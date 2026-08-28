@@ -51,11 +51,14 @@ export const EditSavingsGoalModal: React.FC<EditSavingsGoalModalProps> = ({
     const remainingAmount = Math.max(targetVal - savedVal, 0);
 
     onSave({
-      title: 'Tasarruf hedefi',
+      id: currentGoal.id || `goal_${Date.now()}`,
+      title: currentGoal.title || 'Tasarruf hedefi',
+      category: currentGoal.category || 'Genel',
       savedAmount: savedVal,
       targetAmount: targetVal,
       percentage,
       remainingAmount,
+      isCompleted: savedVal >= targetVal,
     });
 
     onClose();

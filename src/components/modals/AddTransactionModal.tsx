@@ -12,15 +12,16 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import { AppTransaction, TransactionType, Account, Category } from '../../types';
-import { getAccounts, getCategories } from '../../services/storageService';
+import { AppTransaction, TransactionType, Account } from '../../types';
+import { getAccounts, DEFAULT_CATEGORIES } from '../../services/storageService';
+import { formatNumberInput, parseAmountSafely } from '../../utils/formatters';
+import { useData } from '../../context/DataContext';
 
 interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (tx: Omit<AppTransaction, 'id' | 'date'>) => void;
   onOpenAddCategory?: () => void;
-  refreshKey?: number;
 }
 
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
@@ -28,16 +29,21 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   onClose,
   onSave,
   onOpenAddCategory,
-  refreshKey = 0,
 }) => {
+  const { categories: contextCategories } = useData();
+  const categoriesList = contextCategories && contextCategories.length > 0
+    ? contextCategories
+    : DEFAULT_CATEGORIES;
+
   const [type, setType] = useState<TransactionType>('expense');
   const [title, setTitle] = useState('');
   const [amountInput, setAmountInput] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('Gıda & Market');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [error, setError] = useState('');
+
+  const filteredCategories = categoriesList.filter((c) => c.type === type);
 
   useEffect(() => {
     if (visible) {
@@ -47,39 +53,39 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           setSelectedAccountId(accs[0].id);
         }
       });
-      getCategories().then((cats) => {
-        setCategories(cats);
-        if (cats.length > 0) {
-          // Select last created custom category if present, or match type
-          const lastCustom = cats.filter((c) => c.isCustom && c.type === type).pop();
-          if (lastCustom) {
-            setSelectedCategory(lastCustom.name);
-          } else {
-            const match = cats.find((c) => c.type === type);
-            setSelectedCategory(match ? match.name : cats[0].name);
-          }
-        }
-      });
     }
-  }, [visible, type, refreshKey]);
+  }, [visible]);
+
+  // Update selectedCategory whenever type or filteredCategories changes
+  useEffect(() => {
+    if (filteredCategories.length > 0) {
+      // Keep existing selection if valid for new type, otherwise default to first matching category
+      const isValid = filteredCategories.some((c) => c.name === selectedCategory);
+      if (!isValid) {
+        setSelectedCategory(filteredCategories[0].name);
+      }
+    }
+  }, [type, filteredCategories]);
 
   const handleSave = () => {
     if (!title.trim()) {
       setError('Lütfen bir başlık veya açıklama girin.');
       return;
     }
-    const parsedAmount = parseFloat(amountInput.replace(',', '.'));
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    const parsedAmount = parseAmountSafely(amountInput);
+    if (parsedAmount <= 0) {
       setError('Lütfen geçerli bir tutar girin.');
       return;
     }
+
+    const categoryToUse = selectedCategory || (filteredCategories.length > 0 ? filteredCategories[0].name : 'Genel');
 
     const formattedAmount = `${type === 'income' ? '+' : '-'}₺${parsedAmount.toLocaleString('tr-TR', {
       minimumFractionDigits: 2,
     })}`;
 
-    let iconName = 'swap-horizontal';
-    const foundCat = categories.find((c) => c.name === selectedCategory);
+    let iconName = 'pricetag-outline';
+    const foundCat = categoriesList.find((c) => c.name === categoryToUse);
     if (foundCat) iconName = foundCat.icon;
     else if (type === 'income') iconName = 'arrow-down-left';
 
@@ -87,7 +93,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
     onSave({
       title: title.trim(),
-      category: selectedCategory,
+      category: categoryToUse,
       amount: formattedAmount,
       rawAmount: parsedAmount,
       type,
@@ -102,8 +108,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setError('');
     onClose();
   };
-
-  const filteredCategories = categories.filter((c) => c.type === type);
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -120,16 +124,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Type Selector (Gelir / Gider) */}
+            {/* Type Selector (Gider / Gelir) */}
             <View style={styles.typeRow}>
               <TouchableOpacity
                 style={[
                   styles.typeTab,
                   type === 'expense' && styles.activeExpenseTab,
                 ]}
-                onPress={() => {
-                  setType('expense');
-                }}
+                onPress={() => setType('expense')}
               >
                 <Ionicons
                   name="arrow-up-circle-outline"
@@ -151,9 +153,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   styles.typeTab,
                   type === 'income' && styles.activeIncomeTab,
                 ]}
-                onPress={() => {
-                  setType('income');
-                }}
+                onPress={() => setType('income')}
               >
                 <Ionicons
                   name="arrow-down-circle-outline"
@@ -212,7 +212,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <Text style={styles.inputLabel}>İşlem Başlığı / Açıklama</Text>
             <TextInput
               style={styles.input}
-              placeholder="Örn: Market Alışverişi, Maaş..."
+              placeholder="Örn: Market Alışverişi, Maaş, Hastane..."
               placeholderTextColor={COLORS.mutedText}
               value={title}
               onChangeText={(text) => {
@@ -225,12 +225,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <Text style={styles.inputLabel}>Tutar (₺)</Text>
             <TextInput
               style={styles.input}
-              placeholder="0,00"
+              placeholder="0,00 veya 1.000.000"
               placeholderTextColor={COLORS.mutedText}
               keyboardType="numeric"
               value={amountInput}
               onChangeText={(text) => {
-                setAmountInput(text);
+                setAmountInput(formatNumberInput(text));
                 if (error) setError('');
               }}
             />

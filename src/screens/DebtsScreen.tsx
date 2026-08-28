@@ -1,44 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/common/Header';
 import { AddDebtModal } from '../components/modals/AddDebtModal';
 import { PayDebtModal } from '../components/modals/PayDebtModal';
 import { COLORS } from '../constants/colors';
-import { getDebts, addDebt, payDebt, deleteDebt } from '../services/storageService';
+import { useData } from '../context/DataContext';
 import { Debt } from '../types';
 import { formatCurrency } from '../utils/formatters';
 
-export const DebtsScreen = () => {
-  const [debts, setDebts] = useState<Debt[]>([]);
+interface DebtsScreenProps {
+  onOpenAddModal?: () => void;
+}
+
+export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal }) => {
+  const { debts, handleAddDebt, handlePayDebt, handleDeleteDebt } = useData();
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [selectedDebtForPay, setSelectedDebtForPay] = useState<Debt | null>(null);
 
-  useEffect(() => {
-    loadDebts();
-  }, []);
-
-  const loadDebts = async () => {
-    const data = await getDebts();
-    setDebts(data);
-  };
-
-  const handleAddDebt = async (
-    personName: string,
-    type: 'given' | 'taken',
-    amount: number,
-    description?: string
-  ) => {
-    const updated = await addDebt(personName, type, amount, description);
-    setDebts(updated);
-  };
-
-  const handlePayDebt = async (debtId: string, paidAmount: number) => {
-    const updated = await payDebt(debtId, paidAmount);
-    setDebts(updated);
-  };
-
-  const handleDeleteDebt = (debtId: string, personName: string) => {
+  const confirmDelete = (debtId: string, personName: string) => {
     Alert.alert(
       'Kaydı Sil',
       `"${personName}" borç/alacak kaydını silmek istediğinizden emin misiniz?`,
@@ -47,54 +27,46 @@ export const DebtsScreen = () => {
         {
           text: 'Sil',
           style: 'destructive',
-          onPress: async () => {
-            const updated = await deleteDebt(debtId);
-            setDebts(updated);
-          },
+          onPress: () => handleDeleteDebt(debtId),
         },
       ]
     );
   };
 
-  // Dynamic calculations
   const totalReceivables = debts
     .filter((d) => d.type === 'given' && !d.isCompleted)
-    .reduce((sum, d) => sum + d.remainingAmount, 0);
+    .reduce((sum, d) => sum + (d.remainingAmount || 0), 0);
 
   const totalPayables = debts
     .filter((d) => d.type === 'taken' && !d.isCompleted)
-    .reduce((sum, d) => sum + d.remainingAmount, 0);
+    .reduce((sum, d) => sum + (d.remainingAmount || 0), 0);
 
   return (
     <View style={styles.container}>
-      <Header title="Borç & Alacak" subtitle="Kişiler ve Borç Takibi" />
+      <Header
+        title="Borç & Alacak"
+        subtitle="Kişiler ve Borç Takibi"
+        rightActionIcon="add"
+        onRightActionPress={() => (onOpenAddModal ? onOpenAddModal() : setIsAddModalVisible(true))}
+      />
 
       {/* Summary Cards */}
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}>
-          <View style={[styles.iconDot, { backgroundColor: COLORS.income }]} />
+          <View style={[styles.iconDot, { backgroundColor: COLORS.emerald }]} />
           <Text style={styles.summaryLabel}>Toplam Alacak</Text>
           <Text style={styles.receivableAmount}>{formatCurrency(totalReceivables)}</Text>
         </View>
 
         <View style={styles.summaryCard}>
-          <View style={[styles.iconDot, { backgroundColor: COLORS.expense }]} />
+          <View style={[styles.iconDot, { backgroundColor: COLORS.rose }]} />
           <Text style={styles.summaryLabel}>Toplam Borç</Text>
           <Text style={styles.payableAmount}>{formatCurrency(totalPayables)}</Text>
         </View>
       </View>
 
-      {/* Add New Debt / Receivable Button */}
       <View style={styles.actionRow}>
-        <Text style={styles.sectionTitle}>Kişiler Listesi</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          activeOpacity={0.8}
-          onPress={() => setIsAddModalVisible(true)}
-        >
-          <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
-          <Text style={styles.addBtnText}>Borç/Alacak Ekle</Text>
-        </TouchableOpacity>
+        <Text style={styles.sectionTitle}>Kişiler Listesi ({debts.length})</Text>
       </View>
 
       {/* Debts List */}
@@ -104,15 +76,15 @@ export const DebtsScreen = () => {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={40} color={COLORS.mutedText} />
+            <Ionicons name="people-outline" size={36} color={COLORS.subtleText} />
             <Text style={styles.emptyTitle}>Henüz borç/alacak kaydı yok</Text>
             <Text style={styles.emptySubtitle}>
-              Kişilere verdiğiniz veya aldığınız borçları kaydetmek için yukarıdaki butona tıklayın.
+              Kişilere verdiğiniz veya aldığınız borçları eklemek için yukarıdaki + butonuna tıklayın.
             </Text>
           </View>
         }
         renderItem={({ item }) => {
-          const isGiven = item.type === 'given'; // Alacak
+          const isGiven = item.type === 'given';
           return (
             <View style={styles.debtCard}>
               <View style={styles.cardHeader}>
@@ -120,13 +92,13 @@ export const DebtsScreen = () => {
                   <View
                     style={[
                       styles.avatarCircle,
-                      { backgroundColor: isGiven ? COLORS.secondary : '#FEE2E2' },
+                      { backgroundColor: isGiven ? COLORS.emeraldBg : COLORS.roseBg },
                     ]}
                   >
                     <Ionicons
                       name={isGiven ? 'arrow-down-outline' : 'arrow-up-outline'}
                       size={18}
-                      color={isGiven ? COLORS.primary : COLORS.expense}
+                      color={isGiven ? COLORS.emeraldText : COLORS.roseText}
                     />
                   </View>
                   <View>
@@ -140,13 +112,13 @@ export const DebtsScreen = () => {
                 <View
                   style={[
                     styles.typeBadge,
-                    { backgroundColor: isGiven ? COLORS.secondary : '#FEE2E2' },
+                    { backgroundColor: isGiven ? COLORS.emeraldBg : COLORS.roseBg },
                   ]}
                 >
                   <Text
                     style={[
                       styles.typeBadgeText,
-                      { color: isGiven ? COLORS.primary : COLORS.expense },
+                      { color: isGiven ? COLORS.emeraldText : COLORS.roseText },
                     ]}
                   >
                     {isGiven ? 'Alacaklıyım' : 'Borçluyum'}
@@ -183,9 +155,9 @@ export const DebtsScreen = () => {
                   <TouchableOpacity
                     style={styles.deleteBtn}
                     activeOpacity={0.6}
-                    onPress={() => handleDeleteDebt(item.id, item.personName)}
+                    onPress={() => confirmDelete(item.id, item.personName)}
                   >
-                    <Ionicons name="trash-outline" size={16} color={COLORS.expense} />
+                    <Ionicons name="trash-outline" size={16} color={COLORS.subtleText} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -197,14 +169,20 @@ export const DebtsScreen = () => {
       <AddDebtModal
         visible={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
-        onSave={handleAddDebt}
+        onSave={(name, type, amt, desc) => {
+          handleAddDebt(name, type, amt, desc);
+          setIsAddModalVisible(false);
+        }}
       />
 
       <PayDebtModal
         visible={!!selectedDebtForPay}
         debt={selectedDebtForPay}
         onClose={() => setSelectedDebtForPay(null)}
-        onSave={handlePayDebt}
+        onSave={(id, paidAmt) => {
+          handlePayDebt(id, paidAmt);
+          setSelectedDebtForPay(null);
+        }}
       />
     </View>
   );
@@ -219,13 +197,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 12,
-    marginTop: 8,
+    marginTop: 4,
     marginBottom: 16,
   },
   summaryCard: {
     flex: 1,
     backgroundColor: COLORS.card,
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 16,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
@@ -242,58 +220,41 @@ const styles = StyleSheet.create({
   },
   receivableAmount: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.income,
+    fontWeight: '800',
+    color: COLORS.emeraldText,
     marginTop: 4,
   },
   payableAmount: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.expense,
+    fontWeight: '800',
+    color: COLORS.roseText,
     marginTop: 4,
   },
   actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '800',
     color: COLORS.foreground,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    gap: 4,
-  },
-  addBtnText: {
-    color: COLORS.primaryForeground,
-    fontSize: 12,
-    fontWeight: 'bold',
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 150,
   },
   emptyContainer: {
     backgroundColor: COLORS.card,
     padding: 32,
-    borderRadius: 20,
+    borderRadius: 18,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    marginTop: 12,
+    marginTop: 8,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.foreground,
     marginTop: 10,
   },
@@ -302,11 +263,10 @@ const styles = StyleSheet.create({
     color: COLORS.mutedText,
     textAlign: 'center',
     marginTop: 6,
-    lineHeight: 18,
   },
   debtCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -326,15 +286,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   avatarCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   personName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.foreground,
   },
   descriptionText: {
@@ -345,11 +305,11 @@ const styles = StyleSheet.create({
   typeBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   typeBadgeText: {
     fontSize: 11,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -363,13 +323,13 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: COLORS.foreground,
     marginTop: 2,
   },
   completedText: {
-    color: COLORS.income,
-    fontSize: 14,
+    color: COLORS.emeraldText,
+    fontSize: 13,
   },
   cardBtnRow: {
     flexDirection: 'row',
@@ -377,15 +337,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   payBtn: {
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
   payBtnText: {
     color: COLORS.primary,
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   deleteBtn: {
     padding: 6,

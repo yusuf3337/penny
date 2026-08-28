@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
+import { formatNumberInput, parseAmountSafely } from '../../utils/formatters';
 
 interface AddDebtModalProps {
   visible: boolean;
@@ -31,8 +32,8 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
       setError('Lütfen bir kişi ismi girin.');
       return;
     }
-    const parsedAmount = parseFloat(amountInput.replace(',', '.'));
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    const parsedAmount = parseAmountSafely(amountInput);
+    if (parsedAmount <= 0) {
       setError('Lütfen geçerli bir tutar girin.');
       return;
     }
@@ -70,20 +71,31 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
                   type === 'given' && styles.activeGivenTab,
                 ]}
                 onPress={() => setType('given')}
+                activeOpacity={0.8}
               >
                 <Ionicons
                   name="arrow-down-circle-outline"
-                  size={20}
+                  size={18}
                   color={type === 'given' ? COLORS.primaryForeground : COLORS.mutedText}
                 />
-                <Text
-                  style={[
-                    styles.typeTabText,
-                    type === 'given' && styles.activeTypeTabText,
-                  ]}
-                >
-                  Alacaklıyım (Bana borçlu)
-                </Text>
+                <View style={styles.tabTextWrap}>
+                  <Text
+                    style={[
+                      styles.typeTabText,
+                      type === 'given' && styles.activeTypeTabText,
+                    ]}
+                  >
+                    Alacaklıyım
+                  </Text>
+                  <Text
+                    style={[
+                      styles.typeTabSubText,
+                      type === 'given' && styles.activeTypeTabSubText,
+                    ]}
+                  >
+                    Bana Borçlu
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -92,20 +104,31 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
                   type === 'taken' && styles.activeTakenTab,
                 ]}
                 onPress={() => setType('taken')}
+                activeOpacity={0.8}
               >
                 <Ionicons
                   name="arrow-up-circle-outline"
-                  size={20}
+                  size={18}
                   color={type === 'taken' ? COLORS.primaryForeground : COLORS.mutedText}
                 />
-                <Text
-                  style={[
-                    styles.typeTabText,
-                    type === 'taken' && styles.activeTypeTabText,
-                  ]}
-                >
-                  Borçluyum (Ben borçluyum)
-                </Text>
+                <View style={styles.tabTextWrap}>
+                  <Text
+                    style={[
+                      styles.typeTabText,
+                      type === 'taken' && styles.activeTypeTabText,
+                    ]}
+                  >
+                    Borçluyum
+                  </Text>
+                  <Text
+                    style={[
+                      styles.typeTabSubText,
+                      type === 'taken' && styles.activeTypeTabSubText,
+                    ]}
+                  >
+                    Ben Borçluyum
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
 
@@ -126,12 +149,12 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
             <Text style={styles.inputLabel}>Tutar (₺)</Text>
             <TextInput
               style={styles.input}
-              placeholder="0,00"
+              placeholder="0,00 veya 1.000.000"
               placeholderTextColor={COLORS.mutedText}
               keyboardType="numeric"
               value={amountInput}
               onChangeText={(text) => {
-                setAmountInput(text);
+                setAmountInput(formatNumberInput(text));
                 if (error) setError('');
               }}
             />
@@ -188,13 +211,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 4,
     marginBottom: 20,
+    gap: 6,
   },
   typeTab: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     borderRadius: 12,
     gap: 6,
   },
@@ -204,13 +229,25 @@ const styles = StyleSheet.create({
   activeTakenTab: {
     backgroundColor: COLORS.expense,
   },
+  tabTextWrap: {
+    alignItems: 'flex-start',
+  },
   typeTabText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: COLORS.mutedText,
+  },
+  typeTabSubText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: COLORS.subtleText,
+    marginTop: 1,
   },
   activeTypeTabText: {
     color: COLORS.primaryForeground,
+  },
+  activeTypeTabSubText: {
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   inputLabel: {
     fontSize: 12,
