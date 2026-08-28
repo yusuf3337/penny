@@ -92,7 +92,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
       </View>
 
-      {/* SINCAP Hero Timeline Card (Zaman Tüneli / Yıllık Özet) */}
+      {/* Hero Timeline Card (Zaman Tüneli / Yıllık Özet) */}
       <View style={styles.heroCard}>
         <View style={styles.heroHeader}>
           <View style={styles.pillBadge}>
