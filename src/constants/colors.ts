@@ -1,5 +1,5 @@
 export const COLORS = {
-  // SINCAP Modern Color Palette
+  // Modern Color Palette
   background: '#F8FAFC',       // Slate 50 background
   foreground: '#0F172A',       // Slate 900 primary text
   card: '#FFFFFF',             // Clean white cards

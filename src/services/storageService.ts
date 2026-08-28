@@ -27,7 +27,7 @@ const STORAGE_KEYS = {
   BUDGETS: '@penny_budgets_v2',
 };
 
-// Default Categories matching SINCAP screenshots
+// Default Categories matching  screenshots
 export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat_tech', name: 'Teknoloji', icon: 'laptop-outline', color: '#3B82F6', type: 'expense' },
   { id: 'cat_home', name: 'Ev', icon: 'home-outline', color: '#F59E0B', type: 'expense' },
@@ -156,14 +156,14 @@ export const addOrUpdateGoal = async (goal: Partial<SavingsGoal>): Promise<Savin
     const updated = current.map((g) =>
       g.id === goal.id
         ? {
-            ...g,
-            ...goal,
-            savedAmount: saved,
-            targetAmount: target,
-            percentage,
-            remainingAmount: Math.max(target - saved, 0),
-            isCompleted: saved >= target,
-          }
+          ...g,
+          ...goal,
+          savedAmount: saved,
+          targetAmount: target,
+          percentage,
+          remainingAmount: Math.max(target - saved, 0),
+          isCompleted: saved >= target,
+        }
         : g
     );
     await saveStoredGoals(updated);
