@@ -41,7 +41,7 @@ export const UserNameModal: React.FC<UserNameModalProps> = ({ visible, onSave })
             <Ionicons name="person-outline" size={32} color={COLORS.primary} />
           </View>
 
-          <Text style={styles.title}>Penny'ye Hoş Geldin! 👋</Text>
+          <Text style={styles.title}>Penny'ye Hoş Geldin</Text>
           <Text style={styles.subtitle}>
             Sana hitap edebilmemiz ve kişisel finans asistanını hazırlamamız için lütfen ismini gir.
           </Text>

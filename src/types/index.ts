@@ -22,7 +22,7 @@ export interface Account {
 export interface Debt {
   id: string;
   personName: string;
-  type: 'given' | 'taken'; // given = Alacaklıyım (Bana borçlu), taken = Borçluyum (Ben borçluyum)
+  type: 'given' | 'taken'; // given = Alacaklıyım, taken = Borçluyum
   amount: number;
   remainingAmount: number;
   description?: string;
@@ -33,7 +33,7 @@ export interface Debt {
 
 export interface PendingCollection {
   id: string;
-  title: string; // Örn: Daire 3 Kirası, Müşteri Hakedişi, Yazılım Projesi Ödemesi
+  title: string;
   expectedAmount: number;
   actualAmount: number;
   category: string;
@@ -42,23 +42,37 @@ export interface PendingCollection {
   createdAt: string;
 }
 
-export interface RecurringTransaction {
+export interface SubscriptionItem {
   id: string;
   title: string;
   amount: number;
-  type: TransactionType;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   category: string;
-  accountId?: string;
+  cycle: 'monthly' | 'yearly';
+  paymentDay: number; // 1-31 (Day of month)
+  nextDueDate: string; // ISO date string
+  iconName?: string;
+  color?: string;
   isActive: boolean;
-  nextDueDate: string;
+  reviewNote?: string;
+}
+
+export type RecurringTransaction = SubscriptionItem;
+
+export interface CategoryBudget {
+  id: string;
+  categoryName: string;
+  allocatedAmount: number;
+  usedAmount: number;
+  badgeText?: string;
+  iconName?: string;
+  color?: string;
 }
 
 export interface AppTransaction {
   id: string;
   title: string;
   category: string;
-  date: string;
+  date: string; // ISO timestamp
   amount: string;
   rawAmount: number;
   type: TransactionType;
@@ -70,23 +84,20 @@ export interface AppTransaction {
 export interface SpendingCategory {
   name: string;
   value: string;
+  rawAmount: number;
   widthPercentage: number;
+  color: string;
 }
 
 export interface SavingsGoal {
+  id: string;
   title: string;
+  category: string;
   savedAmount: number;
   targetAmount: number;
   percentage: number;
   remainingAmount: number;
-}
-
-export interface FinancialOverview {
-  totalBalance: string;
-  balanceFraction: string;
-  balanceChangePercentage: string;
-  monthlyIncome: string;
-  monthlyIncomeChange: string;
-  monthlyExpense: string;
-  monthlyExpenseChange: string;
+  isCompleted: boolean;
+  dueDate?: string;
+  iconName?: string;
 }

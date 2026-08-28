@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -11,45 +11,54 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import { Debt } from '../../types';
+import { SavingsGoal } from '../../types';
 import { parseAmountSafely, formatCurrency, formatNumberInput } from '../../utils/formatters';
 
-interface PayDebtModalProps {
+interface UpdateGoalProgressModalProps {
   visible: boolean;
-  debt: Debt | null;
+  goal: SavingsGoal | null;
   onClose: () => void;
-  onSave: (debtId: string, paidAmount: number) => void;
+  onSave: (goal: Partial<SavingsGoal>) => void;
 }
 
-export const PayDebtModal: React.FC<PayDebtModalProps> = ({
+export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = ({
   visible,
-  debt,
+  goal,
   onClose,
   onSave,
 }) => {
-  const [payAmountInput, setPayAmountInput] = useState('');
+  const [addAmountInput, setAddAmountInput] = useState('');
   const [error, setError] = useState('');
 
-  if (!debt) return null;
-
-  const handleSave = () => {
-    const parsed = parseAmountSafely(payAmountInput);
-    if (parsed <= 0) {
-      setError('Lütfen geçerli bir tutar girin.');
-      return;
-    }
-    if (parsed > debt.remainingAmount) {
-      setError(`En fazla ${formatCurrency(debt.remainingAmount)} girebilirsiniz.`);
-      return;
-    }
-
-    onSave(debt.id, parsed);
-    setPayAmountInput('');
+  useEffect(() => {
+    setAddAmountInput('');
     setError('');
+  }, [visible, goal]);
+
+  if (!goal) return null;
+
+  const handleAddSavings = () => {
+    const added = parseAmountSafely(addAmountInput);
+    if (added <= 0) {
+      setError('Lütfen birimim tutarı girin.');
+      return;
+    }
+
+    const newSaved = goal.savedAmount + added;
+    const percentage = Math.min(Math.round((newSaved / goal.targetAmount) * 100), 100);
+
+    onSave({
+      id: goal.id,
+      savedAmount: newSaved,
+      targetAmount: goal.targetAmount,
+      percentage,
+      remainingAmount: Math.max(goal.targetAmount - newSaved, 0),
+      isCompleted: newSaved >= goal.targetAmount,
+    });
+
+    setAddAmountInput('');
     onClose();
   };
-
-  const isGiven = debt.type === 'given'; // Alacak
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -59,42 +68,49 @@ export const PayDebtModal: React.FC<PayDebtModalProps> = ({
       >
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {isGiven ? 'Tahsilat Yap' : 'Ödeme Yap'}
-            </Text>
+            <View>
+              <Text style={styles.headerTitle}>Birikim Ekle / Güncelle</Text>
+              <Text style={styles.goalSubTitle}>{goal.title}</Text>
+            </View>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
               <Ionicons name="close" size={24} color={COLORS.foreground} />
             </TouchableOpacity>
           </View>
 
+          {/* Current Info Box */}
           <View style={styles.infoBox}>
-            <Text style={styles.personText}>{debt.personName}</Text>
-            <Text style={styles.remText}>
-              Kalan {isGiven ? 'Alacak' : 'Borç'}: {formatCurrency(debt.remainingAmount)}
-            </Text>
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Biriken</Text>
+              <Text style={styles.infoValue}>{formatCurrency(goal.savedAmount)}</Text>
+            </View>
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Hedef Tutar</Text>
+              <Text style={styles.infoValue}>{formatCurrency(goal.targetAmount)}</Text>
+            </View>
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Kalan</Text>
+              <Text style={styles.infoValue}>{formatCurrency(goal.remainingAmount)}</Text>
+            </View>
           </View>
 
-          <Text style={styles.label}>
-            {isGiven ? 'Tahsil Edilen Tutar (₺)' : 'Ödenen Tutar (₺)'}
-          </Text>
+          {/* Add Amount Input */}
+          <Text style={styles.inputLabel}>Eklenecek Birikim Tutarı (₺)</Text>
           <TextInput
             style={styles.input}
-            placeholder={debt.remainingAmount.toString()}
+            placeholder="Örn: 1.000 veya 1.000.000"
             placeholderTextColor={COLORS.mutedText}
             keyboardType="numeric"
-            value={payAmountInput}
+            value={addAmountInput}
             onChangeText={(text) => {
-              setPayAmountInput(formatNumberInput(text));
+              setAddAmountInput(formatNumberInput(text));
               if (error) setError('');
             }}
           />
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleSave}>
-            <Text style={styles.saveBtnText}>
-              {isGiven ? 'Tahsilatı Kaydet' : 'Ödemeyi Kaydet'}
-            </Text>
+          <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleAddSavings}>
+            <Text style={styles.saveBtnText}>+ Birikime Ekle</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -111,7 +127,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: 28,
+    borderRadius: 24,
     padding: 24,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 10 },
@@ -122,31 +138,42 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.foreground,
+  },
+  goalSubTitle: {
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginTop: 2,
   },
   infoBox: {
+    flexDirection: 'row',
     backgroundColor: COLORS.background,
-    padding: 16,
     borderRadius: 16,
+    padding: 14,
     marginBottom: 16,
   },
-  personText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
+  infoCol: {
+    flex: 1,
+    alignItems: 'center',
   },
-  remText: {
-    fontSize: 13,
+  infoLabel: {
+    fontSize: 11,
     color: COLORS.mutedText,
+  },
+  infoValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.foreground,
     marginTop: 4,
   },
-  label: {
+  inputLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.mutedText,
@@ -163,7 +190,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
   },
   errorText: {
-    color: COLORS.expense,
+    color: COLORS.roseText,
     fontSize: 12,
     marginTop: 10,
   },

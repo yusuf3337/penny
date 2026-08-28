@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -15,7 +16,7 @@ import { COLORS } from '../../constants/colors';
 interface AddCategoryModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (name: string, type: 'income' | 'expense') => void;
+  onSave: (name: string, type: 'income' | 'expense', iconName?: string, color?: string) => void;
 }
 
 export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
@@ -25,7 +26,25 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [selectedIcon, setSelectedIcon] = useState('pricetag-outline');
   const [error, setError] = useState('');
+
+  const icons = [
+    'pricetag-outline',
+    'medical-outline',
+    'fast-food-outline',
+    'laptop-outline',
+    'bus-outline',
+    'home-outline',
+    'receipt-outline',
+    'cart-outline',
+    'game-controller-outline',
+    'fitness-outline',
+    'briefcase-outline',
+    'cash-outline',
+    'heart-outline',
+    'car-outline',
+  ];
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -33,8 +52,11 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
       return;
     }
 
-    onSave(name.trim(), type);
+    const catColor = type === 'income' ? COLORS.emerald : COLORS.primary;
+
+    onSave(name.trim(), type, selectedIcon, catColor);
     setName('');
+    setSelectedIcon('pricetag-outline');
     setError('');
     onClose();
   };
@@ -53,48 +75,71 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Type Selector */}
-          <View style={styles.typeRow}>
-            <TouchableOpacity
-              style={[styles.typeTab, type === 'expense' && styles.activeExpenseTab]}
-              onPress={() => setType('expense')}
-            >
-              <Text
-                style={[styles.typeTabText, type === 'expense' && styles.activeTypeTabText]}
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Type Selector */}
+            <View style={styles.typeRow}>
+              <TouchableOpacity
+                style={[styles.typeTab, type === 'expense' && styles.activeExpenseTab]}
+                onPress={() => setType('expense')}
               >
-                Gider Kategorisi
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={[styles.typeTabText, type === 'expense' && styles.activeTypeTabText]}
+                >
+                  Gider Kategorisi
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.typeTab, type === 'income' && styles.activeIncomeTab]}
-              onPress={() => setType('income')}
-            >
-              <Text
-                style={[styles.typeTabText, type === 'income' && styles.activeTypeTabText]}
+              <TouchableOpacity
+                style={[styles.typeTab, type === 'income' && styles.activeIncomeTab]}
+                onPress={() => setType('income')}
               >
-                Gelir Kategorisi
-              </Text>
+                <Text
+                  style={[styles.typeTabText, type === 'income' && styles.activeTypeTabText]}
+                >
+                  Gelir Kategorisi
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.label}>Kategori Adı</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Örn: Sağlık, Spor, Hobiler..."
+              placeholderTextColor={COLORS.mutedText}
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                if (error) setError('');
+              }}
+            />
+
+            {/* Icon selection */}
+            <Text style={styles.label}>Kategori İkonu</Text>
+            <View style={styles.iconGrid}>
+              {icons.map((ic) => (
+                <TouchableOpacity
+                  key={ic}
+                  style={[
+                    styles.iconBox,
+                    selectedIcon === ic && styles.iconBoxActive,
+                  ]}
+                  onPress={() => setSelectedIcon(ic)}
+                >
+                  <Ionicons
+                    name={ic as any}
+                    size={20}
+                    color={selectedIcon === ic ? COLORS.primaryForeground : COLORS.foreground}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleSave}>
+              <Text style={styles.saveBtnText}>Kategoriyi Oluştur</Text>
             </TouchableOpacity>
-          </View>
-
-          <Text style={styles.label}>Kategori Adı</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Örn: Kedim, Hobi, Yazılım..."
-            placeholderTextColor={COLORS.mutedText}
-            value={name}
-            onChangeText={(text) => {
-              setName(text);
-              if (error) setError('');
-            }}
-          />
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleSave}>
-            <Text style={styles.saveBtnText}>Kategoriyi Oluştur</Text>
-          </TouchableOpacity>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -105,18 +150,14 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+    justifyContent: 'flex-end',
   },
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: 28,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 24,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    maxHeight: '85%',
   },
   header: {
     flexDirection: 'row',
@@ -161,6 +202,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.mutedText,
     marginBottom: 6,
+    marginTop: 10,
   },
   input: {
     backgroundColor: COLORS.background,
@@ -171,6 +213,26 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  iconBoxActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   errorText: {
     color: COLORS.expense,
@@ -183,6 +245,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     marginTop: 20,
+    marginBottom: 20,
   },
   saveBtnText: {
     color: COLORS.primaryForeground,

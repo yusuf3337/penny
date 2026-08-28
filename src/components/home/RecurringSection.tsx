@@ -64,7 +64,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
           <View key={item.id} style={styles.itemRow}>
             <View style={styles.iconBox}>
               <Ionicons
-                name={item.type === 'income' ? 'repeat-outline' : 'calendar-outline'}
+                name={item.iconName as any || 'repeat-outline'}
                 size={20}
                 color={COLORS.primary}
               />
@@ -73,7 +73,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
             <View style={styles.itemMain}>
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text style={styles.itemSub}>
-                {getFreqLabel(item.frequency)} · {formatCurrency(item.amount)}
+                {item.cycle === 'yearly' ? 'Her Yıl' : 'Her Ay'} · {formatCurrency(item.amount)}
               </Text>
             </View>
 

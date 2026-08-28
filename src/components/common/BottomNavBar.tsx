@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-
-export type TabType = 'overview' | 'transactions' | 'debts' | 'reports';
+import { TabType } from '../../context/DataContext';
 
 interface BottomNavBarProps {
   activeTab: TabType;
@@ -16,95 +16,84 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   onTabChange,
   onAddPress,
 }) => {
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 10);
+
+  const tabs: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { id: 'timeline', label: 'Akış', icon: 'time-outline' },
+    { id: 'goals', label: 'Hedefler', icon: 'flag-outline' },
+    { id: 'subscriptions', label: 'Abonelik', icon: 'repeat-outline' },
+    { id: 'budget', label: 'Bütçe', icon: 'pie-chart-outline' },
+    { id: 'reports', label: 'Raporlar', icon: 'bar-chart-outline' },
+    { id: 'debts', label: 'Borçlar', icon: 'people-outline' },
+  ];
+
+  const getFabConfig = (): { label: string; icon: keyof typeof Ionicons.glyphMap } => {
+    switch (activeTab) {
+      case 'goals':
+        return { label: 'Hedef Ekle', icon: 'flag' };
+      case 'subscriptions':
+        return { label: 'Abonelik Ekle', icon: 'repeat' };
+      case 'budget':
+        return { label: 'Bütçe Belirle', icon: 'pie-chart' };
+      case 'debts':
+        return { label: 'Borç/Alacak Ekle', icon: 'people' };
+      default:
+        return { label: 'İşlem Ekle', icon: 'add' };
+    }
+  };
+
+  const fabConfig = getFabConfig();
+
   return (
     <View style={styles.wrapper}>
-      {/* Floating Add Transaction Button */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={onAddPress}>
-        <Ionicons name="add" size={20} color={COLORS.primaryForeground} />
-        <Text style={styles.fabText}>Yeni işlem</Text>
+      {/* Floating Action Button - Dynamic Per Active Tab */}
+      <TouchableOpacity
+        style={[
+          styles.fab,
+          { bottom: 50 + bottomInset },
+        ]}
+        activeOpacity={0.85}
+        onPress={onAddPress}
+      >
+        <Ionicons name={fabConfig.icon} size={16} color={COLORS.primaryForeground} />
+        <Text style={styles.fabText}>{fabConfig.label}</Text>
       </TouchableOpacity>
 
       {/* Bottom Navigation Bar */}
-      <View style={styles.navBar}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => onTabChange('overview')}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="grid-outline"
-            size={20}
-            color={activeTab === 'overview' ? COLORS.primary : COLORS.mutedText}
-          />
-          <Text
-            style={[
-              styles.navText,
-              { color: activeTab === 'overview' ? COLORS.primary : COLORS.mutedText },
-            ]}
-          >
-            Genel bakış
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => onTabChange('transactions')}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="wallet-outline"
-            size={20}
-            color={activeTab === 'transactions' ? COLORS.primary : COLORS.mutedText}
-          />
-          <Text
-            style={[
-              styles.navText,
-              { color: activeTab === 'transactions' ? COLORS.primary : COLORS.mutedText },
-            ]}
-          >
-            İşlemler
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => onTabChange('debts')}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="people-outline"
-            size={20}
-            color={activeTab === 'debts' ? COLORS.primary : COLORS.mutedText}
-          />
-          <Text
-            style={[
-              styles.navText,
-              { color: activeTab === 'debts' ? COLORS.primary : COLORS.mutedText },
-            ]}
-          >
-            Borç/Alacak
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => onTabChange('reports')}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="options-outline"
-            size={20}
-            color={activeTab === 'reports' ? COLORS.primary : COLORS.mutedText}
-          />
-          <Text
-            style={[
-              styles.navText,
-              { color: activeTab === 'reports' ? COLORS.primary : COLORS.mutedText },
-            ]}
-          >
-            Raporlar
-          </Text>
-        </TouchableOpacity>
+      <View style={[styles.navBar, { paddingBottom: bottomInset + 4 }]}>
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              style={styles.navItem}
+              onPress={() => onTabChange(tab.id)}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.iconWrap,
+                  isActive && styles.activeIconWrap,
+                ]}
+              >
+                <Ionicons
+                  name={tab.icon}
+                  size={18}
+                  color={isActive ? COLORS.primary : COLORS.mutedText}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.navText,
+                  { color: isActive ? COLORS.primary : COLORS.mutedText },
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -119,25 +108,25 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 74,
-    right: 20,
+    alignSelf: 'center',
     backgroundColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 30,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 10,
-    elevation: 6,
+    elevation: 8,
     gap: 6,
+    zIndex: 10,
   },
   fabText: {
     color: COLORS.primaryForeground,
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '700',
   },
   navBar: {
     flexDirection: 'row',
@@ -146,15 +135,27 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.cardBorder,
-    paddingTop: 10,
-    paddingBottom: 24,
+    paddingTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 10,
   },
   navItem: {
+    flex: 1,
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
+  },
+  iconWrap: {
+    padding: 4,
+    borderRadius: 12,
+  },
+  activeIconWrap: {
+    backgroundColor: COLORS.primaryLight,
   },
   navText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
