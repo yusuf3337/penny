@@ -11,7 +11,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/common/Header';
 import { useData } from '../context/DataContext';
 import { COLORS } from '../constants/colors';
-import { formatCurrency, formatShortDate } from '../utils/formatters';
+import {
+  formatCurrency,
+  formatShortDate,
+  formatMonthYear,
+  changeMonth,
+  isSameMonthAndYear,
+} from '../utils/formatters';
 
 interface ReportsScreenProps {
   onOpenAddModal: () => void;
@@ -20,27 +26,35 @@ interface ReportsScreenProps {
 export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) => {
   const {
     transactions,
-    totalIncome,
-    totalExpense,
     totalBalance,
     subscriptions,
     totalMonthlySubscriptions,
-    budgets,
-    totalBudgetedSpending,
-    totalUsedSpending,
     goals,
     totalSavedGoals,
   } = useData();
 
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [activeSubTab, setActiveSubTab] = useState<'kategori' | 'genel' | 'icgoru' | 'trend' | 'zaman'>('kategori');
 
-  // Category breakdown for Expense
-  const categoryMap: { [key: string]: number } = {};
-  transactions
+  const handlePrevMonth = () => setSelectedMonth((prev) => changeMonth(prev, -1));
+  const handleNextMonth = () => setSelectedMonth((prev) => changeMonth(prev, 1));
+  const handleCurrentMonth = () => setSelectedMonth(new Date());
+  const isCurrentMonthSelected = isSameMonthAndYear(selectedMonth, new Date());
+
+  // Filter transactions for the selected month
+  const monthlyTransactions = transactions.filter((t) =>
+    isSameMonthAndYear(t.date, selectedMonth)
+  );
+
+  const monthIncome = monthlyTransactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
+
+  const monthExpense = monthlyTransactions
     .filter((t) => t.type === 'expense')
-    .forEach((t) => {
-      categoryMap[t.category] = (categoryMap[t.category] || 0) + (t.rawAmount || 0);
-    });
+    .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
+
+  const monthNet = monthIncome - monthExpense;
 
   const categoryColors: { [key: string]: string } = {
     Teknoloji: '#3B82F6',
@@ -51,23 +65,57 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
     Eğitim: '#8B5CF6',
     Ulaşım: '#06B6D4',
     Eğlence: '#EC4899',
+    'Maaş / Hakediş': '#0D9488',
+    Maaş: '#0D9488',
+    Yatırım: '#10B981',
+    Freelance: '#6366F1',
+    Diğer: '#64748B',
   };
 
-  const categories = Object.keys(categoryMap).map((catName) => {
-    const rawAmount = categoryMap[catName];
-    const percentage = totalExpense > 0 ? Math.round((rawAmount / totalExpense) * 100) : 0;
-    return {
-      name: catName,
-      rawAmount,
-      percentage,
-      color: categoryColors[catName] || COLORS.primary,
-    };
-  });
+  // Category breakdown for Expense
+  const categoryMap: { [key: string]: number } = {};
+  monthlyTransactions
+    .filter((t) => t.type === 'expense')
+    .forEach((t) => {
+      categoryMap[t.category] = (categoryMap[t.category] || 0) + (t.rawAmount || 0);
+    });
+
+  const categories = Object.keys(categoryMap)
+    .map((catName) => {
+      const rawAmount = categoryMap[catName];
+      const percentage = monthExpense > 0 ? Math.round((rawAmount / monthExpense) * 100) : 0;
+      return {
+        name: catName,
+        rawAmount,
+        percentage,
+        color: categoryColors[catName] || COLORS.primary,
+      };
+    })
+    .sort((a, b) => b.rawAmount - a.rawAmount);
+
+  // Category breakdown for Income
+  const incomeCategoryMap: { [key: string]: number } = {};
+  monthlyTransactions
+    .filter((t) => t.type === 'income')
+    .forEach((t) => {
+      incomeCategoryMap[t.category] = (incomeCategoryMap[t.category] || 0) + (t.rawAmount || 0);
+    });
+
+  const incomeCategories = Object.keys(incomeCategoryMap)
+    .map((catName) => {
+      const rawAmount = incomeCategoryMap[catName];
+      const percentage = monthIncome > 0 ? Math.round((rawAmount / monthIncome) * 100) : 0;
+      return {
+        name: catName,
+        rawAmount,
+        percentage,
+        color: categoryColors[catName] || COLORS.emerald,
+      };
+    })
+    .sort((a, b) => b.rawAmount - a.rawAmount);
 
   // Top spending category for insights
-  const topExpenseCategory = categories.length > 0
-    ? [...categories].sort((a, b) => b.rawAmount - a.rawAmount)[0]
-    : null;
+  const topExpenseCategory = categories.length > 0 ? categories[0] : null;
 
   // SVG Donut Chart Calculation
   const size = 180;
@@ -79,9 +127,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
   let cumulativeAngle = 0;
 
   // Savings Rate %
-  const savingsRate = totalIncome > 0
-    ? Math.max(Math.round(((totalIncome - totalExpense) / totalIncome) * 100), 0)
+  const savingsRate = monthIncome > 0
+    ? Math.max(Math.round(((monthIncome - monthExpense) / monthIncome) * 100), 0)
     : 0;
+
+  const currentMonthName = formatMonthYear(selectedMonth);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -118,12 +168,33 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
 
       {/* Month Selector */}
       <View style={styles.monthSelectorRow}>
-        <TouchableOpacity style={styles.arrowBtn}>
-          <Ionicons name="chevron-back" size={16} color={COLORS.foreground} />
+        <TouchableOpacity
+          style={styles.arrowBtn}
+          onPress={handlePrevMonth}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={18} color={COLORS.foreground} />
         </TouchableOpacity>
-        <Text style={styles.monthTitleText}>Ağustos 2026</Text>
-        <TouchableOpacity style={styles.arrowBtn}>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.foreground} />
+
+        <View style={styles.monthCenterWrap}>
+          <Text style={styles.monthTitleText}>{currentMonthName}</Text>
+          {!isCurrentMonthSelected && (
+            <TouchableOpacity
+              style={styles.currentMonthBadge}
+              onPress={handleCurrentMonth}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.currentMonthBadgeText}>Bu Aya Dön</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={styles.arrowBtn}
+          onPress={handleNextMonth}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-forward" size={18} color={COLORS.foreground} />
         </TouchableOpacity>
       </View>
 
@@ -131,55 +202,60 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {activeSubTab === 'kategori' && (
         <>
           <View style={styles.chartCard}>
-            <Text style={styles.chartCardTitle}>Ağustos 2026 - Gider Kırılımı</Text>
+            <Text style={styles.chartCardTitle}>{currentMonthName} - Gider Kırılımı</Text>
 
-            <View style={styles.donutContainer}>
-              <Svg width={size} height={size}>
-                <G rotation="-90" origin={`${center}, ${center}`}>
-                  <Circle
-                    cx={center}
-                    cy={center}
-                    r={radius}
-                    stroke={COLORS.secondary}
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                  />
+            {monthExpense > 0 ? (
+              <View style={styles.donutContainer}>
+                <Svg width={size} height={size}>
+                  <G rotation="-90" origin={`${center}, ${center}`}>
+                    <Circle
+                      cx={center}
+                      cy={center}
+                      r={radius}
+                      stroke={COLORS.secondary}
+                      strokeWidth={strokeWidth}
+                      fill="none"
+                    />
 
-                  {categories.length > 0 &&
-                    categories.map((cat, index) => {
-                      const strokeDashoffset =
-                        circumference - (circumference * cat.percentage) / 100;
-                      const rotation = (cumulativeAngle / 100) * 360;
-                      cumulativeAngle += cat.percentage;
+                    {categories.length > 0 &&
+                      categories.map((cat, index) => {
+                        const strokeDashoffset =
+                          circumference - (circumference * cat.percentage) / 100;
+                        const rotation = (cumulativeAngle / 100) * 360;
+                        cumulativeAngle += cat.percentage;
 
-                      return (
-                        <Circle
-                          key={index}
-                          cx={center}
-                          cy={center}
-                          r={radius}
-                          stroke={cat.color}
-                          strokeWidth={strokeWidth}
-                          strokeDasharray={`${circumference} ${circumference}`}
-                          strokeDashoffset={strokeDashoffset}
-                          strokeLinecap="round"
-                          transform={`rotate(${rotation}, ${center}, ${center})`}
-                          fill="none"
-                        />
-                      );
-                    })}
-                </G>
-              </Svg>
+                        return (
+                          <Circle
+                            key={index}
+                            cx={center}
+                            cy={center}
+                            r={radius}
+                            stroke={cat.color}
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={`${circumference} ${circumference}`}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            transform={`rotate(${rotation}, ${center}, ${center})`}
+                            fill="none"
+                          />
+                        );
+                      })}
+                  </G>
+                </Svg>
 
-              <View style={styles.donutCenter}>
-                <Text style={styles.donutLabel}>Toplam</Text>
-                <Text style={styles.donutTotalText}>{formatCurrency(totalExpense)}</Text>
+                <View style={styles.donutCenter}>
+                  <Text style={styles.donutLabel}>Toplam Gider</Text>
+                  <Text style={styles.donutTotalText}>{formatCurrency(monthExpense)}</Text>
+                </View>
               </View>
-            </View>
+            ) : null}
 
             <View style={styles.categoryList}>
               {categories.length === 0 ? (
-                <Text style={styles.emptyText}>Henüz kaydedilmiş gider yok.</Text>
+                <View style={styles.emptyStateBox}>
+                  <Ionicons name="pie-chart-outline" size={32} color={COLORS.subtleText} />
+                  <Text style={styles.emptyText}>{currentMonthName} için henüz kayıtlı gider yok.</Text>
+                </View>
               ) : (
                 categories.map((cat) => (
                   <View key={cat.name} style={styles.catRow}>
@@ -198,18 +274,28 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
             </View>
           </View>
 
+          {/* Income Breakdown Card */}
           <View style={styles.incomeCard}>
-            <Text style={styles.incomeCardTitle}>Ağustos 2026 - Gelir Kırılımı</Text>
-            <View style={styles.catRow}>
-              <View style={styles.catLeft}>
-                <View style={[styles.colorDot, { backgroundColor: COLORS.emerald }]} />
-                <Text style={styles.catName}>Maaş / Hakediş</Text>
+            <Text style={styles.incomeCardTitle}>{currentMonthName} - Gelir Kırılımı</Text>
+            {incomeCategories.length === 0 ? (
+              <View style={styles.emptyStateBox}>
+                <Ionicons name="cash-outline" size={32} color={COLORS.subtleText} />
+                <Text style={styles.emptyText}>{currentMonthName} için henüz kayıtlı gelir yok.</Text>
               </View>
-              <View style={styles.catRight}>
-                <Text style={styles.catAmount}>{formatCurrency(totalIncome)}</Text>
-                <Text style={styles.catPercent}>%100</Text>
-              </View>
-            </View>
+            ) : (
+              incomeCategories.map((cat) => (
+                <View key={cat.name} style={styles.catRow}>
+                  <View style={styles.catLeft}>
+                    <View style={[styles.colorDot, { backgroundColor: cat.color }]} />
+                    <Text style={styles.catName}>{cat.name}</Text>
+                  </View>
+                  <View style={styles.catRight}>
+                    <Text style={styles.catAmount}>{formatCurrency(cat.rawAmount)}</Text>
+                    <Text style={styles.catPercent}>%{cat.percentage}</Text>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
         </>
       )}
@@ -218,31 +304,31 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {activeSubTab === 'genel' && (
         <View style={styles.genelWrap}>
           <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>NET FİNANSAL BAKİYE</Text>
+            <Text style={styles.metricLabel}>{currentMonthName.toUpperCase()} NET DURUM</Text>
             <Text
               style={[
                 styles.metricBigValue,
-                { color: totalBalance >= 0 ? COLORS.emeraldText : COLORS.roseText },
+                { color: monthNet >= 0 ? COLORS.emeraldText : COLORS.roseText },
               ]}
             >
-              {formatCurrency(totalBalance)}
+              {monthNet >= 0 ? '+' : ''}{formatCurrency(monthNet)}
             </Text>
             <Text style={styles.metricSubText}>
-              Gelir: {formatCurrency(totalIncome)} · Gider: {formatCurrency(totalExpense)}
+              Gelir: {formatCurrency(monthIncome)} · Gider: {formatCurrency(monthExpense)}
             </Text>
           </View>
 
           <View style={styles.rowTwo}>
             <View style={styles.halfCard}>
               <Ionicons name="pie-chart-outline" size={24} color={COLORS.primary} />
-              <Text style={styles.halfLabel}>Tasarruf Oranı</Text>
+              <Text style={styles.halfLabel}>Aylık Tasarruf Oranı</Text>
               <Text style={styles.halfValue}>%{savingsRate}</Text>
             </View>
 
             <View style={styles.halfCard}>
-              <Ionicons name="repeat-outline" size={24} color={COLORS.indigoText} />
-              <Text style={styles.halfLabel}>Aylık Abonelik</Text>
-              <Text style={styles.halfValue}>{formatCurrency(totalMonthlySubscriptions)}</Text>
+              <Ionicons name="wallet-outline" size={24} color={COLORS.emeraldText} />
+              <Text style={styles.halfLabel}>Kümülatif Toplam Bakiye</Text>
+              <Text style={styles.halfValue}>{formatCurrency(totalBalance)}</Text>
             </View>
           </View>
         </View>
@@ -258,7 +344,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 <Text style={styles.insightAlertTitle}>En Yüksek Harcama Kategorisi</Text>
               </View>
               <Text style={styles.insightAlertBody}>
-                Bu ay harcamalarınızın en büyük kısmını %{topExpenseCategory.percentage} oranıyla{' '}
+                {currentMonthName} döneminde harcamalarınızın en büyük kısmını %{topExpenseCategory.percentage} oranıyla{' '}
                 <Text style={{ fontWeight: 'bold' }}>{topExpenseCategory.name}</Text> (
                 {formatCurrency(topExpenseCategory.rawAmount)}) oluşturuyor.
               </Text>
@@ -295,20 +381,36 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {activeSubTab === 'trend' && (
         <View style={styles.trendWrap}>
           <View style={styles.chartCard}>
-            <Text style={styles.chartCardTitle}>Gelir / Gider Karşılaştırması</Text>
-            <View style={styles.barRow}>
-              <View style={styles.barCol}>
-                <Text style={styles.barLabel}>Gelir</Text>
-                <View style={[styles.barFill, { height: totalIncome > 0 ? 120 : 10, backgroundColor: COLORS.emerald }]} />
-                <Text style={styles.barValue}>{formatCurrency(totalIncome)}</Text>
+            <Text style={styles.chartCardTitle}>{currentMonthName} - Gelir & Gider Dengesi</Text>
+            {monthIncome === 0 && monthExpense === 0 ? (
+              <View style={styles.emptyStateBox}>
+                <Ionicons name="bar-chart-outline" size={32} color={COLORS.subtleText} />
+                <Text style={styles.emptyText}>{currentMonthName} için henüz gelir veya gider kaydı bulunmuyor.</Text>
               </View>
+            ) : (
+              <View style={styles.barRow}>
+                {(() => {
+                  const maxAmt = Math.max(monthIncome, monthExpense, 1);
+                  const incomeHeight = monthIncome > 0 ? Math.max((monthIncome / maxAmt) * 120, 16) : 8;
+                  const expenseHeight = monthExpense > 0 ? Math.max((monthExpense / maxAmt) * 120, 16) : 8;
+                  return (
+                    <>
+                      <View style={styles.barCol}>
+                        <Text style={styles.barLabel}>Gelir</Text>
+                        <View style={[styles.barFill, { height: incomeHeight, backgroundColor: COLORS.emerald }]} />
+                        <Text style={styles.barValue}>{formatCurrency(monthIncome)}</Text>
+                      </View>
 
-              <View style={styles.barCol}>
-                <Text style={styles.barLabel}>Gider</Text>
-                <View style={[styles.barFill, { height: totalExpense > 0 ? Math.min((totalExpense / (totalIncome || 1)) * 120, 140) : 10, backgroundColor: COLORS.rose }]} />
-                <Text style={styles.barValue}>{formatCurrency(totalExpense)}</Text>
+                      <View style={styles.barCol}>
+                        <Text style={styles.barLabel}>Gider</Text>
+                        <View style={[styles.barFill, { height: expenseHeight, backgroundColor: COLORS.rose }]} />
+                        <Text style={styles.barValue}>{formatCurrency(monthExpense)}</Text>
+                      </View>
+                    </>
+                  );
+                })()}
               </View>
-            </View>
+            )}
           </View>
         </View>
       )}
@@ -316,14 +418,14 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {/* TAB 5: ZAMAN (Chronological Stream Breakdown) */}
       {activeSubTab === 'zaman' && (
         <View style={styles.zamanWrap}>
-          <Text style={styles.sectionTitle}>Son İşlemler Zaman Akışı</Text>
-          {transactions.length === 0 ? (
+          <Text style={styles.sectionTitle}>{currentMonthName} İşlem Akışı</Text>
+          {monthlyTransactions.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="time-outline" size={36} color={COLORS.subtleText} />
-              <Text style={styles.emptyText}>Zaman tünelinde kaydedilmiş işlem yok.</Text>
+              <Text style={styles.emptyText}>{currentMonthName} döneminde kaydedilmiş işlem yok.</Text>
             </View>
           ) : (
-            transactions.map((tx) => (
+            monthlyTransactions.map((tx) => (
               <View key={tx.id} style={styles.zamanRow}>
                 <View style={styles.zamanLeft}>
                   <View style={[styles.zamanDot, { backgroundColor: tx.type === 'income' ? COLORS.emerald : COLORS.rose }]} />
@@ -391,10 +493,14 @@ const styles = StyleSheet.create({
     gap: 16,
     marginBottom: 16,
   },
+  monthCenterWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   arrowBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
@@ -402,9 +508,29 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
   },
   monthTitleText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.foreground,
+  },
+  currentMonthBadge: {
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  currentMonthBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  emptyStateBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    gap: 8,
   },
 
   // Chart Card

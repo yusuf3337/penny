@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { parseAmountSafely, formatNumberInput } from '../../utils/formatters';
+import { useData } from '../../context/DataContext';
 
 interface AddBudgetModalProps {
   visible: boolean;
@@ -21,11 +22,12 @@ interface AddBudgetModalProps {
 }
 
 export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose, onSave }) => {
+  const { categories: contextCategories } = useData();
   const [selectedCategory, setSelectedCategory] = useState('Yemek');
   const [amountInput, setAmountInput] = useState('');
   const [error, setError] = useState('');
 
-  const categories = [
+  const fallbackCategories = [
     { name: 'Sağlık', icon: 'medical-outline', color: '#10B981' },
     { name: 'Faturalar', icon: 'receipt-outline', color: '#6366F1' },
     { name: 'Yemek', icon: 'fast-food-outline', color: '#EF4444' },
@@ -35,6 +37,14 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
     { name: 'Ev', icon: 'home-outline', color: '#F59E0B' },
   ];
 
+  const expenseCategories = contextCategories && contextCategories.length > 0
+    ? contextCategories.filter((c) => c.type === 'expense').map((c) => ({
+        name: c.name,
+        icon: c.icon,
+        color: c.color,
+      }))
+    : fallbackCategories;
+
   const handleSave = () => {
     const allocated = parseAmountSafely(amountInput);
     if (allocated <= 0) {
@@ -42,7 +52,7 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
       return;
     }
 
-    const catObj = categories.find((c) => c.name === selectedCategory);
+    const catObj = expenseCategories.find((c) => c.name === selectedCategory);
 
     onSave(
       selectedCategory,
@@ -74,7 +84,7 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
             {/* Category selection */}
             <Text style={styles.inputLabel}>Kategori Seçin</Text>
             <View style={styles.catGrid}>
-              {categories.map((cat) => (
+              {expenseCategories.map((cat) => (
                 <TouchableOpacity
                   key={cat.name}
                   style={[

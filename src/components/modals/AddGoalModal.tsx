@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -17,17 +17,46 @@ import { parseAmountSafely, formatNumberInput } from '../../utils/formatters';
 
 interface AddGoalModalProps {
   visible: boolean;
+  initialGoal?: SavingsGoal | null;
   onClose: () => void;
   onSave: (goal: Partial<SavingsGoal>) => void;
 }
 
-export const AddGoalModal: React.FC<AddGoalModalProps> = ({ visible, onClose, onSave }) => {
+export const AddGoalModal: React.FC<AddGoalModalProps> = ({
+  visible,
+  initialGoal,
+  onClose,
+  onSave,
+}) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Birikim');
   const [targetAmountInput, setTargetAmountInput] = useState('');
   const [savedAmountInput, setSavedAmountInput] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('flag-outline');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (visible) {
+      if (initialGoal) {
+        setTitle(initialGoal.title || '');
+        setCategory(initialGoal.category || 'Birikim');
+        setTargetAmountInput(
+          initialGoal.targetAmount ? formatNumberInput(initialGoal.targetAmount.toString()) : ''
+        );
+        setSavedAmountInput(
+          initialGoal.savedAmount ? formatNumberInput(initialGoal.savedAmount.toString()) : ''
+        );
+        setSelectedIcon(initialGoal.iconName || 'flag-outline');
+      } else {
+        setTitle('');
+        setCategory('Birikim');
+        setTargetAmountInput('');
+        setSavedAmountInput('');
+        setSelectedIcon('flag-outline');
+      }
+      setError('');
+    }
+  }, [visible, initialGoal]);
 
   const icons = [
     'flag-outline',
@@ -53,6 +82,7 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({ visible, onClose, on
     const saved = parseAmountSafely(savedAmountInput);
 
     onSave({
+      ...(initialGoal ? { id: initialGoal.id } : {}),
       title: title.trim(),
       category: category.trim() || 'Birikim',
       targetAmount: target,
@@ -77,7 +107,9 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({ visible, onClose, on
       >
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Yeni Hedef Ekle</Text>
+            <Text style={styles.headerTitle}>
+              {initialGoal ? 'Hedefi Düzenle' : 'Yeni Hedef Ekle'}
+            </Text>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
               <Ionicons name="close" size={24} color={COLORS.foreground} />
             </TouchableOpacity>
@@ -156,7 +188,9 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({ visible, onClose, on
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Hedef Oluştur</Text>
+              <Text style={styles.saveButtonText}>
+                {initialGoal ? 'Hedefi Güncelle' : 'Hedef Oluştur'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

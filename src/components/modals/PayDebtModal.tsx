@@ -30,6 +30,15 @@ export const PayDebtModal: React.FC<PayDebtModalProps> = ({
   const [payAmountInput, setPayAmountInput] = useState('');
   const [error, setError] = useState('');
 
+  React.useEffect(() => {
+    if (debt) {
+      const safeRem = Math.round((debt.remainingAmount || 0) * 100) / 100;
+      const formattedRem = safeRem.toFixed(2).replace('.', ',');
+      setPayAmountInput(formatNumberInput(formattedRem));
+      setError('');
+    }
+  }, [debt]);
+
   if (!debt) return null;
 
   const handleSave = () => {
@@ -38,8 +47,9 @@ export const PayDebtModal: React.FC<PayDebtModalProps> = ({
       setError('Lütfen geçerli bir tutar girin.');
       return;
     }
-    if (parsed > debt.remainingAmount) {
-      setError(`En fazla ${formatCurrency(debt.remainingAmount)} girebilirsiniz.`);
+    const safeRem = Math.round((debt.remainingAmount || 0) * 100) / 100;
+    if (parsed > safeRem + 0.01) {
+      setError(`En fazla ${formatCurrency(safeRem)} girebilirsiniz.`);
       return;
     }
 
@@ -79,7 +89,7 @@ export const PayDebtModal: React.FC<PayDebtModalProps> = ({
           </Text>
           <TextInput
             style={styles.input}
-            placeholder={debt.remainingAmount.toString()}
+            placeholder={formatCurrency(debt.remainingAmount)}
             placeholderTextColor={COLORS.mutedText}
             keyboardType="numeric"
             value={payAmountInput}

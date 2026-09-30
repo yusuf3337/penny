@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/common/Header';
 import { useData } from '../context/DataContext';
 import { COLORS } from '../constants/colors';
-import { formatCurrency } from '../utils/formatters';
+import {
+  formatCurrency,
+  formatMonthYear,
+  changeMonth,
+  isSameMonthAndYear,
+} from '../utils/formatters';
 
 interface BudgetScreenProps {
   onOpenAddModal: () => void;
@@ -18,13 +23,21 @@ interface BudgetScreenProps {
 
 export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) => {
   const { budgets, transactions, totalBudgetedSpending } = useData();
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
 
-  // Calculate actual spending per category dynamically from transactions
+  const handlePrevMonth = () => setSelectedMonth((prev) => changeMonth(prev, -1));
+  const handleNextMonth = () => setSelectedMonth((prev) => changeMonth(prev, 1));
+  const handleCurrentMonth = () => setSelectedMonth(new Date());
+  const isCurrentMonthSelected = isSameMonthAndYear(selectedMonth, new Date());
+  const currentMonthName = formatMonthYear(selectedMonth);
+
+  // Calculate actual spending per category dynamically from transactions for the selected month
   const getCategoryUsed = (categoryName: string) => {
     return transactions
       .filter(
         (t) =>
           t.type === 'expense' &&
+          isSameMonthAndYear(t.date, selectedMonth) &&
           t.category.toLowerCase().trim() === categoryName.toLowerCase().trim()
       )
       .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
@@ -44,14 +57,46 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Header
         title="Bütçe"
-        subtitle="Ağustos 2026 · Limiti sen koyarsın"
+        subtitle="Limiti sen koyarsın · Aylık Takip"
         rightActionIcon="add"
         onRightActionPress={onOpenAddModal}
       />
 
-      {/* Top Bütçelenen Harcama Summary Card (Matching Image 5) */}
+      {/* Month Selector */}
+      <View style={styles.monthSelectorRow}>
+        <TouchableOpacity
+          style={styles.arrowBtn}
+          onPress={handlePrevMonth}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={18} color={COLORS.foreground} />
+        </TouchableOpacity>
+
+        <View style={styles.monthCenterWrap}>
+          <Text style={styles.monthTitleText}>{currentMonthName}</Text>
+          {!isCurrentMonthSelected && (
+            <TouchableOpacity
+              style={styles.currentMonthBadge}
+              onPress={handleCurrentMonth}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.currentMonthBadgeText}>Bu Aya Dön</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={styles.arrowBtn}
+          onPress={handleNextMonth}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-forward" size={18} color={COLORS.foreground} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Top Bütçelenen Harcama Summary Card */}
       <View style={styles.summaryCard}>
-        <Text style={styles.monthLabel}>Ağustos 2026</Text>
+        <Text style={styles.monthLabel}>{currentMonthName} · Bütçe Durumu</Text>
 
         <View style={styles.summaryRow}>
           <View>
@@ -81,18 +126,18 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
         </View>
       </View>
 
-      {/* Category Budgets Header */}
+      {/* Category Budgets / Sanal Zarf Yöntemi */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Kategori Bütçeleri</Text>
+        <Text style={styles.sectionTitle}>Sanal Zarf Bütçeleri (Envelopes)</Text>
       </View>
 
       {/* Category Budget Items */}
       {budgets.length === 0 ? (
         <View style={styles.emptyCard}>
-          <Ionicons name="pie-chart-outline" size={36} color={COLORS.subtleText} />
-          <Text style={styles.emptyText}>Henüz kategori bütçesi eklenmedi.</Text>
+          <Ionicons name="mail-outline" size={36} color={COLORS.subtleText} />
+          <Text style={styles.emptyText}>Henüz sanal zarf bütçesi eklenmedi.</Text>
           <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
-            <Text style={styles.emptyAddBtnText}>+ İlk Bütçeni Belirle</Text>
+            <Text style={styles.emptyAddBtnText}>+ İlk Zarf Bütçeni Oluştur</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -104,6 +149,7 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
               : 0;
 
           const isOverLimit = usedAmt > b.allocatedAmount;
+          const remaining = Math.max(b.allocatedAmount - usedAmt, 0);
 
           return (
             <View key={b.id} style={styles.budgetCard}>
@@ -116,18 +162,16 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
                     ]}
                   >
                     <Ionicons
-                      name={(b.iconName as any) || 'pricetag-outline'}
+                      name={(b.iconName as any) || 'mail-outline'}
                       size={18}
                       color={b.color || COLORS.primary}
                     />
                   </View>
                   <View>
-                    <Text style={styles.catName}>{b.categoryName}</Text>
-                    {b.badgeText ? (
-                      <View style={styles.badgeChip}>
-                        <Text style={styles.badgeText}>{b.badgeText}</Text>
-                      </View>
-                    ) : null}
+                    <Text style={styles.catName}>{b.categoryName} Zarfı</Text>
+                    <Text style={styles.badgeText}>
+                      Kalan: <Text style={{ fontWeight: '700', color: isOverLimit ? COLORS.rose : COLORS.emeraldText }}>{formatCurrency(remaining)}</Text>
+                    </Text>
                   </View>
                 </View>
 
@@ -169,6 +213,48 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingBottom: 150,
+  },
+
+  // Month Selector
+  monthSelectorRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 16,
+  },
+  monthCenterWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  monthTitleText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.foreground,
+  },
+  currentMonthBadge: {
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  currentMonthBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 
   summaryCard: {
@@ -325,6 +411,60 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
+  ruleCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    marginBottom: 20,
+  },
+  ruleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  ruleTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.foreground,
+  },
+  ruleDesc: {
+    fontSize: 11,
+    color: COLORS.mutedText,
+    lineHeight: 16,
+    marginBottom: 14,
+  },
+  ruleRow: {
+    marginBottom: 10,
+  },
+  ruleRowTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  ruleLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.foreground,
+  },
+  ruleValText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.mutedText,
+  },
+  ruleTrack: {
+    height: 6,
+    backgroundColor: COLORS.secondary,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  ruleBar: {
+    height: '100%',
+    borderRadius: 3,
+  },
   catProgressTrack: {
     height: 6,
     backgroundColor: COLORS.secondary,
