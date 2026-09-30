@@ -20,6 +20,8 @@ import { AddCategoryModal } from './src/components/modals/AddCategoryModal';
 import { SettingsModal } from './src/components/modals/SettingsModal';
 import { COLORS } from './src/constants/colors';
 
+import { SplitExpenseModal } from './src/components/modals/SplitExpenseModal';
+
 const MainNavigator = () => {
   const {
     activeTab,
@@ -40,9 +42,12 @@ const MainNavigator = () => {
   // Modals state per active tab
   const [isAddTxModalVisible, setIsAddTxModalVisible] = useState(false);
   const [isAddGoalModalVisible, setIsAddGoalModalVisible] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<any>(null);
   const [isAddSubModalVisible, setIsAddSubModalVisible] = useState(false);
+  const [editingSub, setEditingSub] = useState<any>(null);
   const [isAddBudgetModalVisible, setIsAddBudgetModalVisible] = useState(false);
   const [isAddDebtModalVisible, setIsAddDebtModalVisible] = useState(false);
+  const [isSplitModalVisible, setIsSplitModalVisible] = useState(false);
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
   const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
@@ -58,9 +63,11 @@ const MainNavigator = () => {
   const handleOpenActiveTabModal = () => {
     switch (activeTab) {
       case 'goals':
+        setEditingGoal(null);
         setIsAddGoalModalVisible(true);
         break;
       case 'subscriptions':
+        setEditingSub(null);
         setIsAddSubModalVisible(true);
         break;
       case 'budget':
@@ -82,15 +89,26 @@ const MainNavigator = () => {
           onOpenAddModal={() => setIsAddTxModalVisible(true)}
           onOpenNameModal={() => setIsNameModalVisible(true)}
           onOpenSettingsModal={() => setIsSettingsModalVisible(true)}
+          onOpenSplitModal={() => setIsSplitModalVisible(true)}
         />
       )}
 
       {activeTab === 'goals' && (
-        <GoalsScreen onOpenGoalModal={() => setIsAddGoalModalVisible(true)} />
+        <GoalsScreen
+          onOpenGoalModal={(goal) => {
+            setEditingGoal(goal || null);
+            setIsAddGoalModalVisible(true);
+          }}
+        />
       )}
 
       {activeTab === 'subscriptions' && (
-        <SubscriptionsScreen onOpenAddModal={() => setIsAddSubModalVisible(true)} />
+        <SubscriptionsScreen
+          onOpenAddModal={(sub) => {
+            setEditingSub(sub || null);
+            setIsAddSubModalVisible(true);
+          }}
+        />
       )}
 
       {activeTab === 'budget' && (
@@ -102,7 +120,10 @@ const MainNavigator = () => {
       )}
 
       {activeTab === 'debts' && (
-        <DebtsScreen onOpenAddModal={() => setIsAddDebtModalVisible(true)} />
+        <DebtsScreen
+          onOpenAddModal={() => setIsAddDebtModalVisible(true)}
+          onOpenSplitModal={() => setIsSplitModalVisible(true)}
+        />
       )}
 
       {/* Dynamic Bottom Navigation Bar */}
@@ -125,13 +146,21 @@ const MainNavigator = () => {
 
       <AddGoalModal
         visible={isAddGoalModalVisible}
-        onClose={() => setIsAddGoalModalVisible(false)}
+        initialGoal={editingGoal}
+        onClose={() => {
+          setIsAddGoalModalVisible(false);
+          setEditingGoal(null);
+        }}
         onSave={handleSaveGoal}
       />
 
       <AddSubscriptionModal
         visible={isAddSubModalVisible}
-        onClose={() => setIsAddSubModalVisible(false)}
+        initialSub={editingSub}
+        onClose={() => {
+          setIsAddSubModalVisible(false);
+          setEditingSub(null);
+        }}
         onSave={handleAddSubscription}
       />
 
@@ -145,6 +174,13 @@ const MainNavigator = () => {
         visible={isAddDebtModalVisible}
         onClose={() => setIsAddDebtModalVisible(false)}
         onSave={handleAddDebt}
+      />
+
+      <SplitExpenseModal
+        visible={isSplitModalVisible}
+        onClose={() => setIsSplitModalVisible(false)}
+        onAddDebt={handleAddDebt}
+        onAddTransaction={handleAddTransaction}
       />
 
       <UserNameModal

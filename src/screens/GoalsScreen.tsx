@@ -208,9 +208,16 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
 
                 <TouchableOpacity
                   style={styles.deleteIconBtn}
+                  onPress={() => onOpenGoalModal(goal)}
+                >
+                  <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.deleteIconBtn}
                   onPress={() => confirmDelete(goal.id, goal.title)}
                 >
-                  <Ionicons name="trash-outline" size={14} color={COLORS.subtleText} />
+                  <Ionicons name="trash-outline" size={16} color={COLORS.subtleText} />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>

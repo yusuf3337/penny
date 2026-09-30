@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -17,12 +17,14 @@ import { parseAmountSafely, calculateNextDueDate, formatNumberInput } from '../.
 
 interface AddSubscriptionModalProps {
   visible: boolean;
+  initialSub?: SubscriptionItem | null;
   onClose: () => void;
-  onSave: (sub: Omit<SubscriptionItem, 'id'>) => void;
+  onSave: (sub: Partial<SubscriptionItem> & Omit<SubscriptionItem, 'id'> & { id?: string }) => void;
 }
 
 export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
   visible,
+  initialSub,
   onClose,
   onSave,
 }) => {
@@ -31,9 +33,35 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
   const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [paymentDay, setPaymentDay] = useState<number>(new Date().getDate());
   const [category, setCategory] = useState('Eğlence');
+  const [accountType, setAccountType] = useState<'bank' | 'cash'>('bank');
   const [selectedIcon, setSelectedIcon] = useState('repeat-outline');
   const [selectedColor, setSelectedColor] = useState(COLORS.primary);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (visible) {
+      if (initialSub) {
+        setTitle(initialSub.title || '');
+        setAmountInput(initialSub.amount ? formatNumberInput(initialSub.amount.toString()) : '');
+        setCycle(initialSub.cycle || 'monthly');
+        setPaymentDay(initialSub.paymentDay || new Date().getDate());
+        setCategory(initialSub.category || 'Eğlence');
+        setAccountType(initialSub.accountType || 'bank');
+        setSelectedIcon(initialSub.iconName || 'repeat-outline');
+        setSelectedColor(initialSub.color || COLORS.primary);
+      } else {
+        setTitle('');
+        setAmountInput('');
+        setCycle('monthly');
+        setPaymentDay(new Date().getDate());
+        setCategory('Eğlence');
+        setAccountType('bank');
+        setSelectedIcon('repeat-outline');
+        setSelectedColor(COLORS.primary);
+      }
+      setError('');
+    }
+  }, [visible, initialSub]);
 
   // Popular Brand Presets matching user request
   const presets = [
@@ -66,14 +94,21 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
     }
 
     const safeDay = Math.min(Math.max(paymentDay || 1, 1), 31);
-    const nextDueDate = calculateNextDueDate(safeDay, cycle);
+    const nextDueDate =
+      initialSub?.nextDueDate &&
+      initialSub.paymentDay === safeDay &&
+      initialSub.cycle === cycle
+        ? initialSub.nextDueDate
+        : calculateNextDueDate(safeDay, cycle);
 
     onSave({
+      ...(initialSub ? { id: initialSub.id, lastProcessedDate: initialSub.lastProcessedDate } : {}),
       title: title.trim(),
       amount,
       cycle,
       paymentDay: safeDay,
       category,
+      accountType,
       nextDueDate,
       isActive: true,
       iconName: selectedIcon,
@@ -94,7 +129,9 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
       >
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Yeni Abonelik Ekle</Text>
+            <Text style={styles.headerTitle}>
+              {initialSub ? 'Abonelik Düzenle' : 'Yeni Abonelik Ekle'}
+            </Text>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
               <Ionicons name="close" size={24} color={COLORS.foreground} />
             </TouchableOpacity>
@@ -171,6 +208,34 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
               }}
             />
 
+            {/* Account Selector (Banka / Nakit) */}
+            <Text style={styles.inputLabel}>Ödeme Hesabı</Text>
+            <View style={styles.cycleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.cycleTab,
+                  accountType === 'bank' && styles.cycleTabActive,
+                ]}
+                onPress={() => setAccountType('bank')}
+              >
+                <Text style={[styles.cycleText, accountType === 'bank' && styles.cycleTextActive]}>
+                  💳 Banka Hesabı
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.cycleTab,
+                  accountType === 'cash' && styles.cycleTabActive,
+                ]}
+                onPress={() => setAccountType('cash')}
+              >
+                <Text style={[styles.cycleText, accountType === 'cash' && styles.cycleTextActive]}>
+                  💵 Nakit Cüzdan
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Amount */}
             <Text style={styles.inputLabel}>Tutar (₺)</Text>
             <TextInput
@@ -188,7 +253,9 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Aboneliği Kaydet</Text>
+              <Text style={styles.saveButtonText}>
+                {initialSub ? 'Değişiklikleri Kaydet' : 'Aboneliği Kaydet'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

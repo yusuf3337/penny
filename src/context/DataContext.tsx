@@ -12,12 +12,16 @@ import {
   getUserName,
   saveUserName as saveNameService,
   getStoredTransactions,
+  saveTransactions,
   addTransaction as addTxService,
   deleteTransaction as deleteTxService,
+  deleteTransactionsForMonth as deleteMonthTxService,
+  clearAllTransactions as clearAllTxService,
   getStoredGoals,
   addOrUpdateGoal as saveGoalService,
   deleteGoal as deleteGoalService,
   getStoredSubscriptions,
+  saveStoredSubscriptions,
   addSubscription as addSubService,
   deleteSubscription as deleteSubService,
   getStoredBudgets,
@@ -34,6 +38,7 @@ import {
   markHasOnboarded as markOnboardedService,
   resetAllAppData,
 } from '../services/storageService';
+import { calculateNextDueDate, advanceSubscriptionDueDate } from '../utils/formatters';
 
 export type TabType = 'timeline' | 'goals' | 'subscriptions' | 'budget' | 'reports' | 'debts';
 
@@ -53,15 +58,17 @@ interface DataContextType {
   handleAddCategory: (name: string, type: 'income' | 'expense', iconName?: string, color?: string) => Promise<void>;
 
   transactions: AppTransaction[];
-  handleAddTransaction: (tx: Omit<AppTransaction, 'id' | 'date'>) => Promise<void>;
+  handleAddTransaction: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => Promise<void>;
   handleDeleteTransaction: (id: string) => Promise<void>;
+  handleDeleteTransactionsForMonth: (date: Date) => Promise<void>;
+  handleClearAllTransactions: () => Promise<void>;
 
   goals: SavingsGoal[];
   handleSaveGoal: (goal: Partial<SavingsGoal>) => Promise<void>;
   handleDeleteGoal: (id: string) => Promise<void>;
 
   subscriptions: SubscriptionItem[];
-  handleAddSubscription: (sub: Omit<SubscriptionItem, 'id'>) => Promise<void>;
+  handleAddSubscription: (sub: Partial<SubscriptionItem> & Omit<SubscriptionItem, 'id'> & { id?: string }) => Promise<void>;
   handleDeleteSubscription: (id: string) => Promise<void>;
 
   budgets: CategoryBudget[];
@@ -78,6 +85,8 @@ interface DataContextType {
   totalIncome: number;
   totalExpense: number;
   totalBalance: number;
+  bankBalance: number;
+  cashBalance: number;
   totalSavedGoals: number;
   totalTargetGoals: number;
   totalMonthlySubscriptions: number;
@@ -123,12 +132,90 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getPendingCollections(),
       ]);
 
+      // 1. Clean up any runaway duplicate subscription transactions caused by the previous loop
+      let hasChanges = false;
+      const seenAutoTxs = new Set<string>();
+      const deduplicatedTxs: AppTransaction[] = [];
+
+      for (const tx of txs) {
+        if (tx.title.includes('Abonelik Ödemesi')) {
+          const dateKey = tx.date ? tx.date.slice(0, 10) : '';
+          const dedupeKey = `${tx.title.trim()}_${tx.rawAmount}_${dateKey}`;
+          if (seenAutoTxs.has(dedupeKey)) {
+            hasChanges = true;
+            continue; // Drop duplicate auto transaction
+          }
+          seenAutoTxs.add(dedupeKey);
+        }
+        deduplicatedTxs.push(tx);
+      }
+
+      let updatedTxs = deduplicatedTxs;
+      let updatedSubs = [...subList];
+
+      const now = new Date();
+      updatedSubs = updatedSubs.map((sub) => {
+        if (sub.isActive && sub.nextDueDate) {
+          const dueDate = new Date(sub.nextDueDate);
+          if (!isNaN(dueDate.getTime()) && dueDate <= now) {
+            // Check if already processed for this billing cycle / day
+            const cycleKey = `${sub.id}_${now.getFullYear()}_${now.getMonth() + 1}`;
+            const isAlreadyChargedToday = updatedTxs.some((t) => {
+              const txDate = new Date(t.date);
+              return (
+                t.title.includes(sub.title) &&
+                t.title.includes('Abonelik Ödemesi') &&
+                txDate.getFullYear() === now.getFullYear() &&
+                txDate.getMonth() === now.getMonth() &&
+                txDate.getDate() === now.getDate()
+              );
+            });
+
+            // Advance nextDueDate strictly into the future
+            let advancedNextDue = advanceSubscriptionDueDate(sub.nextDueDate, sub.paymentDay || 1, sub.cycle || 'monthly');
+            while (new Date(advancedNextDue) <= now) {
+              advancedNextDue = advanceSubscriptionDueDate(advancedNextDue, sub.paymentDay || 1, sub.cycle || 'monthly');
+            }
+
+            if (!isAlreadyChargedToday) {
+              hasChanges = true;
+              const autoTx: AppTransaction = {
+                id: `tx_sub_${sub.id}_${cycleKey}_${Date.now()}`,
+                title: `${sub.title} Abonelik Ödemesi`,
+                category: sub.category || 'Eğlence',
+                date: new Date().toISOString(),
+                amount: `-₺${sub.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
+                rawAmount: sub.amount,
+                type: 'expense',
+                iconName: sub.iconName || 'repeat-outline',
+                accountType: sub.accountType || 'bank',
+                accountName: sub.accountType === 'cash' ? 'Nakit Cüzdan' : 'Banka Hesabı',
+              };
+              updatedTxs = [autoTx, ...updatedTxs];
+            }
+
+            hasChanges = true;
+            return {
+              ...sub,
+              nextDueDate: advancedNextDue,
+              lastProcessedDate: now.toISOString(),
+            };
+          }
+        }
+        return sub;
+      });
+
+      if (hasChanges) {
+        await saveTransactions(updatedTxs);
+        await saveStoredSubscriptions(updatedSubs);
+      }
+
       setUserName(name);
       setHasOnboarded(onboardedStatus);
       setCategories(catList);
-      setTransactions(txs);
+      setTransactions(updatedTxs);
       setGoals(goalList);
-      setSubscriptions(subList);
+      setSubscriptions(updatedSubs);
       setBudgets(budgetList);
       setDebts(debtList);
       setPendingCollections(pendingList);
@@ -166,7 +253,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCategories(updated);
   };
 
-  const handleAddTransaction = async (tx: Omit<AppTransaction, 'id' | 'date'>) => {
+  const handleAddTransaction = async (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => {
     const updated = await addTxService(tx);
     setTransactions(updated);
 
@@ -188,6 +275,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTransactions(updated);
   };
 
+  const handleDeleteTransactionsForMonth = async (date: Date) => {
+    const updated = await deleteMonthTxService(date);
+    setTransactions(updated);
+  };
+
+  const handleClearAllTransactions = async () => {
+    const updated = await clearAllTxService();
+    setTransactions(updated);
+  };
+
   const handleSaveGoal = async (goal: Partial<SavingsGoal>) => {
     const updated = await saveGoalService(goal);
     setGoals(updated);
@@ -198,8 +295,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setGoals(updated);
   };
 
-  const handleSaveSubscription = async (sub: Omit<SubscriptionItem, 'id'>) => {
-    const updated = await addSubService(sub);
+  const handleSaveSubscription = async (
+    sub: Partial<SubscriptionItem> & Omit<SubscriptionItem, 'id'> & { id?: string }
+  ) => {
+    const updated = await addSubService(sub as any);
     setSubscriptions(updated);
   };
 
@@ -251,7 +350,35 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
   }, [transactions]);
 
-  const totalBalance = useMemo(() => totalIncome - totalExpense, [totalIncome, totalExpense]);
+  const bankIncome = useMemo(() => {
+    return transactions
+      .filter((t) => t.type === 'income' && (t.accountType === 'bank' || !t.accountType || t.accountName?.includes('Banka')))
+      .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
+  }, [transactions]);
+
+  const bankExpense = useMemo(() => {
+    return transactions
+      .filter((t) => t.type === 'expense' && (t.accountType === 'bank' || !t.accountType || t.accountName?.includes('Banka')))
+      .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
+  }, [transactions]);
+
+  const bankBalance = useMemo(() => bankIncome - bankExpense, [bankIncome, bankExpense]);
+
+  const cashIncome = useMemo(() => {
+    return transactions
+      .filter((t) => t.type === 'income' && (t.accountType === 'cash' || t.accountName?.includes('Nakit')))
+      .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
+  }, [transactions]);
+
+  const cashExpense = useMemo(() => {
+    return transactions
+      .filter((t) => t.type === 'expense' && (t.accountType === 'cash' || t.accountName?.includes('Nakit')))
+      .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
+  }, [transactions]);
+
+  const cashBalance = useMemo(() => cashIncome - cashExpense, [cashIncome, cashExpense]);
+
+  const totalBalance = useMemo(() => bankBalance + cashBalance, [bankBalance, cashBalance]);
 
   const totalSavedGoals = useMemo(() => {
     return goals.reduce((sum, g) => sum + (g.savedAmount || 0), 0);
@@ -298,6 +425,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         transactions,
         handleAddTransaction,
         handleDeleteTransaction,
+        handleDeleteTransactionsForMonth,
+        handleClearAllTransactions,
         goals,
         handleSaveGoal,
         handleDeleteGoal,
@@ -314,6 +443,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         totalIncome,
         totalExpense,
         totalBalance,
+        bankBalance,
+        cashBalance,
         totalSavedGoals,
         totalTargetGoals,
         totalMonthlySubscriptions,

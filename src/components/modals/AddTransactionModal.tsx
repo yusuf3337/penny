@@ -20,7 +20,7 @@ import { useData } from '../../context/DataContext';
 interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (tx: Omit<AppTransaction, 'id' | 'date'>) => void;
+  onSave: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => void;
   onOpenAddCategory?: () => void;
 }
 
@@ -41,12 +41,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [txDate, setTxDate] = useState<Date>(new Date());
   const [error, setError] = useState('');
 
   const filteredCategories = categoriesList.filter((c) => c.type === type);
 
   useEffect(() => {
     if (visible) {
+      setTxDate(new Date());
       getAccounts().then((accs) => {
         setAccounts(accs);
         if (accs.length > 0 && !selectedAccountId) {
@@ -66,6 +68,29 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       }
     }
   }, [type, filteredCategories]);
+
+  const setToday = () => setTxDate(new Date());
+  const setYesterday = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    setTxDate(d);
+  };
+  const stepDay = (delta: number) => {
+    const d = new Date(txDate.getTime());
+    d.setDate(d.getDate() + delta);
+    setTxDate(d);
+  };
+
+  const isToday = (d: Date) => {
+    const today = new Date();
+    return d.toDateString() === today.toDateString();
+  };
+
+  const isYesterday = (d: Date) => {
+    const yest = new Date();
+    yest.setDate(yest.getDate() - 1);
+    return d.toDateString() === yest.toDateString();
+  };
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -90,6 +115,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     else if (type === 'income') iconName = 'arrow-down-left';
 
     const selectedAcc = accounts.find((a) => a.id === selectedAccountId);
+    const accountType: 'bank' | 'cash' = selectedAcc ? (selectedAcc.type === 'cash' ? 'cash' : 'bank') : 'bank';
 
     onSave({
       title: title.trim(),
@@ -99,13 +125,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       type,
       iconName,
       accountId: selectedAccountId,
-      accountName: selectedAcc ? selectedAcc.name : undefined,
+      accountName: selectedAcc ? selectedAcc.name : 'Banka Hesabı',
+      accountType,
+      date: txDate.toISOString(),
     });
 
     // Reset inputs
     setTitle('');
     setAmountInput('');
     setError('');
+    setTxDate(new Date());
     onClose();
   };
 
@@ -234,6 +263,41 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 if (error) setError('');
               }}
             />
+
+            {/* Date Selector */}
+            <Text style={styles.inputLabel}>İşlem Tarihi</Text>
+            <View style={styles.dateSelectorRow}>
+              <View style={styles.quickDateTabs}>
+                <TouchableOpacity
+                  style={[styles.quickDateTab, isToday(txDate) && styles.quickDateTabActive]}
+                  onPress={setToday}
+                >
+                  <Text style={[styles.quickDateText, isToday(txDate) && styles.quickDateTextActive]}>
+                    Bugün
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.quickDateTab, isYesterday(txDate) && styles.quickDateTabActive]}
+                  onPress={setYesterday}
+                >
+                  <Text style={[styles.quickDateText, isYesterday(txDate) && styles.quickDateTextActive]}>
+                    Dün
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.dateStepper}>
+                <TouchableOpacity style={styles.dateArrowBtn} onPress={() => stepDay(-1)}>
+                  <Ionicons name="chevron-back" size={16} color={COLORS.foreground} />
+                </TouchableOpacity>
+                <Text style={styles.dateDisplayValue}>
+                  {txDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </Text>
+                <TouchableOpacity style={styles.dateArrowBtn} onPress={() => stepDay(1)}>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.foreground} />
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {/* Category Chips */}
             <View style={styles.categoryHeader}>
@@ -369,6 +433,56 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
+  },
+  dateSelectorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  quickDateTabs: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  quickDateTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9,
+  },
+  quickDateTabActive: {
+    backgroundColor: COLORS.foreground,
+  },
+  quickDateText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.mutedText,
+  },
+  quickDateTextActive: {
+    color: COLORS.background,
+  },
+  dateStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    gap: 6,
+  },
+  dateArrowBtn: {
+    padding: 4,
+  },
+  dateDisplayValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.foreground,
   },
   categoryWrap: {
     flexDirection: 'row',

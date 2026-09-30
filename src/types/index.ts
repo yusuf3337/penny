@@ -50,10 +50,12 @@ export interface SubscriptionItem {
   cycle: 'monthly' | 'yearly';
   paymentDay: number; // 1-31 (Day of month)
   nextDueDate: string; // ISO date string
+  lastProcessedDate?: string;
   iconName?: string;
   color?: string;
   isActive: boolean;
   reviewNote?: string;
+  accountType?: 'bank' | 'cash';
 }
 
 export type RecurringTransaction = SubscriptionItem;
@@ -79,6 +81,7 @@ export interface AppTransaction {
   iconName: string;
   accountId?: string;
   accountName?: string;
+  accountType?: 'bank' | 'cash';
 }
 
 export interface SpendingCategory {

@@ -11,9 +11,10 @@ import { formatCurrency } from '../utils/formatters';
 
 interface DebtsScreenProps {
   onOpenAddModal?: () => void;
+  onOpenSplitModal?: () => void;
 }
 
-export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal }) => {
+export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpenSplitModal }) => {
   const { debts, handleAddDebt, handlePayDebt, handleDeleteDebt } = useData();
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [selectedDebtForPay, setSelectedDebtForPay] = useState<Debt | null>(null);
@@ -64,6 +65,28 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal }) => {
           <Text style={styles.payableAmount}>{formatCurrency(totalPayables)}</Text>
         </View>
       </View>
+
+      {/* Hesap Bölüş Quick Card */}
+      {onOpenSplitModal ? (
+        <TouchableOpacity
+          style={styles.splitBanner}
+          activeOpacity={0.85}
+          onPress={onOpenSplitModal}
+        >
+          <View style={styles.splitBannerLeft}>
+            <View style={styles.splitIconWrap}>
+              <Ionicons name="people" size={18} color={COLORS.primary} />
+            </View>
+            <View>
+              <Text style={styles.splitBannerTitle}>Ortak Harcama / Hesap Bölüş</Text>
+              <Text style={styles.splitBannerSub}>
+                Yemek veya tatil hesabını kişi başı bölüp alacaklara aktarın
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.mutedText} />
+        </TouchableOpacity>
+      ) : null}
 
       <View style={styles.actionRow}>
         <Text style={styles.sectionTitle}>Kişiler Listesi ({debts.length})</Text>
@@ -235,7 +258,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     color: COLORS.foreground,
   },
@@ -245,37 +268,38 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     backgroundColor: COLORS.card,
-    padding: 32,
     borderRadius: 18,
+    padding: 32,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    marginTop: 8,
+    marginTop: 10,
   },
   emptyTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.foreground,
-    marginTop: 10,
+    marginTop: 12,
   },
   emptySubtitle: {
     fontSize: 12,
     color: COLORS.mutedText,
     textAlign: 'center',
     marginTop: 6,
+    lineHeight: 18,
   },
   debtCard: {
     backgroundColor: COLORS.card,
     borderRadius: 18,
     padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
+    marginBottom: 12,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: COLORS.cardBorder,
     paddingBottom: 12,
@@ -349,5 +373,41 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     padding: 6,
+  },
+  splitBanner: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  splitBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  splitIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  splitBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.foreground,
+  },
+  splitBannerSub: {
+    fontSize: 11,
+    color: COLORS.mutedText,
+    marginTop: 2,
   },
 });

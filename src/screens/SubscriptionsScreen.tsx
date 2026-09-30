@@ -14,7 +14,7 @@ import { COLORS } from '../constants/colors';
 import { formatCurrency, getDaysRemainingText } from '../utils/formatters';
 
 interface SubscriptionsScreenProps {
-  onOpenAddModal: () => void;
+  onOpenAddModal: (sub?: any) => void;
 }
 
 export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpenAddModal }) => {
@@ -34,13 +34,19 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
 
   const reviewItem = subscriptions.find((s) => s.reviewNote);
 
+  const sortedSubscriptions = [...subscriptions].sort((a, b) => {
+    const timeA = a.nextDueDate ? new Date(a.nextDueDate).getTime() : 0;
+    const timeB = b.nextDueDate ? new Date(b.nextDueDate).getTime() : 0;
+    return timeA - timeB;
+  });
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Header
         title="Abonelikler"
         subtitle="Yaklaşan yenilemeler tek ekranda"
         rightActionIcon="add"
-        onRightActionPress={onOpenAddModal}
+        onRightActionPress={() => onOpenAddModal()}
       />
 
       {/* Summary Header Card (Matching Image 3) */}
@@ -71,10 +77,10 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
           <Text style={styles.boxTitle}>Yaklaşan Yenilemeler</Text>
         </View>
 
-        {subscriptions.length === 0 ? (
+        {sortedSubscriptions.length === 0 ? (
           <Text style={styles.emptySubText}>Yaklaşan abonelik ödemeniz yok.</Text>
         ) : (
-          subscriptions.slice(0, 2).map((sub) => (
+          sortedSubscriptions.slice(0, 2).map((sub) => (
             <View key={sub.id} style={styles.upcomingRow}>
               <View style={styles.upcomingLeft}>
                 <View style={[styles.subIcon, { backgroundColor: COLORS.secondary }]}>
@@ -114,13 +120,18 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
         <View style={styles.emptyCard}>
           <Ionicons name="repeat-outline" size={36} color={COLORS.subtleText} />
           <Text style={styles.emptyText}>Henüz kaydedilmiş abonelik bulunmuyor.</Text>
-          <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
+          <TouchableOpacity style={styles.emptyAddBtn} onPress={() => onOpenAddModal()}>
             <Text style={styles.emptyAddBtnText}>+ İlk Aboneliğini Ekle</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        subscriptions.map((sub) => (
-          <View key={sub.id} style={styles.subCard}>
+        sortedSubscriptions.map((sub) => (
+          <TouchableOpacity
+            key={sub.id}
+            style={styles.subCard}
+            activeOpacity={0.85}
+            onPress={() => onOpenAddModal(sub)}
+          >
             <View style={styles.subLeft}>
               <View
                 style={[
@@ -137,18 +148,23 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
               <View>
                 <Text style={styles.cardSubTitle}>{sub.title}</Text>
                 <Text style={styles.cardSubDetails}>
-                  {sub.cycle === 'monthly' ? 'Aylık' : 'Yıllık'} · {getDaysRemainingText(sub.nextDueDate)}
+                  {sub.cycle === 'monthly' ? 'Aylık' : 'Yıllık'} · {sub.accountType === 'cash' ? '💵 Nakit' : '💳 Banka'} · {getDaysRemainingText(sub.nextDueDate)}
                 </Text>
               </View>
             </View>
 
             <View style={styles.subRight}>
               <Text style={styles.cardSubAmount}>{formatCurrency(sub.amount)}</Text>
-              <TouchableOpacity onPress={() => confirmDelete(sub.id, sub.title)}>
-                <Ionicons name="trash-outline" size={14} color={COLORS.subtleText} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => onOpenAddModal(sub)}>
+                  <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => confirmDelete(sub.id, sub.title)}>
+                  <Ionicons name="trash-outline" size={16} color={COLORS.subtleText} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>

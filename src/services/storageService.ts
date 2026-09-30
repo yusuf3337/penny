@@ -115,7 +115,7 @@ export const saveTransactions = async (txs: AppTransaction[]): Promise<void> => 
 };
 
 export const addTransaction = async (
-  tx: Omit<AppTransaction, 'id' | 'date'>
+  tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }
 ): Promise<AppTransaction[]> => {
   const current = await getStoredTransactions();
   const rawAmount = parseAmountSafely(tx.rawAmount);
@@ -124,7 +124,7 @@ export const addTransaction = async (
     rawAmount,
     amount: `${tx.type === 'income' ? '+' : '-'}₺${rawAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
     id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    date: new Date().toISOString(),
+    date: tx.date || new Date().toISOString(),
   };
   const updated = [created, ...current];
   await saveTransactions(updated);
@@ -136,6 +136,24 @@ export const deleteTransaction = async (id: string): Promise<AppTransaction[]> =
   const updated = current.filter((t) => t.id !== id);
   await saveTransactions(updated);
   return updated;
+};
+
+export const deleteTransactionsForMonth = async (date: Date): Promise<AppTransaction[]> => {
+  const current = await getStoredTransactions();
+  const targetYear = date.getFullYear();
+  const targetMonth = date.getMonth();
+  const updated = current.filter((t) => {
+    const txDate = new Date(t.date);
+    if (isNaN(txDate.getTime())) return true;
+    return !(txDate.getFullYear() === targetYear && txDate.getMonth() === targetMonth);
+  });
+  await saveTransactions(updated);
+  return updated;
+};
+
+export const clearAllTransactions = async (): Promise<AppTransaction[]> => {
+  await saveTransactions([]);
+  return [];
 };
 
 export const getStoredGoals = async (): Promise<SavingsGoal[]> => {
@@ -202,18 +220,33 @@ export const saveStoredSubscriptions = async (subs: SubscriptionItem[]): Promise
 };
 
 export const addSubscription = async (
-  sub: Omit<SubscriptionItem, 'id'>
+  sub: Partial<SubscriptionItem> & Omit<SubscriptionItem, 'id'> & { id?: string }
 ): Promise<SubscriptionItem[]> => {
   const current = await getStoredSubscriptions();
   const amount = parseAmountSafely(sub.amount);
-  const newSub: SubscriptionItem = {
-    ...sub,
-    amount,
-    id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-  };
-  const updated = [newSub, ...current];
-  await saveStoredSubscriptions(updated);
-  return updated;
+
+  if (sub.id) {
+    const updated = current.map((s) =>
+      s.id === sub.id
+        ? {
+            ...s,
+            ...sub,
+            amount,
+          }
+        : s
+    );
+    await saveStoredSubscriptions(updated);
+    return updated;
+  } else {
+    const newSub: SubscriptionItem = {
+      ...sub,
+      amount,
+      id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    };
+    const updated = [newSub, ...current];
+    await saveStoredSubscriptions(updated);
+    return updated;
+  }
 };
 
 export const deleteSubscription = async (id: string): Promise<SubscriptionItem[]> => {
