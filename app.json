@@ -1,10 +1,15 @@
 {
   "expo": {
-    "name": "penny",
+    "name": "Penny",
     "slug": "penny",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
     "userInterfaceStyle": "light",
     "platforms": [
       "ios",
@@ -14,6 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yusufcepni.penny",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
