@@ -12,7 +12,8 @@ import {
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { parseAmountSafely } from '../utils/formatters';
+import { parseAmountSafely, formatCurrency } from '../utils/formatters';
+import { getFormattingLocale, localize } from '../context/LocaleContext';
 
 const STORAGE_KEYS = {
   USER_NAME: '@penny_user_name_v1',
@@ -93,6 +94,7 @@ const saveStoredItem = async <T>(key: string, value: T): Promise<void> => {
     await AsyncStorage.setItem(key, JSON.stringify(value));
   } catch (err) {
     console.error(`Error saving key ${key}:`, err);
+    throw err;
   }
 };
 
@@ -122,7 +124,7 @@ export const addTransaction = async (
   const created: AppTransaction = {
     ...tx,
     rawAmount,
-    amount: `${tx.type === 'income' ? '+' : '-'}₺${rawAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
+    amount: `${tx.type === 'income' || (tx.type === 'transfer' && tx.transferDirection === 'in') ? '+' : '-'}${formatCurrency(rawAmount)}`,
     id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     date: tx.date || new Date().toISOString(),
   };
@@ -308,7 +310,8 @@ export const addDebt = async (
   personName: string,
   type: 'given' | 'taken',
   amount: number,
-  description?: string
+  description?: string,
+  options?: { source?: 'split_expense'; accountType?: 'bank' | 'cash' }
 ): Promise<Debt[]> => {
   const current = await getDebts();
   const safeAmount = parseAmountSafely(amount);
@@ -319,6 +322,8 @@ export const addDebt = async (
     amount: safeAmount,
     remainingAmount: safeAmount,
     description: description?.trim(),
+    source: options?.source,
+    accountType: options?.accountType,
     isCompleted: false,
     createdAt: new Date().toISOString(),
   };
@@ -398,15 +403,30 @@ export const exportAllDataJSON = async (): Promise<string> => {
 
 export const exportTransactionsCSV = async (): Promise<string> => {
   const txs = await getStoredTransactions();
-  let csv = 'Tarih;İşlem Tipi;Kategori;Başlık;Tutar (TL)\n';
-  txs.forEach((t) => {
-    const typeStr = t.type === 'income' ? 'Gelir' : 'Gider';
-    const cleanTitle = (t.title || '').replace(/;/g, ',');
-    const cleanCat = (t.category || '').replace(/;/g, ',');
-    const formattedDate = new Date(t.date).toLocaleDateString('tr-TR');
-    csv += `"${formattedDate}";"${typeStr}";"${cleanCat}";"${cleanTitle}";"${t.rawAmount}"\n`;
-  });
-  return csv;
+  const locale = getFormattingLocale();
+  const decimal = new Intl.NumberFormat(locale).formatToParts(1.5).find((part) => part.type === 'decimal')?.value ?? ',';
+  const delimiter = decimal === ',' ? ';' : ',';
+  const amountFormatter = new Intl.NumberFormat(locale, { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const cell = (value: string | number) => {
+    const text = String(value ?? '');
+    const formula = /^[=+@]/.test(text) || (text.startsWith('-') && !/^-\d+(,\d+)?$/.test(text));
+    const safe = formula ? `'${text}` : text;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
+  const rows = [
+    ['Tarih', 'İşlem Tipi', 'Kategori', 'Başlık', 'Hesap', 'Tutar (TL)'].map((label) => localize(label)),
+    ...[...txs]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .map((t) => [
+        new Date(t.date).toLocaleDateString(locale),
+        localize(t.type === 'income' ? 'Gelir' : t.type === 'expense' ? 'Gider' : 'Hesap Hareketi'),
+        t.category || '',
+        t.title || '',
+        t.accountName || localize(t.accountType === 'cash' ? 'Nakit' : 'Banka'),
+        amountFormatter.format(t.type === 'income' || (t.type === 'transfer' && t.transferDirection === 'in') ? (t.rawAmount || 0) : -(t.rawAmount || 0)),
+      ]),
+  ];
+  return `\uFEFF${rows.map((row) => row.map(cell).join(delimiter)).join('\r\n')}\r\n`;
 };
 
 export const importAllDataJSON = async (jsonString: string): Promise<boolean> => {
@@ -435,10 +455,15 @@ export const resetAllAppData = async (): Promise<void> => {
     STORAGE_KEYS.HAS_ONBOARDED,
     STORAGE_KEYS.TRANSACTIONS,
     STORAGE_KEYS.SAVINGS_GOALS,
+    STORAGE_KEYS.ACCOUNTS,
     STORAGE_KEYS.DEBTS,
     STORAGE_KEYS.CATEGORIES,
     STORAGE_KEYS.SUBSCRIPTIONS,
+    STORAGE_KEYS.PENDING_COLLECTIONS,
     STORAGE_KEYS.BUDGETS,
+    '@penny_is_pro_v1',
+    '@penny_pro_plan_v1',
+    '@penny_pro_expiry_v1',
   ]);
 };
 

@@ -1,7 +1,9 @@
+import { useThemedStyles } from '../../context/ThemeContext';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../../constants/colors';
 import { SpendingCategory } from '../../types';
 
 interface SpendingAnalysisCardProps {
@@ -13,6 +15,7 @@ export const SpendingAnalysisCard: React.FC<SpendingAnalysisCardProps> = ({
   categories,
   onViewReport,
 }) => {
+  const styles = useThemedStyles(lightStyles);
   const [period, setPeriod] = useState('Bu ay');
 
   return (
@@ -60,15 +63,15 @@ export const SpendingAnalysisCard: React.FC<SpendingAnalysisCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 24,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   header: {
     flexDirection: 'row',
@@ -78,29 +81,29 @@ const styles = StyleSheet.create({
   subLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     letterSpacing: 1.2,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 4,
   },
   periodPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     gap: 4,
   },
   periodText: {
     fontSize: 12,
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     fontWeight: '500',
   },
   categoriesContainer: {
@@ -115,16 +118,16 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 14,
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   categoryValue: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   track: {
     height: 8,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -141,6 +144,6 @@ const styles = StyleSheet.create({
   reportBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
 });

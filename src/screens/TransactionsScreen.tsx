@@ -1,12 +1,18 @@
+import { useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/common/Header';
-import { COLORS } from '../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import { useData } from '../context/DataContext';
+import { useAppDialog } from '../context/AppDialogContext';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
+import { localizeFormat } from '../context/LocaleContext';
 
 export const TransactionsScreen = () => {
+  const styles = useThemedStyles(lightStyles);
+  const { alert } = useAppDialog();
   const { transactions, handleDeleteTransaction } = useData();
   const [accountFilter, setAccountFilter] = useState<'all' | 'bank' | 'cash'>('all');
 
@@ -21,9 +27,9 @@ export const TransactionsScreen = () => {
   });
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert(
+    alert(
       'İşlemi Sil',
-      `"${title}" işlemini silmek istediğinizden emin misiniz?`,
+      localizeFormat('"{0}" işlemini silmek istediğinizden emin misiniz?', [title]),
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -42,7 +48,7 @@ export const TransactionsScreen = () => {
       {/* Account Filter Chips */}
       <View style={styles.filterChipRow}>
         {(['all', 'bank', 'cash'] as const).map((filterKey) => {
-          const labels = { all: 'Tümü', bank: '💳 Banka', cash: '💵 Nakit' };
+          const labels = { all: 'Tümü', bank: 'Banka', cash: 'Nakit' };
           const isActive = accountFilter === filterKey;
           return (
             <TouchableOpacity
@@ -92,10 +98,10 @@ export const TransactionsScreen = () => {
                 <Text
                   style={[
                     styles.itemAmount,
-                    { color: item.type === 'income' ? COLORS.emeraldText : COLORS.foreground },
+                    { color: item.type === 'income' ? COLORS.emeraldText : item.type === 'transfer' ? COLORS.primary : COLORS.foreground },
                   ]}
                 >
-                  {item.type === 'income' ? '+' : '-'}{formatCurrency(item.rawAmount)}
+                  {item.type === 'income' || (item.type === 'transfer' && item.transferDirection === 'in') ? '+' : '-'}{formatCurrency(item.rawAmount)}
                 </Text>
                 <TouchableOpacity
                   style={styles.deleteBtn}
@@ -113,10 +119,10 @@ export const TransactionsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
   },
   filterChipRow: {
     flexDirection: 'row',
@@ -128,18 +134,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   filterChipActive: {
-    backgroundColor: COLORS.foreground,
-    borderColor: COLORS.foreground,
+    backgroundColor: '#174235',
+    borderColor: '#174235',
   },
   filterText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   filterTextActive: {
     color: '#FFF',
@@ -154,7 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontSize: 14,
     marginTop: 10,
   },
@@ -162,12 +168,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     padding: 16,
     borderRadius: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   itemMain: {
     flex: 1,
@@ -180,13 +186,13 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   accountBadgeChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -194,11 +200,11 @@ const styles = StyleSheet.create({
   accountBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   itemDate: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 4,
   },
   rightWrap: {

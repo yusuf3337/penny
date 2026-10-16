@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { View } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { SavingsGoal } from '../../types';
 import { parseAmountSafely, formatCurrency, formatNumberInput } from '../../utils/formatters';
+import { HeroUIModal } from '../common/HeroUIModal';
+import { HeroUIInput } from '../common/HeroUIInput';
+import { HeroUIButton } from '../common/HeroUIButton';
+import { localizeFormat } from '../../context/LocaleContext';
 
 interface UpdateGoalProgressModalProps {
   visible: boolean;
@@ -40,7 +34,7 @@ export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = (
   const handleAddSavings = () => {
     const added = parseAmountSafely(addAmountInput);
     if (added <= 0) {
-      setError('Lütfen birimim tutarı girin.');
+      setError('Lütfen bir birikim tutarı girin.');
       return;
     }
 
@@ -61,149 +55,64 @@ export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = (
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Birikim Ekle / Güncelle</Text>
-              <Text style={styles.goalSubTitle}>{goal.title}</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={24} color={COLORS.foreground} />
-            </TouchableOpacity>
+    <HeroUIModal
+      isOpen={visible}
+      onClose={onClose}
+      title="Birikim Ekle"
+      subtitle={localizeFormat('{0} hedefinize yeni birikim aktarın.', [goal.title])}
+      badge={{ text: 'KİLOMETRE TAŞI', color: '#0D9488', bg: '#CCFBF1' }}
+      footer={
+        <HeroUIButton
+          variant="primary"
+          size="lg"
+          onPress={handleAddSavings}
+          icon="add-circle-outline"
+        >
+          Birikime Ekle
+        </HeroUIButton>
+      }
+    >
+      {/* Current Progress HeroUI Card */}
+      <View className="bg-zinc-100 dark:bg-[#22332D] rounded-[20px] p-4 mb-4">
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-1 items-center">
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2] mb-0.5">Şu An Biriken</Text>
+            <Text className="text-sm font-extrabold text-[#0D9488] dark:text-[#66C9AE]">{formatCurrency(goal.savedAmount)}</Text>
           </View>
-
-          {/* Current Info Box */}
-          <View style={styles.infoBox}>
-            <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>Biriken</Text>
-              <Text style={styles.infoValue}>{formatCurrency(goal.savedAmount)}</Text>
-            </View>
-            <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>Hedef Tutar</Text>
-              <Text style={styles.infoValue}>{formatCurrency(goal.targetAmount)}</Text>
-            </View>
-            <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>Kalan</Text>
-              <Text style={styles.infoValue}>{formatCurrency(goal.remainingAmount)}</Text>
-            </View>
+          <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2C4039]" />
+          <View className="flex-1 items-center">
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2] mb-0.5">Hedef Tutar</Text>
+            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#EAF2EE]">{formatCurrency(goal.targetAmount)}</Text>
           </View>
-
-          {/* Add Amount Input */}
-          <Text style={styles.inputLabel}>Eklenecek Birikim Tutarı (₺)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Örn: 1.000 veya 1.000.000"
-            placeholderTextColor={COLORS.mutedText}
-            keyboardType="numeric"
-            value={addAmountInput}
-            onChangeText={(text) => {
-              setAddAmountInput(formatNumberInput(text));
-              if (error) setError('');
-            }}
-          />
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleAddSavings}>
-            <Text style={styles.saveBtnText}>+ Birikime Ekle</Text>
-          </TouchableOpacity>
+          <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2C4039]" />
+          <View className="flex-1 items-center">
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2] mb-0.5">Kalan</Text>
+            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#EAF2EE]">{formatCurrency(goal.remainingAmount)}</Text>
+          </View>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+
+        {/* Progress bar */}
+        <View className="h-1.5 bg-zinc-200 dark:bg-[#2C4039] rounded-full overflow-hidden">
+          <View
+            className="h-full bg-[#0D9488] rounded-full"
+            style={{ width: `${Math.max(goal.percentage || 0, 4)}%` }}
+          />
+        </View>
+      </View>
+
+      <HeroUIInput
+        label="Eklenecek Birikim Tutarı"
+        prefix="₺"
+        placeholder="Örn: 1.000 veya 10.000"
+        keyboardType="numeric"
+        value={addAmountInput}
+        onChangeText={(text) => {
+          setAddAmountInput(formatNumberInput(text));
+          if (error) setError('');
+        }}
+        errorMessage={error}
+        description="Bu tutar mevcut birikiminizin üzerine eklenecektir."
+      />
+    </HeroUIModal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
-  },
-  goalSubTitle: {
-    fontSize: 13,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
-  },
-  infoCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  infoLabel: {
-    fontSize: 11,
-    color: COLORS.mutedText,
-  },
-  infoValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.foreground,
-    marginTop: 4,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  errorText: {
-    color: COLORS.roseText,
-    fontSize: 12,
-    marginTop: 10,
-  },
-  saveBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  saveBtnText: {
-    color: COLORS.primaryForeground,
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-});

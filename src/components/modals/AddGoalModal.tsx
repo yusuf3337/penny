@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
 import { SavingsGoal } from '../../types';
 import { parseAmountSafely, formatNumberInput } from '../../utils/formatters';
+import { HeroUIModal } from '../common/HeroUIModal';
+import { HeroUIInput } from '../common/HeroUIInput';
+import { HeroUIButton } from '../common/HeroUIButton';
 
 interface AddGoalModalProps {
   visible: boolean;
@@ -90,7 +83,6 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
       iconName: selectedIcon,
     });
 
-    // Reset
     setTitle('');
     setCategory('Birikim');
     setTargetAmountInput('');
@@ -100,182 +92,99 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {initialGoal ? 'Hedefi Düzenle' : 'Yeni Hedef Ekle'}
-            </Text>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={24} color={COLORS.foreground} />
+    <HeroUIModal
+      isOpen={visible}
+      onClose={onClose}
+      title={initialGoal ? 'Hedefi Düzenle' : 'Yeni Hedef Ekle'}
+      subtitle="Hayallerinizi kilometre taşlarıyla takip edin."
+      badge={{
+        text: initialGoal ? 'DÜZENLEME' : 'HEDEF',
+        color: '#0D9488',
+        bg: '#CCFBF1',
+      }}
+      footer={
+        <HeroUIButton
+          variant="primary"
+          size="lg"
+          onPress={handleSave}
+          icon={initialGoal ? 'checkmark-circle-outline' : 'add-circle-outline'}
+        >
+          {initialGoal ? 'Değişiklikleri Kaydet' : 'Hedefi Oluştur'}
+        </HeroUIButton>
+      }
+    >
+      <HeroUIInput
+        label="Hedef Adı"
+        placeholder="Örn: Ev Peşinatı, Yeni Telefon, Tatil..."
+        startIcon="flag-outline"
+        value={title}
+        onChangeText={(text) => {
+          setTitle(text);
+          if (error) setError('');
+        }}
+        errorMessage={!title.trim() && error ? error : undefined}
+      />
+
+      <HeroUIInput
+        label="Kategori / Etiket"
+        placeholder="Örn: Birikim, Seyahat, Elektronik"
+        startIcon="pricetag-outline"
+        value={category}
+        onChangeText={setCategory}
+      />
+
+      <HeroUIInput
+        label="Hedef Tutar"
+        prefix="₺"
+        placeholder="Örn: 50.000 veya 1.000.000"
+        keyboardType="numeric"
+        value={targetAmountInput}
+        onChangeText={(text) => {
+          setTargetAmountInput(formatNumberInput(text));
+          if (error) setError('');
+        }}
+        errorMessage={
+          title.trim() && parseAmountSafely(targetAmountInput) <= 0 && error
+            ? error
+            : undefined
+        }
+      />
+
+      <HeroUIInput
+        label="Mevcut Birikim (Opsiyonel)"
+        prefix="₺"
+        placeholder="0"
+        keyboardType="numeric"
+        value={savedAmountInput}
+        onChangeText={(text) => setSavedAmountInput(formatNumberInput(text))}
+        description="Varsa bu hedefe önceden ayırdığınız tutarı girin."
+      />
+
+      {/* HeroUI Icon Selector */}
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Hedef İkonu</Text>
+      <View className="flex-row flex-wrap gap-2.5 mb-2.5">
+        {icons.map((ic) => {
+          const isSelected = selectedIcon === ic;
+          return (
+            <TouchableOpacity
+              key={ic}
+              className={`w-11 h-11 rounded-[14px] items-center justify-center border-[1.5px] ${
+                isSelected
+                  ? 'bg-teal-50 border-[#0D9488]'
+                  : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+              }`}
+              onPress={() => setSelectedIcon(ic)}
+              activeOpacity={0.75}
+            >
+              <Ionicons
+                name={ic as any}
+                size={20}
+                color={isSelected ? '#0D9488' : '#71717A'}
+              />
             </TouchableOpacity>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Title Input */}
-            <Text style={styles.inputLabel}>Hedef Adı</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: Ev Peşinatı, Yeni Araba..."
-              placeholderTextColor={COLORS.mutedText}
-              value={title}
-              onChangeText={(text) => {
-                setTitle(text);
-                if (error) setError('');
-              }}
-            />
-
-            {/* Category Input */}
-            <Text style={styles.inputLabel}>Kategori / Etiket</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: Birikim, Seyahat, Elektronik"
-              placeholderTextColor={COLORS.mutedText}
-              value={category}
-              onChangeText={setCategory}
-            />
-
-            {/* Target Amount */}
-            <Text style={styles.inputLabel}>Hedef Tutar (₺)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="50.000 veya 1.000.000"
-              placeholderTextColor={COLORS.mutedText}
-              keyboardType="numeric"
-              value={targetAmountInput}
-              onChangeText={(text) => {
-                setTargetAmountInput(formatNumberInput(text));
-                if (error) setError('');
-              }}
-            />
-
-            {/* Initial Saved Amount */}
-            <Text style={styles.inputLabel}>Mevcut Birikim (₺) - Opsiyonel</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={COLORS.mutedText}
-              keyboardType="numeric"
-              value={savedAmountInput}
-              onChangeText={(text) => setSavedAmountInput(formatNumberInput(text))}
-            />
-
-            {/* Icon Picker */}
-            <Text style={styles.inputLabel}>İkon Seçin</Text>
-            <View style={styles.iconRow}>
-              {icons.map((ic) => (
-                <TouchableOpacity
-                  key={ic}
-                  style={[
-                    styles.iconBox,
-                    selectedIcon === ic && styles.iconBoxSelected,
-                  ]}
-                  onPress={() => setSelectedIcon(ic)}
-                >
-                  <Ionicons
-                    name={ic as any}
-                    size={20}
-                    color={selectedIcon === ic ? COLORS.primaryForeground : COLORS.foreground}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>
-                {initialGoal ? 'Hedefi Güncelle' : 'Hedef Oluştur'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+          );
+        })}
+      </View>
+    </HeroUIModal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    maxHeight: '85%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-    marginBottom: 6,
-    marginTop: 10,
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  iconRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 6,
-  },
-  iconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  iconBoxSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  errorText: {
-    color: COLORS.roseText,
-    fontSize: 12,
-    marginTop: 12,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  saveButtonText: {
-    color: COLORS.primaryForeground,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

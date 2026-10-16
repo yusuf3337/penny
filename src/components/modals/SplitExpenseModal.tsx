@@ -1,23 +1,18 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
 import { parseAmountSafely, formatNumberInput, formatCurrency } from '../../utils/formatters';
+import { HeroUIModal } from '../common/HeroUIModal';
+import { HeroUIInput } from '../common/HeroUIInput';
+import { HeroUIButton } from '../common/HeroUIButton';
+import { useData } from '../../context/DataContext';
+import { localizeFormat } from '../../context/LocaleContext';
 
 interface SplitExpenseModalProps {
   visible: boolean;
   onClose: () => void;
-  onAddDebt: (personName: string, type: 'given' | 'taken', amount: number, desc?: string) => Promise<void>;
+  onAddDebt: (personName: string, type: 'given' | 'taken', amount: number, desc?: string, options?: { source?: 'split_expense'; accountType?: 'bank' | 'cash' }) => Promise<void>;
   onAddTransaction: (tx: any) => Promise<void>;
 }
 
@@ -27,24 +22,34 @@ export const SplitExpenseModal: React.FC<SplitExpenseModalProps> = ({
   onAddDebt,
   onAddTransaction,
 }) => {
+  const { categories } = useData();
   const [title, setTitle] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Yemek');
+  const [accountType, setAccountType] = useState<'bank' | 'cash'>('bank');
   const [totalAmountInput, setTotalAmountInput] = useState('');
   const [participantsText, setParticipantsText] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const parsedTotal = parseAmountSafely(totalAmountInput);
+  const categoryNames = categories.filter((category) => category.type === 'expense').map((category) => category.name);
+  const availableCategories = categoryNames.length > 0 ? categoryNames : ['Yemek', 'Ev', 'Ulaşım', 'Eğlence', 'Diğer'];
+  const effectiveCategory = availableCategories.includes(selectedCategory) ? selectedCategory : availableCategories[0];
+  const accountName = accountType === 'cash' ? 'Nakit Cüzdan' : 'Banka Hesabı';
 
   // Parse comma or space separated names
   const names = participantsText
     .split(/[,;\n]/)
     .map((n) => n.trim())
-    .filter((n) => n.length > 0);
+    .filter((n, index, all) => n.length > 0 && all.findIndex((other) => other.toLocaleLowerCase('tr-TR') === n.toLocaleLowerCase('tr-TR')) === index);
 
   // Total people including "Ben" (user)
   const totalPeople = names.length + 1;
-  const rawShare = parsedTotal > 0 ? parsedTotal / totalPeople : 0;
-  const perPersonShare = Math.round(rawShare * 100) / 100;
+  const totalCents = Math.round(parsedTotal * 100);
+  const shareCents = totalPeople > 0 ? Math.floor(totalCents / totalPeople) : 0;
+  const participantShare = shareCents / 100;
+  const myShare = (shareCents + (totalCents % totalPeople)) / 100;
 
   const handleApplySplit = async () => {
     if (!title.trim()) {
@@ -59,18 +64,35 @@ export const SplitExpenseModal: React.FC<SplitExpenseModalProps> = ({
       setError('Lütfen en az 1 kişi ismi girin.');
       return;
     }
+    if (totalCents < totalPeople) {
+      setError('Tutar, kişi başına en az 0,01 ₺ düşecek kadar büyük olmalı.');
+      return;
+    }
 
+    setIsLoading(true);
     try {
       // 1. Record user's own share as expense transaction
       await onAddTransaction({
         title: `${title.trim()} (Benim Payım)`,
-        category: 'Yemek',
-        amount: `-₺${perPersonShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
-        rawAmount: perPersonShare,
+        category: effectiveCategory,
+        amount: `-${formatCurrency(myShare)}`,
+        rawAmount: myShare,
         type: 'expense',
         iconName: 'people-outline',
-        accountType: 'bank',
-        accountName: 'Banka Hesabı',
+        accountType,
+        accountName,
+      });
+
+      await onAddTransaction({
+        title: `${title.trim()} (Diğer Paylar)`,
+        category: 'Ortak Harcama',
+        amount: '',
+        rawAmount: participantShare * names.length,
+        type: 'transfer',
+        transferDirection: 'out',
+        iconName: 'arrow-up-outline',
+        accountType,
+        accountName,
       });
 
       // 2. Add each participant's share to Debts as "given" (Alacaklıyım)
@@ -78,246 +100,130 @@ export const SplitExpenseModal: React.FC<SplitExpenseModalProps> = ({
         await onAddDebt(
           name,
           'given',
-          perPersonShare,
-          `${title.trim()} Ortak Harcama Payı`
+          participantShare,
+          `${title.trim()} Ortak Harcama Payı`,
+          { source: 'split_expense', accountType }
         );
       }
 
-      setSuccessMessage(`${names.length} kişinin payı Alacaklıyım listenize eklendi!`);
+      setSuccessMessage(localizeFormat('{0} kişi için alacak kaydı açıldı.', [names.length]));
       setTimeout(() => {
         setTitle('');
         setTotalAmountInput('');
         setParticipantsText('');
         setError('');
         setSuccessMessage('');
+        setIsLoading(false);
         onClose();
       }, 1500);
     } catch (err) {
       setError('Hesap bölüştürülürken bir hata oluştu.');
+      setIsLoading(false);
     }
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <View style={styles.titleRow}>
-              <View style={styles.iconCircle}>
-                <Ionicons name="people-outline" size={20} color={COLORS.primary} />
-              </View>
-              <Text style={styles.headerTitle}>Ortak Harcama Bölüş</Text>
+    <HeroUIModal
+      isOpen={visible}
+      onClose={onClose}
+      title="Ortak Harcama Bölüş"
+      subtitle="Hesabı eşit bölüştürün, alacaklarınızı anında kaydedin."
+      badge={{ text: 'ORTAK HARCAMA', color: '#137C70', bg: '#E3F2EC' }}
+      footer={
+        <HeroUIButton
+          variant="primary"
+          size="lg"
+          onPress={handleApplySplit}
+          isLoading={isLoading}
+          icon="people-outline"
+        >
+          Hesabı Böl ve Alacaklara Ekle
+        </HeroUIButton>
+      }
+    >
+      <HeroUIInput
+        label="Harcama Açıklaması"
+        placeholder="Örn: Akşam Yemeği, Yazlık Kira, Market..."
+        startIcon="receipt-outline"
+        value={title}
+        onChangeText={(t) => {
+          setTitle(t);
+          if (error) setError('');
+        }}
+      />
+
+      <Text className="text-[13px] font-semibold text-[#3B514C] dark:text-[#CCDCD2] mb-2">Kategori</Text>
+      <View className="flex-row flex-wrap gap-2 mb-4">
+        {availableCategories.map((category) => (
+          <TouchableOpacity
+            key={category}
+            className={`px-3 py-2 rounded-xl border ${effectiveCategory === category ? 'bg-[#E3F2EC] dark:bg-[#203E35] border-[#137C70]' : 'bg-white dark:bg-[#182521] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <Text className={`text-xs font-semibold ${effectiveCategory === category ? 'text-[#137C70] dark:text-[#66C9AE]' : 'text-[#667A73] dark:text-[#A9BDB2]'}`}>{category}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text className="text-[13px] font-semibold text-[#3B514C] dark:text-[#CCDCD2] mb-2">Ödenen hesap</Text>
+      <View className="flex-row gap-2 mb-4">
+        {(['bank', 'cash'] as const).map((account) => (
+          <TouchableOpacity
+            key={account}
+            className={`flex-1 px-3 py-2.5 rounded-xl border ${accountType === account ? 'bg-[#E3F2EC] dark:bg-[#203E35] border-[#137C70]' : 'bg-white dark:bg-[#182521] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            onPress={() => setAccountType(account)}
+          >
+            <Text className={`text-xs text-center font-semibold ${accountType === account ? 'text-[#137C70] dark:text-[#66C9AE]' : 'text-[#667A73] dark:text-[#A9BDB2]'}`}>{account === 'bank' ? 'Banka' : 'Nakit'}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <HeroUIInput
+        label="Toplam Hesap Tutarı"
+        prefix="₺"
+        placeholder="Örn: 1.200"
+        keyboardType="numeric"
+        value={totalAmountInput}
+        onChangeText={(t) => {
+          setTotalAmountInput(formatNumberInput(t));
+          if (error) setError('');
+        }}
+      />
+
+      <HeroUIInput
+        label="Diğer Katılan Kişiler"
+        placeholder="Ahmet, Mehmet, Zeynep (virgülle ayırın)"
+        startIcon="person-add-outline"
+        value={participantsText}
+        onChangeText={(t) => {
+          setParticipantsText(t);
+          if (error) setError('');
+        }}
+        description="Siz otomatik olarak hesaplamaya dahilsiniz."
+      />
+
+      {/* Calculation Preview HeroUI Card */}
+      {parsedTotal > 0 && totalPeople > 1 && (
+        <View className="bg-emerald-50 dark:bg-[#183C2D] rounded-2xl p-4 border-[1.5px] border-emerald-200 dark:border-[#2B624A] mb-4">
+          <View className="flex-row items-center gap-3">
+            <View className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-[#20503B] items-center justify-center">
+              <Ionicons name="calculator-outline" size={18} color="#0D9488" />
             </View>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={24} color={COLORS.foreground} />
-            </TouchableOpacity>
+            <View className="flex-1">
+              <Text className="text-[13px] font-bold text-emerald-900 dark:text-[#A6E8C7]">Kişi Başına Düşen Pay</Text>
+              <Text className="text-[11px] text-emerald-700 dark:text-[#70E0B0] mt-0.5">{localizeFormat('{0} kişi arasında eşit paylaşıldı.', [totalPeople])}</Text>
+            </View>
+              <Text className="text-lg font-bold text-emerald-900 dark:text-[#A6E8C7]">{formatCurrency(participantShare)}</Text>
           </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.description}>
-              Hesabı siz ödediyseniz, toplam tutarı ve katılan kişileri girin. Katılımcıların payı otomatik olarak <Text style={{ fontWeight: 'bold', color: COLORS.emeraldText }}>Alacaklıyım</Text> listenize eklenecektir.
-            </Text>
-
-            {/* Title */}
-            <Text style={styles.inputLabel}>Harcama Açıklaması</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: Akşam Yemeği, Tatil Oteli, Tatlı..."
-              placeholderTextColor={COLORS.mutedText}
-              value={title}
-              onChangeText={(t) => {
-                setTitle(t);
-                if (error) setError('');
-              }}
-            />
-
-            {/* Total Amount */}
-            <Text style={styles.inputLabel}>Toplam Hesap Tutarı (₺)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: 1.200"
-              placeholderTextColor={COLORS.mutedText}
-              keyboardType="numeric"
-              value={totalAmountInput}
-              onChangeText={(t) => {
-                setTotalAmountInput(formatNumberInput(t));
-                if (error) setError('');
-              }}
-            />
-
-            {/* Participants */}
-            <Text style={styles.inputLabel}>Diğer Katılan Kişiler (Virgülle Ayırın)</Text>
-            <TextInput
-              style={[styles.input, { height: 70 }]}
-              placeholder="Örn: Ahmet, Mehmet, Zeynep"
-              placeholderTextColor={COLORS.mutedText}
-              multiline
-              value={participantsText}
-              onChangeText={(t) => {
-                setParticipantsText(t);
-                if (error) setError('');
-              }}
-            />
-
-            {/* Calculation Preview */}
-            {parsedTotal > 0 && totalPeople > 1 ? (
-              <View style={styles.previewBox}>
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewLabel}>Kişi Sayısı:</Text>
-                  <Text style={styles.previewVal}>{totalPeople} Kişi (Siz dahil)</Text>
-                </View>
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewLabel}>Kişi Başına Düşen Pay:</Text>
-                  <Text style={styles.previewValHighlight}>
-                    {formatCurrency(perPersonShare)}
-                  </Text>
-                </View>
-                <Text style={styles.previewSub}>
-                  Sizin payınız ({formatCurrency(perPersonShare)}) Gider olarak yazılacak, kalan {names.length} kişi için Alacak kaydı açılacak.
-                </Text>
-              </View>
-            ) : null}
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
-
-            <TouchableOpacity
-              style={styles.saveButton}
-              activeOpacity={0.85}
-              onPress={handleApplySplit}
-            >
-              <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
-              <Text style={styles.saveButtonText}>Hesabı Böl ve Alacaklara Ekle</Text>
-            </TouchableOpacity>
-          </ScrollView>
+          <View className="h-[1px] bg-emerald-200 dark:bg-[#2B624A] my-2.5" />
+          <Text className="text-[11px] text-emerald-700 dark:text-[#70E0B0] leading-snug">
+            {localizeFormat('Sizin payınız ({0}) gider olarak kaydedilecek; kalan {1} kişi için alacak oluşturulacak.', [formatCurrency(myShare), names.length])}
+          </Text>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      )}
+
+      {error ? <Text className="text-rose-500 text-xs font-semibold mb-2.5">{error}</Text> : null}
+      {successMessage ? <Text className="text-emerald-600 text-[13px] font-bold mb-2.5">{successMessage}</Text> : null}
+    </HeroUIModal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    maxHeight: '85%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
-  },
-  description: {
-    fontSize: 12,
-    color: COLORS.mutedText,
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-    marginBottom: 6,
-    marginTop: 10,
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  previewBox: {
-    backgroundColor: COLORS.emeraldBg,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    marginTop: 16,
-    gap: 6,
-  },
-  previewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  previewLabel: {
-    fontSize: 12,
-    color: COLORS.emeraldText,
-    fontWeight: '600',
-  },
-  previewVal: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.foreground,
-  },
-  previewValHighlight: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.emeraldText,
-  },
-  previewSub: {
-    fontSize: 11,
-    color: COLORS.emeraldText,
-    marginTop: 4,
-  },
-  errorText: {
-    color: COLORS.expense,
-    fontSize: 12,
-    marginTop: 12,
-  },
-  successText: {
-    color: COLORS.emeraldText,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 12,
-  },
-  saveButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  saveButtonText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-});

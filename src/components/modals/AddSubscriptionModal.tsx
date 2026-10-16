@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, TouchableOpacity, ScrollView } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { SubscriptionItem } from '../../types';
 import { parseAmountSafely, calculateNextDueDate, formatNumberInput } from '../../utils/formatters';
+import { HeroUIModal } from '../common/HeroUIModal';
+import { HeroUIInput } from '../common/HeroUIInput';
+import { HeroUIButton } from '../common/HeroUIButton';
 
 interface AddSubscriptionModalProps {
   visible: boolean;
@@ -63,7 +57,7 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
     }
   }, [visible, initialSub]);
 
-  // Popular Brand Presets matching user request
+  // Popular Brand Presets
   const presets = [
     { name: 'Spotify', icon: 'musical-notes-outline', color: '#1DB954', category: 'Eğlence' },
     { name: 'YouTube Premium', icon: 'logo-youtube', color: '#FF0000', category: 'Eğlence' },
@@ -122,250 +116,174 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
+    <HeroUIModal
+      isOpen={visible}
+      onClose={onClose}
+      title={initialSub ? 'Aboneliği Düzenle' : 'Yeni Abonelik Ekle'}
+      subtitle="Tekrarlayan aylık veya yıllık sabit giderlerinizi takip edin."
+      badge={{
+        text: initialSub ? 'DÜZENLEME' : 'ABONELİK',
+        color: '#6366F1',
+        bg: '#EEF2FF',
+      }}
+      footer={
+        <HeroUIButton
+          variant="primary"
+          size="lg"
+          onPress={handleSave}
+          icon="calendar-outline"
+        >
+          {initialSub ? 'Değişiklikleri Kaydet' : 'Aboneliği Kaydet'}
+        </HeroUIButton>
+      }
+    >
+      {/* Popüler Marka Kısayolları */}
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Hazır Servis Seçin</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="flex-row mb-4"
+        contentContainerClassName="pr-2.5"
       >
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {initialSub ? 'Abonelik Düzenle' : 'Yeni Abonelik Ekle'}
-            </Text>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={24} color={COLORS.foreground} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Popüler Marka Kısayolları */}
-            <Text style={styles.inputLabel}>Hazır Abonelik Seçin</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
-              {presets.map((p) => (
-                <TouchableOpacity
-                  key={p.name}
-                  style={[styles.presetChip, { borderColor: p.color }]}
-                  onPress={() => applyPreset(p)}
-                >
-                  <Ionicons name={p.icon as any} size={16} color={p.color} />
-                  <Text style={styles.presetText}>{p.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* Title */}
-            <Text style={styles.inputLabel}>Abonelik Adı</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: Spotify, YouTube Premium..."
-              placeholderTextColor={COLORS.mutedText}
-              value={title}
-              onChangeText={(text) => {
-                setTitle(text);
-                if (error) setError('');
-              }}
-            />
-
-            {/* Cycle Selector */}
-            <Text style={styles.inputLabel}>Ödeme Periyodu</Text>
-            <View style={styles.cycleRow}>
-              <TouchableOpacity
-                style={[
-                  styles.cycleTab,
-                  cycle === 'monthly' && styles.cycleTabActive,
-                ]}
-                onPress={() => setCycle('monthly')}
+        {presets.map((p) => {
+          const isSelected = title === p.name;
+          return (
+            <TouchableOpacity
+              key={p.name}
+              className={`flex-row items-center gap-1.5 px-3 py-2 rounded-2xl border-[1.5px] mr-2 ${
+                isSelected
+                  ? 'bg-zinc-100 dark:bg-[#22332D]'
+                  : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+              }`}
+              style={isSelected ? { borderColor: p.color, backgroundColor: `${p.color}15` } : {}}
+              onPress={() => applyPreset(p)}
+              activeOpacity={0.75}
+            >
+              <Ionicons name={p.icon as any} size={16} color={p.color} />
+              <Text
+                className={`text-xs ${
+                  isSelected ? 'font-bold' : 'font-semibold text-zinc-900 dark:text-[#EAF2EE]'
+                }`}
+                style={isSelected ? { color: p.color } : {}}
               >
-                <Text style={[styles.cycleText, cycle === 'monthly' && styles.cycleTextActive]}>
-                  Aylık
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.cycleTab,
-                  cycle === 'yearly' && styles.cycleTabActive,
-                ]}
-                onPress={() => setCycle('yearly')}
-              >
-                <Text style={[styles.cycleText, cycle === 'yearly' && styles.cycleTextActive]}>
-                  Yıllık
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Payment Day of Month */}
-            <Text style={styles.inputLabel}>Her Ay Hangi Gün Ödeniyor? (1 - 31)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: 15"
-              placeholderTextColor={COLORS.mutedText}
-              keyboardType="numeric"
-              value={paymentDay ? paymentDay.toString() : ''}
-              onChangeText={(text) => {
-                const dayNum = parseInt(text, 10);
-                setPaymentDay(isNaN(dayNum) ? 0 : dayNum);
-              }}
-            />
-
-            {/* Account Selector (Banka / Nakit) */}
-            <Text style={styles.inputLabel}>Ödeme Hesabı</Text>
-            <View style={styles.cycleRow}>
-              <TouchableOpacity
-                style={[
-                  styles.cycleTab,
-                  accountType === 'bank' && styles.cycleTabActive,
-                ]}
-                onPress={() => setAccountType('bank')}
-              >
-                <Text style={[styles.cycleText, accountType === 'bank' && styles.cycleTextActive]}>
-                  💳 Banka Hesabı
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.cycleTab,
-                  accountType === 'cash' && styles.cycleTabActive,
-                ]}
-                onPress={() => setAccountType('cash')}
-              >
-                <Text style={[styles.cycleText, accountType === 'cash' && styles.cycleTextActive]}>
-                  💵 Nakit Cüzdan
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Amount */}
-            <Text style={styles.inputLabel}>Tutar (₺)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="79,99"
-              placeholderTextColor={COLORS.mutedText}
-              keyboardType="numeric"
-              value={amountInput}
-              onChangeText={(text) => {
-                setAmountInput(text);
-                if (error) setError('');
-              }}
-            />
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>
-                {initialSub ? 'Değişiklikleri Kaydet' : 'Aboneliği Kaydet'}
+                {p.name}
               </Text>
             </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+          );
+        })}
+      </ScrollView>
+
+      <HeroUIInput
+        label="Abonelik Adı"
+        placeholder="Örn: Spotify, YouTube Premium..."
+        startIcon="repeat-outline"
+        value={title}
+        onChangeText={(text) => {
+          setTitle(text);
+          if (error) setError('');
+        }}
+        errorMessage={!title.trim() && error ? error : undefined}
+      />
+
+      {/* HeroUI Segmented Tabs for Cycle */}
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Ödeme Periyodu</Text>
+      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-2xl p-1 mb-4">
+        <TouchableOpacity
+          className={`flex-1 py-2.5 items-center rounded-[13px] ${
+            cycle === 'monthly' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+          }`}
+          onPress={() => setCycle('monthly')}
+          activeOpacity={0.8}
+        >
+          <Text
+            className={`text-[13px] ${
+              cycle === 'monthly' ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+            }`}
+          >
+            Aylık Ödeme
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className={`flex-1 py-2.5 items-center rounded-[13px] ${
+            cycle === 'yearly' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+          }`}
+          onPress={() => setCycle('yearly')}
+          activeOpacity={0.8}
+        >
+          <Text
+            className={`text-[13px] ${
+              cycle === 'yearly' ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+            }`}
+          >
+            Yıllık Ödeme
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <HeroUIInput
+        label="Aylık Ödeme Günü (1 - 31)"
+        placeholder="Örn: 15"
+        keyboardType="numeric"
+        value={paymentDay ? paymentDay.toString() : ''}
+        onChangeText={(text) => {
+          const dayNum = parseInt(text, 10);
+          setPaymentDay(isNaN(dayNum) ? 0 : dayNum);
+        }}
+        startIcon="calendar-outline"
+        description="Abonelik ücretinin hesabınızdan çekildiği gün."
+      />
+
+      {/* HeroUI Segmented Tabs for Account */}
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Ödeme Hesabı</Text>
+      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-2xl p-1 mb-4">
+        <TouchableOpacity
+          className={`flex-1 py-2.5 items-center rounded-[13px] ${
+            accountType === 'bank' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+          }`}
+          onPress={() => setAccountType('bank')}
+          activeOpacity={0.8}
+        >
+          <Text
+            className={`text-[13px] ${
+              accountType === 'bank' ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+            }`}
+          >
+            Banka Hesabı
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className={`flex-1 py-2.5 items-center rounded-[13px] ${
+            accountType === 'cash' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+          }`}
+          onPress={() => setAccountType('cash')}
+          activeOpacity={0.8}
+        >
+          <Text
+            className={`text-[13px] ${
+              accountType === 'cash' ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+            }`}
+          >
+            Nakit Cüzdan
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <HeroUIInput
+        label="Tutar"
+        prefix="₺"
+        placeholder="Örn: 79,99"
+        keyboardType="numeric"
+        value={amountInput}
+        onChangeText={(text) => {
+          setAmountInput(formatNumberInput(text));
+          if (error) setError('');
+        }}
+        errorMessage={
+          title.trim() && parseAmountSafely(amountInput) <= 0 && error ? error : undefined
+        }
+      />
+    </HeroUIModal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    maxHeight: '85%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-    marginBottom: 6,
-    marginTop: 10,
-  },
-  presetScroll: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  presetChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    marginRight: 8,
-  },
-  presetText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.foreground,
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  cycleRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.background,
-    borderRadius: 14,
-    padding: 3,
-    marginBottom: 4,
-  },
-  cycleTab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-  cycleTabActive: {
-    backgroundColor: COLORS.primary,
-  },
-  cycleText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-  },
-  cycleTextActive: {
-    color: '#FFF',
-    fontWeight: '700',
-  },
-  errorText: {
-    color: COLORS.roseText,
-    fontSize: 12,
-    marginTop: 12,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  saveButtonText: {
-    color: COLORS.primaryForeground,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

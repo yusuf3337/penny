@@ -1,9 +1,12 @@
+import { useThemedStyles } from '../context/ThemeContext';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../components/common/LocalizedPrimitives';
 import { Header } from '../components/common/Header';
-import { COLORS } from '../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../constants/colors';
 
 export const ProfileScreen = () => {
+  const styles = useThemedStyles(lightStyles);
   return (
     <View style={styles.container}>
       <Header title="Profil & Ayarlar" subtitle="Uygulama Tercihleriniz" />
@@ -14,10 +17,10 @@ export const ProfileScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
   },
   content: {
     flex: 1,
@@ -26,7 +29,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeholderText: {
-    color: COLORS.textSecondary,
+    color: LIGHT_COLORS.textSecondary,
     fontSize: 14,
   },
 });

@@ -1,26 +1,28 @@
+import { useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/common/Header';
 import { UpdateGoalProgressModal } from '../components/modals/UpdateGoalProgressModal';
 import { useData } from '../context/DataContext';
-import { COLORS } from '../constants/colors';
+import { useAppDialog } from '../context/AppDialogContext';
+import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import { formatCurrency } from '../utils/formatters';
 import { SavingsGoal } from '../types';
+import { localizeFormat } from '../context/LocaleContext';
+
+import { usePremium } from '../context/PremiumContext';
 
 interface GoalsScreenProps {
   onOpenGoalModal: (goal?: SavingsGoal) => void;
 }
 
 export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => {
+  const styles = useThemedStyles(lightStyles);
+  const { alert } = useAppDialog();
   const { goals, totalSavedGoals, totalTargetGoals, handleSaveGoal, handleDeleteGoal } = useData();
+  const { isPro, openPaywall } = usePremium();
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
   const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState<SavingsGoal | null>(null);
 
@@ -39,7 +41,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
   });
 
   const confirmDelete = (id: string, title: string) => {
-    Alert.alert('Hedefi Sil', `"${title}" hedefini silmek istediğinize emin misiniz?`, [
+    alert('Hedefi Sil', localizeFormat('"{0}" hedefini silmek istediğinize emin misiniz?', [title]), [
       { text: 'Vazgeç', style: 'cancel' },
       { text: 'Sil', style: 'destructive', onPress: () => handleDeleteGoal(id) },
     ]);
@@ -49,10 +51,36 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Header
         title="Hedefler"
-        subtitle="Kilometre taşları ve katkı geçmişi"
+        subtitle="Birikimlerinizi ve ilerlemenizi izleyin"
         rightActionIcon="add"
         onRightActionPress={() => onOpenGoalModal()}
       />
+
+      {/* Freemium Limit Tracker Bar */}
+      <View style={styles.quotaBarContainer}>
+        {isPro ? (
+          <View style={styles.proQuotaBadge}>
+            <Ionicons name="checkmark-circle-outline" size={15} color={COLORS.primary} />
+            <Text style={styles.proQuotaText}>Penny Pro Aktif · Sınırsız Birikim Hedefi</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.freeQuotaBadge}
+            activeOpacity={0.8}
+            onPress={() => openPaywall('goal_limit')}
+          >
+            <View style={styles.freeQuotaLeft}>
+              <Ionicons name="flag-outline" size={14} color={COLORS.primary} />
+              <Text style={styles.freeQuotaText}>
+                Hedef Kotası: <Text style={{ fontWeight: '800' }}>{goals.length}/2</Text> (Ücretsiz)
+              </Text>
+            </View>
+            <View style={styles.freeQuotaRight}>
+              <Text style={styles.freeQuotaUpgradeLink}>Sınırsız Yap</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Top Biriken Summary Card (Matching Image 2) */}
       <View style={styles.summaryCard}>
@@ -61,7 +89,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
             <Text style={styles.summaryLabel}>Biriken</Text>
             <Text style={styles.savedTotalText}>{formatCurrency(totalSavedGoals)}</Text>
             <Text style={styles.targetSubText}>
-              {activeCount} Aktif · {completedCount} Tamamlanan
+              {localizeFormat('{0} Aktif · {1} Tamamlanan', [activeCount, completedCount])}
             </Text>
           </View>
 
@@ -109,7 +137,8 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
             style={styles.emptyAddBtn}
             onPress={() => onOpenGoalModal()}
           >
-            <Text style={styles.emptyAddBtnText}>+ İlk Hedefini Ekle</Text>
+            <Ionicons name="add" size={16} color="#FFF" />
+            <Text style={styles.emptyAddBtnText}>İlk Hedefini Ekle</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -203,7 +232,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
                   onPress={() => setSelectedGoalForUpdate(goal)}
                 >
                   <Ionicons name="add-circle" size={14} color={COLORS.primaryForeground} />
-                  <Text style={styles.addProgressBtnText}>+ Birikim Ekle</Text>
+                  <Text style={styles.addProgressBtnText}>Birikim Ekle</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -238,10 +267,10 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -250,13 +279,13 @@ const styles = StyleSheet.create({
 
   // Summary Card
   summaryCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 16,
-    shadowColor: COLORS.shadow,
+    shadowColor: LIGHT_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 10,
@@ -269,18 +298,18 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontWeight: '600',
   },
   savedTotalText: {
     fontSize: 28,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginVertical: 4,
   },
   targetSubText: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
 
   percentRing: {
@@ -288,27 +317,27 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     borderWidth: 3,
-    borderColor: COLORS.emerald,
+    borderColor: LIGHT_COLORS.emerald,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.emeraldBg,
+    backgroundColor: LIGHT_COLORS.emeraldBg,
   },
   percentRingText: {
     fontSize: 13,
     fontWeight: '800',
-    color: COLORS.emeraldText,
+    color: LIGHT_COLORS.emeraldText,
   },
 
   globalProgressTrack: {
     height: 8,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     borderRadius: 4,
     marginTop: 16,
     overflow: 'hidden',
   },
   globalProgressBar: {
     height: '100%',
-    backgroundColor: COLORS.emerald,
+    backgroundColor: LIGHT_COLORS.emerald,
     borderRadius: 4,
   },
 
@@ -322,18 +351,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   filterChipActive: {
-    backgroundColor: COLORS.foreground,
-    borderColor: COLORS.foreground,
+    backgroundColor: '#174235',
+    borderColor: '#174235',
   },
   filterText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   filterTextActive: {
     color: '#FFF',
@@ -341,24 +370,28 @@ const styles = StyleSheet.create({
 
   // Goal Items
   emptyCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   emptyText: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 8,
   },
   emptyAddBtn: {
     marginTop: 14,
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
   },
   emptyAddBtnText: {
     color: '#FFF',
@@ -367,11 +400,11 @@ const styles = StyleSheet.create({
   },
 
   goalCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 12,
   },
   goalHeader: {
@@ -388,18 +421,18 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: COLORS.emeraldBg,
+    backgroundColor: LIGHT_COLORS.emeraldBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   goalTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   goalCategory: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 2,
   },
 
@@ -409,20 +442,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   badgeNormal: {
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: LIGHT_COLORS.primaryLight,
   },
   badgeSuccess: {
-    backgroundColor: COLORS.emeraldBg,
+    backgroundColor: LIGHT_COLORS.emeraldBg,
   },
   badgeText: {
     fontSize: 12,
     fontWeight: '800',
   },
   badgeTextNormal: {
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
   badgeTextSuccess: {
-    color: COLORS.emeraldText,
+    color: LIGHT_COLORS.emeraldText,
   },
 
   milestoneRow: {
@@ -435,24 +468,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
   },
   milestoneChipReached: {
-    backgroundColor: COLORS.emeraldBg,
+    backgroundColor: LIGHT_COLORS.emeraldBg,
   },
   milestoneText: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   milestoneTextReached: {
-    color: COLORS.emeraldText,
+    color: LIGHT_COLORS.emeraldText,
     fontWeight: '700',
   },
 
   progressTrack: {
     height: 6,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 10,
@@ -469,18 +502,18 @@ const styles = StyleSheet.create({
   savedAmount: {
     fontSize: 14,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   targetAmount: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginLeft: 4,
     flex: 1,
   },
   addProgressBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 10,
@@ -488,11 +521,58 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   addProgressBtnText: {
-    color: COLORS.primaryForeground,
+    color: LIGHT_COLORS.primaryForeground,
     fontSize: 11,
     fontWeight: '700',
   },
   deleteIconBtn: {
     padding: 4,
+  },
+
+  // Quota bar styles
+  quotaBarContainer: {
+    marginBottom: 16,
+  },
+  proQuotaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: LIGHT_COLORS.primaryLight,
+    borderWidth: 1,
+    borderColor: '#CAD8D2',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  proQuotaText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: LIGHT_COLORS.primary,
+  },
+  freeQuotaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: LIGHT_COLORS.card,
+    borderWidth: 1,
+    borderColor: LIGHT_COLORS.cardBorder,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  freeQuotaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  freeQuotaText: {
+    fontSize: 12,
+    color: LIGHT_COLORS.foreground,
+  },
+  freeQuotaRight: {},
+  freeQuotaUpgradeLink: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: LIGHT_COLORS.primary,
   },
 });

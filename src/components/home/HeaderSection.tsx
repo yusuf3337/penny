@@ -1,7 +1,10 @@
+import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../../constants/colors';
+import { getFormattingLocale } from '../../context/LocaleContext';
 
 interface HeaderSectionProps {
   userName?: string;
@@ -12,12 +15,13 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   userName = 'Kullanıcı',
   onAvatarPress,
 }) => {
-  const formattedDate = new Date().toLocaleDateString('tr-TR', {
+  const styles = useThemedStyles(lightStyles);
+  const formattedDate = new Date().toLocaleDateString(getFormattingLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     weekday: 'long',
-  }).toUpperCase();
+  }).toLocaleUpperCase(getFormattingLocale());
 
   // Initials (e.g. "Deniz" -> "DE" or "D", "Ahmet Yılmaz" -> "AY")
   const initials = userName
@@ -49,7 +53,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -65,19 +69,19 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   greetingTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 4,
   },
   subtitle: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 4,
   },
   actionsContainer: {
@@ -89,9 +93,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -103,19 +107,19 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: COLORS.accent,
+    backgroundColor: LIGHT_COLORS.accent,
   },
   avatar: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: COLORS.secondaryForeground,
+    color: LIGHT_COLORS.secondaryForeground,
   },
 });

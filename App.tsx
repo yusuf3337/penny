@@ -1,8 +1,14 @@
+import './global.css';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as Haptics from 'expo-haptics';
+import { HeroUINativeProvider } from 'heroui-native';
 import { DataProvider, useData } from './src/context/DataContext';
+import { PremiumProvider, usePremium } from './src/context/PremiumContext';
+import { AppDialogProvider } from './src/context/AppDialogContext';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { GoalsScreen } from './src/screens/GoalsScreen';
 import { SubscriptionsScreen } from './src/screens/SubscriptionsScreen';
@@ -16,13 +22,16 @@ import { AddSubscriptionModal } from './src/components/modals/AddSubscriptionMod
 import { AddBudgetModal } from './src/components/modals/AddBudgetModal';
 import { AddDebtModal } from './src/components/modals/AddDebtModal';
 import { UserNameModal } from './src/components/modals/UserNameModal';
-import { AddCategoryModal } from './src/components/modals/AddCategoryModal';
 import { SettingsModal } from './src/components/modals/SettingsModal';
+import { ProUpgradeModal } from './src/components/modals/ProUpgradeModal';
 import { COLORS } from './src/constants/colors';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { LocaleProvider, useLocale } from './src/context/LocaleContext';
 
 import { SplitExpenseModal } from './src/components/modals/SplitExpenseModal';
 
 const MainNavigator = () => {
+  useLocale(); // Re-render date and currency labels when the language changes.
   const {
     activeTab,
     setActiveTab,
@@ -36,8 +45,10 @@ const MainNavigator = () => {
     handleAddSubscription,
     handleSaveBudget,
     handleAddDebt,
-    handleAddCategory,
+    goals,
   } = useData();
+
+  const { isPro, openPaywall } = usePremium();
 
   // Modals state per active tab
   const [isAddTxModalVisible, setIsAddTxModalVisible] = useState(false);
@@ -49,20 +60,48 @@ const MainNavigator = () => {
   const [isAddDebtModalVisible, setIsAddDebtModalVisible] = useState(false);
   const [isSplitModalVisible, setIsSplitModalVisible] = useState(false);
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
-  const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (!isPro) {
+      setIsAddDebtModalVisible(false);
+      setIsSplitModalVisible(false);
+    }
+  }, [isPro]);
+
+  const handleOpenDebtModal = () => {
+    if (!isPro) {
+      openPaywall('debt_tracking');
+      return;
+    }
+    setIsAddDebtModalVisible(true);
+  };
 
   // Auto show initial onboarding name modal ONLY ONCE if user hasn't onboarded yet
   useEffect(() => {
-    if (!isLoading && !hasOnboarded && (!userName || userName === 'Kullanıcı')) {
-      setIsNameModalVisible(true);
+    if (
+      !isLoading &&
+      !hasOnboarded &&
+      (!userName || userName === 'Kullanıcı') &&
+      !isSettingsModalVisible
+    ) {
+      const timer = setTimeout(() => {
+        setIsNameModalVisible(true);
+      }, 350);
+      return () => clearTimeout(timer);
     }
-  }, [isLoading, hasOnboarded, userName]);
+  }, [isLoading, hasOnboarded, userName, isSettingsModalVisible]);
 
   // Trigger modal depending on current active tab
   const handleOpenActiveTabModal = () => {
+    triggerAddHaptic();
+
     switch (activeTab) {
       case 'goals':
+        if (!isPro && goals.length >= 2) {
+          openPaywall('goal_limit');
+          return;
+        }
         setEditingGoal(null);
         setIsAddGoalModalVisible(true);
         break;
@@ -74,7 +113,7 @@ const MainNavigator = () => {
         setIsAddBudgetModalVisible(true);
         break;
       case 'debts':
-        setIsAddDebtModalVisible(true);
+        handleOpenDebtModal();
         break;
       default:
         setIsAddTxModalVisible(true);
@@ -82,20 +121,41 @@ const MainNavigator = () => {
     }
   };
 
+  const triggerAddHaptic = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+  };
+
+  const handleOpenSplitExpense = () => {
+    triggerAddHaptic();
+    if (!isPro) {
+      openPaywall('split_expense');
+      return;
+    }
+    setIsSplitModalVisible(true);
+  };
+
   return (
     <View style={styles.appWrap}>
       {activeTab === 'timeline' && (
         <HomeScreen
-          onOpenAddModal={() => setIsAddTxModalVisible(true)}
+          onOpenAddModal={() => {
+            triggerAddHaptic();
+            setIsAddTxModalVisible(true);
+          }}
           onOpenNameModal={() => setIsNameModalVisible(true)}
           onOpenSettingsModal={() => setIsSettingsModalVisible(true)}
-          onOpenSplitModal={() => setIsSplitModalVisible(true)}
+          onOpenSplitModal={handleOpenSplitExpense}
         />
       )}
 
       {activeTab === 'goals' && (
         <GoalsScreen
           onOpenGoalModal={(goal) => {
+            triggerAddHaptic();
+            if (!goal && !isPro && goals.length >= 2) {
+              openPaywall('goal_limit');
+              return;
+            }
             setEditingGoal(goal || null);
             setIsAddGoalModalVisible(true);
           }}
@@ -105,6 +165,7 @@ const MainNavigator = () => {
       {activeTab === 'subscriptions' && (
         <SubscriptionsScreen
           onOpenAddModal={(sub) => {
+            triggerAddHaptic();
             setEditingSub(sub || null);
             setIsAddSubModalVisible(true);
           }}
@@ -112,17 +173,30 @@ const MainNavigator = () => {
       )}
 
       {activeTab === 'budget' && (
-        <BudgetScreen onOpenAddModal={() => setIsAddBudgetModalVisible(true)} />
+        <BudgetScreen
+          onOpenAddModal={() => {
+            triggerAddHaptic();
+            setIsAddBudgetModalVisible(true);
+          }}
+        />
       )}
 
       {activeTab === 'reports' && (
-        <ReportsScreen onOpenAddModal={() => setIsAddTxModalVisible(true)} />
+        <ReportsScreen
+          onOpenAddModal={() => {
+            triggerAddHaptic();
+            setIsAddTxModalVisible(true);
+          }}
+        />
       )}
 
       {activeTab === 'debts' && (
         <DebtsScreen
-          onOpenAddModal={() => setIsAddDebtModalVisible(true)}
-          onOpenSplitModal={() => setIsSplitModalVisible(true)}
+          onOpenAddModal={() => {
+            triggerAddHaptic();
+            handleOpenDebtModal();
+          }}
+          onOpenSplitModal={handleOpenSplitExpense}
         />
       )}
 
@@ -138,10 +212,6 @@ const MainNavigator = () => {
         visible={isAddTxModalVisible}
         onClose={() => setIsAddTxModalVisible(false)}
         onSave={handleAddTransaction}
-        onOpenAddCategory={() => {
-          setIsAddTxModalVisible(false);
-          setTimeout(() => setIsCategoryModalVisible(true), 150);
-        }}
       />
 
       <AddGoalModal
@@ -173,7 +243,13 @@ const MainNavigator = () => {
       <AddDebtModal
         visible={isAddDebtModalVisible}
         onClose={() => setIsAddDebtModalVisible(false)}
-        onSave={handleAddDebt}
+        onSave={(name, type, amount, description) => {
+          if (!isPro) {
+            openPaywall('debt_tracking');
+            return;
+          }
+          void handleAddDebt(name, type, amount, description);
+        }}
       />
 
       <SplitExpenseModal
@@ -192,37 +268,46 @@ const MainNavigator = () => {
         }}
       />
 
-      <AddCategoryModal
-        visible={isCategoryModalVisible}
-        onClose={() => {
-          setIsCategoryModalVisible(false);
-          setIsAddTxModalVisible(true);
-        }}
-        onSave={async (name, type, iconName, color) => {
-          await handleAddCategory(name, type, iconName, color);
-          setIsCategoryModalVisible(false);
-          setIsAddTxModalVisible(true);
-        }}
-      />
-
       <SettingsModal
         visible={isSettingsModalVisible}
         onClose={() => setIsSettingsModalVisible(false)}
       />
+
+      {/* Global Penny Pro Paywall */}
+      <ProUpgradeModal />
     </View>
+  );
+};
+
+const AppContent = () => {
+  const { isDark, colors } = useTheme();
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <MainNavigator />
+    </SafeAreaView>
   );
 };
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <DataProvider>
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-          <StatusBar style="dark" />
-          <MainNavigator />
-        </SafeAreaView>
-      </DataProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <LocaleProvider>
+        <HeroUINativeProvider>
+          <SafeAreaProvider>
+            <ThemeProvider>
+              <PremiumProvider>
+                <AppDialogProvider>
+                  <DataProvider>
+                    <AppContent />
+                  </DataProvider>
+                </AppDialogProvider>
+              </PremiumProvider>
+            </ThemeProvider>
+          </SafeAreaProvider>
+        </HeroUINativeProvider>
+      </LocaleProvider>
+    </GestureHandlerRootView>
   );
 }
 

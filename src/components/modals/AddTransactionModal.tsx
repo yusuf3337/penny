@@ -1,41 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { View, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
-import { AppTransaction, TransactionType, Account } from '../../types';
+import { AppTransaction, Account } from '../../types';
 import { getAccounts, DEFAULT_CATEGORIES } from '../../services/storageService';
-import { formatNumberInput, parseAmountSafely } from '../../utils/formatters';
+import { formatNumberInput, parseAmountSafely, formatCurrency } from '../../utils/formatters';
+import { getFormattingLocale } from '../../context/LocaleContext';
 import { useData } from '../../context/DataContext';
+import { HeroUIModal } from '../common/HeroUIModal';
+import { HeroUIInput } from '../common/HeroUIInput';
+import { HeroUIButton } from '../common/HeroUIButton';
+import { usePremium } from '../../context/PremiumContext';
 
 interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => void;
-  onOpenAddCategory?: () => void;
 }
 
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   visible,
   onClose,
   onSave,
-  onOpenAddCategory,
 }) => {
-  const { categories: contextCategories } = useData();
+  const { categories: contextCategories, budgets, handleAddCategory } = useData();
+  const { isPro, openPaywall } = usePremium();
   const categoriesList = contextCategories && contextCategories.length > 0
     ? contextCategories
     : DEFAULT_CATEGORIES;
 
-  const [type, setType] = useState<TransactionType>('expense');
+  const [type, setType] = useState<'expense' | 'income'>('expense');
   const [title, setTitle] = useState('');
   const [amountInput, setAmountInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -43,8 +37,27 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [txDate, setTxDate] = useState<Date>(new Date());
   const [error, setError] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
+  const [showCategoryInput, setShowCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryError, setCategoryError] = useState('');
+  const [selectionError, setSelectionError] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const pendingCategoryPaywall = useRef(false);
 
-  const filteredCategories = categoriesList.filter((c) => c.type === type);
+  const filteredCategories = useMemo(() => {
+    const matching = categoriesList.filter((category) => category.type === type);
+    if (type !== 'expense') return matching;
+    const budgetNames = new Set(budgets.map((budget) => budget.categoryName.trim().toLocaleLowerCase('tr-TR')));
+    return [...matching].sort((a, b) =>
+      Number(budgetNames.has(b.name.trim().toLocaleLowerCase('tr-TR'))) -
+      Number(budgetNames.has(a.name.trim().toLocaleLowerCase('tr-TR')))
+    );
+  }, [categoriesList, budgets, type]);
+  const budgetNames = useMemo(
+    () => new Set(budgets.map((budget) => budget.categoryName.trim().toLocaleLowerCase('tr-TR'))),
+    [budgets]
+  );
 
   useEffect(() => {
     if (visible) {
@@ -58,16 +71,37 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
   }, [visible]);
 
-  // Update selectedCategory whenever type or filteredCategories changes
-  useEffect(() => {
-    if (filteredCategories.length > 0) {
-      // Keep existing selection if valid for new type, otherwise default to first matching category
-      const isValid = filteredCategories.some((c) => c.name === selectedCategory);
-      if (!isValid) {
-        setSelectedCategory(filteredCategories[0].name);
-      }
+  const createCategory = async () => {
+    if (!isPro) return;
+    const name = newCategoryName.trim();
+    if (!name) {
+      setCategoryError('Lütfen bir kategori adı girin.');
+      return;
     }
-  }, [type, filteredCategories]);
+    const existing = filteredCategories.find((category) => category.name.trim().toLocaleLowerCase('tr-TR') === name.toLocaleLowerCase('tr-TR'));
+    if (existing) {
+      setSelectedCategory(existing.name);
+      setSelectionError('');
+      setShowCategoryInput(false);
+      setNewCategoryName('');
+      setCategoryError('');
+      return;
+    }
+    if (creatingCategory) return;
+    setCreatingCategory(true);
+    try {
+      await handleAddCategory(name, type, type === 'expense' ? 'pricetag-outline' : 'arrow-down-circle-outline');
+      setSelectedCategory(name);
+      setSelectionError('');
+      setNewCategoryName('');
+      setCategoryError('');
+      setShowCategoryInput(false);
+    } catch {
+      setCategoryError('Kategori oluşturulamadı. Tekrar deneyin.');
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
 
   const setToday = () => setTxDate(new Date());
   const setYesterday = () => {
@@ -93,6 +127,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   const handleSave = () => {
+    if (creatingCategory) return;
     if (!title.trim()) {
       setError('Lütfen bir başlık veya açıklama girin.');
       return;
@@ -103,11 +138,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       return;
     }
 
-    const categoryToUse = selectedCategory || (filteredCategories.length > 0 ? filteredCategories[0].name : 'Genel');
+    const categoryToUse = filteredCategories.find((category) => category.name === selectedCategory)?.name;
+    if (!categoryToUse) {
+      setSelectionError('Kategori Seçin');
+      return;
+    }
 
-    const formattedAmount = `${type === 'income' ? '+' : '-'}₺${parsedAmount.toLocaleString('tr-TR', {
-      minimumFractionDigits: 2,
-    })}`;
+    const formattedAmount = `${type === 'income' ? '+' : '-'}${formatCurrency(parsedAmount)}`;
 
     let iconName = 'pricetag-outline';
     const foundCat = categoriesList.find((c) => c.name === categoryToUse);
@@ -134,401 +171,308 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setTitle('');
     setAmountInput('');
     setError('');
+    setSelectedCategory('');
+    setSelectionError('');
     setTxDate(new Date());
+    setShowDetails(false);
+    setShowCategoryInput(false);
     onClose();
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Yeni İşlem Ekle</Text>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={24} color={COLORS.foreground} />
+    <HeroUIModal
+      isOpen={visible}
+      onClose={onClose}
+      onDismiss={() => {
+        if (pendingCategoryPaywall.current) {
+          pendingCategoryPaywall.current = false;
+          openPaywall('custom_category');
+        }
+      }}
+      title="Yeni İşlem Ekle"
+      subtitle="Gelir veya gider hareketlerinizi anında kaydedin."
+      badge={{
+        text: type === 'expense' ? 'GİDER' : 'GELİR',
+        color: type === 'expense' ? '#BE123C' : '#047857',
+        bg: type === 'expense' ? '#FFF1F2' : '#ECFDF5',
+      }}
+      footer={
+        <HeroUIButton
+          variant={type === 'expense' ? 'danger' : 'success'}
+          size="lg"
+          onPress={handleSave}
+          disabled={creatingCategory}
+          icon={type === 'expense' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'}
+        >
+          {type === 'expense' ? 'Gideri Kaydet' : 'Geliri Kaydet'}
+        </HeroUIButton>
+      }
+    >
+      {/* HeroUI Segmented Tabs for Transaction Type */}
+      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-[18px] p-1 mb-4 gap-1.5">
+        <TouchableOpacity
+          className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-[14px] ${
+            type === 'expense' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+          }`}
+          onPress={() => { setType('expense'); setSelectedCategory(''); setSelectionError(''); }}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="arrow-up-circle"
+            size={18}
+            color={type === 'expense' ? '#F43F5E' : '#71717A'}
+          />
+          <Text
+            className={`text-sm font-bold ${
+              type === 'expense' ? 'text-rose-500' : 'text-zinc-500 dark:text-[#A9BDB2]'
+            }`}
+          >
+            Gider
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-[14px] ${
+            type === 'income' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+          }`}
+          onPress={() => { setType('income'); setSelectedCategory(''); setSelectionError(''); }}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="arrow-down-circle"
+            size={18}
+            color={type === 'income' ? '#10B981' : '#71717A'}
+          />
+          <Text
+            className={`text-sm font-bold ${
+              type === 'income' ? 'text-emerald-500' : 'text-zinc-500 dark:text-[#A9BDB2]'
+            }`}
+          >
+            Gelir
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Title Input */}
+      <HeroUIInput
+        label="İşlem Başlığı"
+        placeholder="Örn: Market Alışverişi, Maaş, Kahve..."
+        startIcon="create-outline"
+        value={title}
+        onChangeText={(text) => {
+          setTitle(text);
+          if (error) setError('');
+        }}
+        errorMessage={!title.trim() && error ? error : undefined}
+      />
+
+      {/* Amount Input */}
+      <HeroUIInput
+        label="Tutar"
+        prefix="₺"
+        placeholder="0,00"
+        keyboardType="numeric"
+        value={amountInput}
+        onChangeText={(text) => {
+          setAmountInput(formatNumberInput(text));
+          if (error) setError('');
+        }}
+        errorMessage={
+          title.trim() && parseAmountSafely(amountInput) <= 0 && error ? error : undefined
+        }
+      />
+
+      {/* Category selection stays visible so envelope spending is attributed correctly. */}
+      <View className="flex-row items-center justify-between mb-2">
+        <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8]">Kategori</Text>
+        <TouchableOpacity
+          onPress={() => {
+            if (!isPro) {
+              pendingCategoryPaywall.current = true;
+              onClose();
+              return;
+            }
+            setShowCategoryInput((current) => !current);
+            setCategoryError('');
+          }}
+          activeOpacity={0.7}
+          className="flex-row items-center gap-1"
+        >
+          <Ionicons name={isPro ? 'add' : 'lock-closed-outline'} size={15} color="#0D9488" />
+          <Text className="text-xs font-bold text-[#0D9488] dark:text-[#66C9AE]">Yeni Kategori</Text>
+          {!isPro && <Text className="text-[10px] font-bold text-[#0D9488] dark:text-[#66C9AE]">PRO</Text>}
+        </TouchableOpacity>
+      </View>
+
+      {showCategoryInput && (
+        <View className="mb-3 rounded-2xl bg-zinc-50 dark:bg-[#22332D] p-3">
+          <HeroUIInput
+            label="Kategori Adı"
+            placeholder="Örn: Sağlık, Spor, Hobiler..."
+            value={newCategoryName}
+            onChangeText={(value) => {
+              setNewCategoryName(value);
+              if (categoryError) setCategoryError('');
+            }}
+            errorMessage={categoryError || undefined}
+            autoCapitalize="words"
+            returnKeyType="done"
+            onSubmitEditing={createCategory}
+          />
+          <View className="flex-row gap-2">
+            <TouchableOpacity
+              className="flex-1 items-center justify-center rounded-xl bg-zinc-200 dark:bg-[#2C4039] py-2.5"
+              onPress={() => { setShowCategoryInput(false); setCategoryError(''); }}
+            >
+              <Text className="text-sm font-semibold text-zinc-700 dark:text-[#CCDCD2]">Vazgeç</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="flex-1 items-center justify-center rounded-xl bg-[#0D9488] py-2.5"
+              onPress={createCategory}
+              disabled={creatingCategory}
+            >
+              <Text className="text-sm font-semibold text-white">Kategoriyi Oluştur</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      )}
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Type Selector (Gider / Gelir) */}
-            <View style={styles.typeRow}>
-              <TouchableOpacity
-                style={[
-                  styles.typeTab,
-                  type === 'expense' && styles.activeExpenseTab,
-                ]}
-                onPress={() => setType('expense')}
-              >
-                <Ionicons
-                  name="arrow-up-circle-outline"
-                  size={20}
-                  color={type === 'expense' ? COLORS.primaryForeground : COLORS.mutedText}
-                />
-                <Text
-                  style={[
-                    styles.typeTabText,
-                    type === 'expense' && styles.activeTypeTabText,
-                  ]}
-                >
-                  Gider
-                </Text>
-              </TouchableOpacity>
+      <View className="flex-row flex-wrap gap-2 mb-3">
+        {filteredCategories.map((cat) => {
+          const isSelected = selectedCategory === cat.name;
+          const hasBudget = type === 'expense' && budgetNames.has(cat.name.trim().toLocaleLowerCase('tr-TR'));
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              className={`flex-row items-center gap-1.5 py-2 px-3 rounded-[14px] border-[1.5px] ${
+                isSelected
+                  ? type === 'income'
+                    ? 'bg-emerald-50 dark:bg-[#183C2D] border-emerald-500'
+                    : 'bg-rose-50 dark:bg-[#44252E] border-rose-500'
+                  : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+              }`}
+              onPress={() => { setSelectedCategory(cat.name); setSelectionError(''); }}
+              activeOpacity={0.75}
+            >
+              <Ionicons
+                name={cat.icon as any}
+                size={15}
+                color={isSelected ? (type === 'income' ? '#047857' : '#BE123C') : '#71717A'}
+              />
+              <Text className={`text-[13px] ${isSelected ? (type === 'income' ? 'text-emerald-700 dark:text-[#70E0B0] font-bold' : 'text-rose-700 dark:text-[#FDA4AF] font-bold') : 'text-zinc-500 dark:text-[#A9BDB2] font-semibold'}`}>
+                {cat.name}
+              </Text>
+              {hasBudget && <Text className="text-[11px] font-bold text-[#0D9488] dark:text-[#66C9AE]">Zarf</Text>}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {!!selectionError && <Text className="text-xs text-rose-500 font-semibold mb-3">{selectionError}</Text>}
 
-              <TouchableOpacity
-                style={[
-                  styles.typeTab,
-                  type === 'income' && styles.activeIncomeTab,
-                ]}
-                onPress={() => setType('income')}
-              >
-                <Ionicons
-                  name="arrow-down-circle-outline"
-                  size={20}
-                  color={type === 'income' ? COLORS.primaryForeground : COLORS.mutedText}
-                />
-                <Text
-                  style={[
-                    styles.typeTabText,
-                    type === 'income' && styles.activeTypeTabText,
-                  ]}
-                >
-                  Gelir
-                </Text>
-              </TouchableOpacity>
-            </View>
+      <TouchableOpacity
+        className="flex-row items-center justify-between rounded-xl bg-zinc-100 dark:bg-[#22332D] px-3 py-2.5 mb-3"
+        onPress={() => setShowDetails((current) => !current)}
+      >
+        <Text className="text-[13px] font-semibold text-zinc-600 dark:text-[#A9BDB2]">Hesap ve tarih</Text>
+        <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color="#71717A" />
+      </TouchableOpacity>
 
-            {/* Account Selector Chips */}
-            {accounts.length > 0 ? (
-              <>
-                <Text style={styles.inputLabel}>Kasa / Hesap</Text>
-                <View style={styles.categoryWrap}>
-                  {accounts.map((acc) => (
-                    <TouchableOpacity
-                      key={acc.id}
-                      style={[
-                        styles.chip,
-                        selectedAccountId === acc.id && styles.activeChip,
-                      ]}
-                      onPress={() => setSelectedAccountId(acc.id)}
-                    >
-                      <Ionicons
-                        name={acc.type === 'cash' ? 'wallet-outline' : 'card-outline'}
-                        size={14}
-                        color={
-                          selectedAccountId === acc.id
-                            ? COLORS.primaryForeground
-                            : COLORS.foreground
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.chipText,
-                          selectedAccountId === acc.id && styles.activeChipText,
-                        ]}
-                      >
-                        {acc.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            ) : null}
-
-            {/* Title Input */}
-            <Text style={styles.inputLabel}>İşlem Başlığı / Açıklama</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: Market Alışverişi, Maaş, Hastane..."
-              placeholderTextColor={COLORS.mutedText}
-              value={title}
-              onChangeText={(text) => {
-                setTitle(text);
-                if (error) setError('');
-              }}
-            />
-
-            {/* Amount Input */}
-            <Text style={styles.inputLabel}>Tutar (₺)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0,00 veya 1.000.000"
-              placeholderTextColor={COLORS.mutedText}
-              keyboardType="numeric"
-              value={amountInput}
-              onChangeText={(text) => {
-                setAmountInput(formatNumberInput(text));
-                if (error) setError('');
-              }}
-            />
-
-            {/* Date Selector */}
-            <Text style={styles.inputLabel}>İşlem Tarihi</Text>
-            <View style={styles.dateSelectorRow}>
-              <View style={styles.quickDateTabs}>
+      {showDetails && accounts.length > 0 && (
+        <View className="mb-4">
+          <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Hesap / Kasa</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {accounts.map((acc) => {
+              const isSelected = selectedAccountId === acc.id;
+              return (
                 <TouchableOpacity
-                  style={[styles.quickDateTab, isToday(txDate) && styles.quickDateTabActive]}
-                  onPress={setToday}
-                >
-                  <Text style={[styles.quickDateText, isToday(txDate) && styles.quickDateTextActive]}>
-                    Bugün
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.quickDateTab, isYesterday(txDate) && styles.quickDateTabActive]}
-                  onPress={setYesterday}
-                >
-                  <Text style={[styles.quickDateText, isYesterday(txDate) && styles.quickDateTextActive]}>
-                    Dün
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.dateStepper}>
-                <TouchableOpacity style={styles.dateArrowBtn} onPress={() => stepDay(-1)}>
-                  <Ionicons name="chevron-back" size={16} color={COLORS.foreground} />
-                </TouchableOpacity>
-                <Text style={styles.dateDisplayValue}>
-                  {txDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </Text>
-                <TouchableOpacity style={styles.dateArrowBtn} onPress={() => stepDay(1)}>
-                  <Ionicons name="chevron-forward" size={16} color={COLORS.foreground} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Category Chips */}
-            <View style={styles.categoryHeader}>
-              <Text style={styles.inputLabel}>Kategori</Text>
-              {onOpenAddCategory ? (
-                <TouchableOpacity onPress={onOpenAddCategory} activeOpacity={0.7}>
-                  <Text style={styles.addCategoryLink}>+ Özel Kategori Ekle</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-
-            <View style={styles.categoryWrap}>
-              {filteredCategories.map((cat) => (
-                <TouchableOpacity
-                  key={cat.id}
-                  style={[
-                    styles.chip,
-                    selectedCategory === cat.name && styles.activeChip,
-                  ]}
-                  onPress={() => setSelectedCategory(cat.name)}
+                  key={acc.id}
+                  className={`flex-row items-center gap-1.5 py-2 px-3 rounded-[14px] border-[1.5px] ${
+                    isSelected
+                      ? 'bg-teal-50 border-[#0D9488]'
+                      : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                  }`}
+                  onPress={() => setSelectedAccountId(acc.id)}
+                  activeOpacity={0.75}
                 >
                   <Ionicons
-                    name={cat.icon as any}
-                    size={14}
-                    color={
-                      selectedCategory === cat.name
-                        ? COLORS.primaryForeground
-                        : COLORS.foreground
-                    }
+                    name={acc.type === 'cash' ? 'wallet-outline' : 'card-outline'}
+                    size={15}
+                    color={isSelected ? '#0D9488' : '#71717A'}
                   />
                   <Text
-                    style={[
-                      styles.chipText,
-                      selectedCategory === cat.name && styles.activeChipText,
-                    ]}
+                    className={`text-[13px] ${
+                      isSelected ? 'font-bold text-teal-800' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+                    }`}
                   >
-                    {cat.name}
+                    {acc.name}
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Kaydet</Text>
-            </TouchableOpacity>
-          </ScrollView>
+              );
+            })}
+          </View>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      )}
+
+      {/* Date Selector */}
+      {showDetails && <>
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">İşlem Tarihi</Text>
+      <View className="flex-row items-center justify-between mb-4 gap-2.5">
+        <View className="flex-row gap-1.5">
+          <TouchableOpacity
+            className={`py-2 px-3 rounded-xl border ${
+              isToday(txDate)
+                ? 'bg-teal-50 border-[#0D9488]'
+                : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+            }`}
+            onPress={setToday}
+            activeOpacity={0.75}
+          >
+            <Text
+              className={`text-xs ${
+                isToday(txDate) ? 'font-bold text-teal-800' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              }`}
+            >
+              Bugün
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className={`py-2 px-3 rounded-xl border ${
+              isYesterday(txDate)
+                ? 'bg-teal-50 border-[#0D9488]'
+                : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+            }`}
+            onPress={setYesterday}
+            activeOpacity={0.75}
+          >
+            <Text
+              className={`text-xs ${
+                isYesterday(txDate) ? 'font-bold text-teal-800' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              }`}
+            >
+              Dün
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row items-center bg-zinc-100 dark:bg-[#22332D] rounded-xl px-1 py-0.5">
+          <TouchableOpacity
+            className="w-7 h-7 rounded-full items-center justify-center"
+            onPress={() => stepDay(-1)}
+          >
+            <Ionicons name="chevron-back" size={16} color="#18181B" />
+          </TouchableOpacity>
+          <Text className="text-xs font-bold text-zinc-900 dark:text-[#EAF2EE] px-2">
+            {txDate.toLocaleDateString(getFormattingLocale(), { day: 'numeric', month: 'short' })}
+          </Text>
+          <TouchableOpacity
+            className="w-7 h-7 rounded-full items-center justify-center"
+            onPress={() => stepDay(1)}
+          >
+            <Ionicons name="chevron-forward" size={16} color="#18181B" />
+          </TouchableOpacity>
+        </View>
+      </View>
+      </>}
+    </HeroUIModal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    maxHeight: '85%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
-  },
-  typeRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 4,
-    marginBottom: 16,
-  },
-  typeTab: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 6,
-  },
-  activeExpenseTab: {
-    backgroundColor: COLORS.expense,
-  },
-  activeIncomeTab: {
-    backgroundColor: COLORS.primary,
-  },
-  typeTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-  },
-  activeTypeTabText: {
-    color: COLORS.primaryForeground,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-    marginBottom: 6,
-    marginTop: 10,
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  addCategoryLink: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  dateSelectorRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 2,
-  },
-  quickDateTabs: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  quickDateTab: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 9,
-  },
-  quickDateTabActive: {
-    backgroundColor: COLORS.foreground,
-  },
-  quickDateText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-  },
-  quickDateTextActive: {
-    color: COLORS.background,
-  },
-  dateStepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    gap: 6,
-  },
-  dateArrowBtn: {
-    padding: 4,
-  },
-  dateDisplayValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.foreground,
-  },
-  categoryWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    gap: 4,
-  },
-  activeChip: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  chipText: {
-    fontSize: 12,
-    color: COLORS.foreground,
-    fontWeight: '500',
-  },
-  activeChipText: {
-    color: COLORS.primaryForeground,
-  },
-  errorText: {
-    color: COLORS.expense,
-    fontSize: 12,
-    marginTop: 12,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  saveButtonText: {
-    color: COLORS.primaryForeground,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

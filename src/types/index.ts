@@ -26,6 +26,8 @@ export interface Debt {
   amount: number;
   remainingAmount: number;
   description?: string;
+  source?: 'split_expense';
+  accountType?: 'bank' | 'cash';
   isCompleted: boolean;
   dueDate?: string;
   createdAt: string;
@@ -78,6 +80,7 @@ export interface AppTransaction {
   amount: string;
   rawAmount: number;
   type: TransactionType;
+  transferDirection?: 'in' | 'out';
   iconName: string;
   accountId?: string;
   accountName?: string;

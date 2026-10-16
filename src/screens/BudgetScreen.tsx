@@ -1,15 +1,11 @@
+import { useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/common/Header';
 import { useData } from '../context/DataContext';
-import { COLORS } from '../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import {
   formatCurrency,
   formatMonthYear,
@@ -17,12 +13,16 @@ import {
   isSameMonthAndYear,
 } from '../utils/formatters';
 
+import { usePremium } from '../context/PremiumContext';
+
 interface BudgetScreenProps {
   onOpenAddModal: () => void;
 }
 
 export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) => {
+  const styles = useThemedStyles(lightStyles);
   const { budgets, transactions, totalBudgetedSpending } = useData();
+  const { isPro, openPaywall } = usePremium();
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
 
   const handlePrevMonth = () => setSelectedMonth((prev) => changeMonth(prev, -1));
@@ -57,10 +57,36 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Header
         title="Bütçe"
-        subtitle="Limiti sen koyarsın · Aylık Takip"
+        subtitle="Aylık harcama sınırlarını takip edin"
         rightActionIcon="add"
         onRightActionPress={onOpenAddModal}
       />
+
+      {/* Freemium Limit Tracker Bar */}
+      <View style={styles.quotaBarContainer}>
+        {isPro ? (
+          <View style={styles.proQuotaBadge}>
+            <Ionicons name="checkmark-circle-outline" size={15} color={COLORS.primary} />
+            <Text style={styles.proQuotaText}>Penny Pro Aktif · Sınırsız Bütçe Zarfı</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.freeQuotaBadge}
+            activeOpacity={0.8}
+            onPress={() => openPaywall('budget_limit')}
+          >
+            <View style={styles.freeQuotaLeft}>
+              <Ionicons name="pie-chart-outline" size={14} color={COLORS.primary} />
+              <Text style={styles.freeQuotaText}>
+                Zarf Kotası: <Text style={{ fontWeight: '800' }}>{budgets.length}/3</Text> (Ücretsiz)
+              </Text>
+            </View>
+            <View style={styles.freeQuotaRight}>
+              <Text style={styles.freeQuotaUpgradeLink}>Sınırsız Yap</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Month Selector */}
       <View style={styles.monthSelectorRow}>
@@ -128,7 +154,7 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
 
       {/* Category Budgets / Sanal Zarf Yöntemi */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Sanal Zarf Bütçeleri (Envelopes)</Text>
+      <Text style={styles.sectionTitle}>Kategori bütçeleri</Text>
       </View>
 
       {/* Category Budget Items */}
@@ -137,7 +163,8 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
           <Ionicons name="mail-outline" size={36} color={COLORS.subtleText} />
           <Text style={styles.emptyText}>Henüz sanal zarf bütçesi eklenmedi.</Text>
           <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
-            <Text style={styles.emptyAddBtnText}>+ İlk Zarf Bütçeni Oluştur</Text>
+            <Ionicons name="add" size={16} color="#FFF" />
+            <Text style={styles.emptyAddBtnText}>İlk Zarf Bütçeni Oluştur</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -205,10 +232,10 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -231,40 +258,40 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   monthTitleText: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   currentMonthBadge: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   currentMonthBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
 
   summaryCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 20,
-    shadowColor: COLORS.shadow,
+    shadowColor: LIGHT_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 10,
@@ -272,7 +299,7 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontWeight: '600',
     marginBottom: 10,
   },
@@ -283,17 +310,17 @@ const styles = StyleSheet.create({
   },
   summarySubTitle: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   usedAmountText: {
     fontSize: 26,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 4,
   },
   allocatedSubText: {
     fontSize: 14,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontWeight: '600',
   },
 
@@ -302,20 +329,20 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 27,
     borderWidth: 3,
-    borderColor: COLORS.emerald,
+    borderColor: LIGHT_COLORS.emerald,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.emeraldBg,
+    backgroundColor: LIGHT_COLORS.emeraldBg,
   },
   percentText: {
     fontSize: 14,
     fontWeight: '800',
-    color: COLORS.emeraldText,
+    color: LIGHT_COLORS.emeraldText,
   },
 
   progressTrack: {
     height: 8,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     borderRadius: 4,
     marginTop: 16,
     overflow: 'hidden',
@@ -331,28 +358,32 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
 
   emptyCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   emptyText: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 8,
   },
   emptyAddBtn: {
     marginTop: 14,
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
   },
   emptyAddBtnText: {
     color: '#FFF',
@@ -361,11 +392,11 @@ const styles = StyleSheet.create({
   },
 
   budgetCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 12,
   },
   cardTopRow: {
@@ -389,7 +420,7 @@ const styles = StyleSheet.create({
   catName: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   badgeChip: {
     marginTop: 2,
@@ -397,26 +428,26 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
 
   amountsText: {
     fontSize: 13,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   allocatedText: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontWeight: '400',
   },
 
   ruleCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 20,
   },
   ruleHeader: {
@@ -428,11 +459,11 @@ const styles = StyleSheet.create({
   ruleTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   ruleDesc: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     lineHeight: 16,
     marginBottom: 14,
   },
@@ -448,16 +479,16 @@ const styles = StyleSheet.create({
   ruleLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   ruleValText: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   ruleTrack: {
     height: 6,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -467,12 +498,59 @@ const styles = StyleSheet.create({
   },
   catProgressTrack: {
     height: 6,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     borderRadius: 3,
     overflow: 'hidden',
   },
   catProgressBar: {
     height: '100%',
     borderRadius: 3,
+  },
+
+  // Quota bar styles
+  quotaBarContainer: {
+    marginBottom: 16,
+  },
+  proQuotaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: LIGHT_COLORS.primaryLight,
+    borderWidth: 1,
+    borderColor: '#CAD8D2',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  proQuotaText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: LIGHT_COLORS.primary,
+  },
+  freeQuotaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: LIGHT_COLORS.card,
+    borderWidth: 1,
+    borderColor: LIGHT_COLORS.cardBorder,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  freeQuotaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  freeQuotaText: {
+    fontSize: 12,
+    color: LIGHT_COLORS.foreground,
+  },
+  freeQuotaRight: {},
+  freeQuotaUpgradeLink: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: LIGHT_COLORS.primary,
   },
 });

@@ -5,12 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "platforms": [
       "ios",
       "android",
@@ -19,9 +14,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yusufcepni.penny",
-      "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleLocalizations": ["tr", "en", "de", "fr", "ko", "zh-Hans", "ja", "ru", "it"]
       }
     },
     "android": {
@@ -36,7 +31,20 @@
     },
     "plugins": [
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-iap",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 124,
+          "backgroundColor": "#F5F7F5",
+          "dark": {
+            "image": "./assets/icon.png",
+            "backgroundColor": "#0F1816"
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {
