@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
 import { Debt } from '../../types';
 import { parseAmountSafely, formatCurrency, formatNumberInput } from '../../utils/formatters';
+import { HeroUIModal } from '../common/HeroUIModal';
+import { HeroUIInput } from '../common/HeroUIInput';
+import { HeroUIButton } from '../common/HeroUIButton';
+import { localizeFormat } from '../../context/LocaleContext';
 
 interface PayDebtModalProps {
   visible: boolean;
@@ -62,131 +57,60 @@ export const PayDebtModal: React.FC<PayDebtModalProps> = ({
   const isGiven = debt.type === 'given'; // Alacak
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {isGiven ? 'Tahsilat Yap' : 'Ödeme Yap'}
-            </Text>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={24} color={COLORS.foreground} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.infoBox}>
-            <Text style={styles.personText}>{debt.personName}</Text>
-            <Text style={styles.remText}>
-              Kalan {isGiven ? 'Alacak' : 'Borç'}: {formatCurrency(debt.remainingAmount)}
-            </Text>
-          </View>
-
-          <Text style={styles.label}>
-            {isGiven ? 'Tahsil Edilen Tutar (₺)' : 'Ödenen Tutar (₺)'}
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder={formatCurrency(debt.remainingAmount)}
-            placeholderTextColor={COLORS.mutedText}
-            keyboardType="numeric"
-            value={payAmountInput}
-            onChangeText={(text) => {
-              setPayAmountInput(formatNumberInput(text));
-              if (error) setError('');
-            }}
+    <HeroUIModal
+      isOpen={visible}
+      onClose={onClose}
+      title={isGiven ? 'Tahsilat Al' : 'Borç Öde'}
+      subtitle={localizeFormat('{0} ile olan bakiye hareketini kaydedin.', [debt.personName])}
+      badge={{
+        text: isGiven ? 'TAHSİLAT' : 'ÖDEME',
+        color: isGiven ? '#047857' : '#BE123C',
+        bg: isGiven ? '#ECFDF5' : '#FFF1F2',
+      }}
+      footer={
+        <HeroUIButton
+          variant={isGiven ? 'success' : 'primary'}
+          size="lg"
+          onPress={handleSave}
+          icon={isGiven ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'}
+        >
+          {isGiven ? 'Tahsilatı Kaydet' : 'Ödemeyi Kaydet'}
+        </HeroUIButton>
+      }
+    >
+      {/* Balance Summary Card */}
+      <View className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#22332D] p-3.5 rounded-[18px] mb-4">
+        <View className="w-10.5 h-10.5 rounded-[14px] bg-white dark:bg-[#182521] items-center justify-center shadow-xs">
+          <Ionicons
+            name={isGiven ? 'wallet-outline' : 'card-outline'}
+            size={22}
+            color={isGiven ? '#059669' : '#0D9488'}
           />
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleSave}>
-            <Text style={styles.saveBtnText}>
-              {isGiven ? 'Tahsilatı Kaydet' : 'Ödemeyi Kaydet'}
-            </Text>
-          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        <View className="flex-1">
+          <Text className="text-[15px] font-extrabold text-zinc-900 dark:text-[#EAF2EE]">{debt.personName}</Text>
+          <Text className="text-xs text-zinc-500 dark:text-[#A9BDB2] mt-0.5">
+            Kalan {isGiven ? 'Alacak' : 'Borç'}:{' '}
+            <Text className="font-extrabold text-zinc-900 dark:text-[#EAF2EE]">
+              {formatCurrency(debt.remainingAmount)}
+            </Text>
+          </Text>
+        </View>
+      </View>
+
+      <HeroUIInput
+        label={isGiven ? 'Tahsil Edilen Tutar' : 'Ödenen Tutar'}
+        prefix="₺"
+        placeholder={formatCurrency(debt.remainingAmount)}
+        keyboardType="numeric"
+        value={payAmountInput}
+        onChangeText={(text) => {
+          setPayAmountInput(formatNumberInput(text));
+          if (error) setError('');
+        }}
+        errorMessage={error}
+        description="Kısmi veya tam ödeme tutarını girebilirsiniz."
+      />
+    </HeroUIModal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 28,
-    padding: 24,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
-  },
-  infoBox: {
-    backgroundColor: COLORS.background,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  personText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
-  },
-  remText: {
-    fontSize: 13,
-    color: COLORS.mutedText,
-    marginTop: 4,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  errorText: {
-    color: COLORS.expense,
-    fontSize: 12,
-    marginTop: 10,
-  },
-  saveBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  saveBtnText: {
-    color: COLORS.primaryForeground,
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-});

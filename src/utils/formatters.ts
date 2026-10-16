@@ -1,17 +1,31 @@
 /**
  * Safe currency, date, and subscription formatters for Penny
  */
+import { getFormattingLocale } from '../context/LocaleContext';
+
+const separators = () => {
+  const parts = new Intl.NumberFormat(getFormattingLocale()).formatToParts(1234.5);
+  return {
+    decimal: parts.find((part) => part.type === 'decimal')?.value ?? ',',
+    group: parts.find((part) => part.type === 'group')?.value ?? '.',
+  };
+};
 
 export const parseAmountSafely = (input: string | number | undefined | null): number => {
   if (input === undefined || input === null) return 0;
   if (typeof input === 'number') return isNaN(input) ? 0 : Math.round(input * 100) / 100;
 
-  const str = input.toString().replace(/[₺$\s]/g, '');
-  const commaIndex = str.indexOf(',');
+  const str = input.toString().replace(/[^\d.,]/g, '');
+  const lastDot = str.lastIndexOf('.');
+  const lastComma = str.lastIndexOf(',');
+  const candidate = Math.max(lastDot, lastComma);
+  const trailingDigits = candidate < 0 ? 0 : str.slice(candidate + 1).replace(/\D/g, '').length;
+  const hasBoth = lastDot >= 0 && lastComma >= 0;
+  const decimalIndex = candidate >= 0 && (hasBoth || trailingDigits <= 2) ? candidate : -1;
 
-  if (commaIndex !== -1) {
-    const intPart = str.slice(0, commaIndex).replace(/\D/g, '');
-    const decPart = str.slice(commaIndex + 1).replace(/\D/g, '').slice(0, 2);
+  if (decimalIndex !== -1) {
+    const intPart = str.slice(0, decimalIndex).replace(/\D/g, '');
+    const decPart = str.slice(decimalIndex + 1).replace(/\D/g, '').slice(0, 2);
     const parsed = parseFloat(`${intPart || '0'}.${decPart || '0'}`);
     return isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100;
   } else {
@@ -23,67 +37,79 @@ export const parseAmountSafely = (input: string | number | undefined | null): nu
 };
 
 /**
- * Formats a live user text input into formatted Turkish number style (e.g. 50000 -> 50.000, 114,29 -> 114,29)
- * Correctly distinguishes thousand dot separators from decimal commas.
+ * Formats live numeric entry using the selected language's separators.
  */
 export const formatNumberInput = (input: string): string => {
   if (!input) return '';
 
+  const { decimal, group } = separators();
   let str = input;
-  // If user types a trailing dot without any comma yet, treat trailing dot as decimal comma
-  if (str.endsWith('.') && !str.includes(',')) {
-    str = str.slice(0, -1) + ',';
+  // Accept a period as a decimal separator on comma-decimal keyboards.
+  if (decimal !== '.' && str.endsWith('.') && !str.includes(decimal)) {
+    str = str.slice(0, -1) + decimal;
+  }
+  if (decimal !== '.' && !str.includes(decimal) && str.includes('.')) {
+    const lastDot = str.lastIndexOf('.');
+    const digitsAfter = str.slice(lastDot + 1).replace(/\D/g, '').length;
+    if (digitsAfter > 0 && digitsAfter <= 2) {
+      str = `${str.slice(0, lastDot)}${decimal}${str.slice(lastDot + 1)}`;
+    }
+  }
+  if (decimal === '.' && !str.includes(decimal) && str.includes(',')) {
+    const lastComma = str.lastIndexOf(',');
+    const digitsAfter = str.slice(lastComma + 1).replace(/\D/g, '').length;
+    if (digitsAfter > 0 && digitsAfter <= 2) {
+      str = `${str.slice(0, lastComma)}.${str.slice(lastComma + 1)}`;
+    }
   }
 
-  const commaIndex = str.indexOf(',');
+  const decimalIndex = str.indexOf(decimal);
 
-  if (commaIndex !== -1) {
-    const intPartRaw = str.slice(0, commaIndex);
-    const decPartRaw = str.slice(commaIndex + 1);
+  if (decimalIndex !== -1) {
+    const intPartRaw = str.slice(0, decimalIndex);
+    const decPartRaw = str.slice(decimalIndex + decimal.length);
 
-    // Clean integer part (strip all dots and non-digits)
     const cleanIntDigits = intPartRaw.replace(/\D/g, '');
     const cleanInt = cleanIntDigits.length > 1 ? cleanIntDigits.replace(/^0+/, '') || '0' : cleanIntDigits || '0';
-    const formattedInt = cleanInt.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const formattedInt = cleanInt.replace(/\B(?=(\d{3})+(?!\d))/g, group);
 
     // Clean decimal part (only digits, max 2 digits)
     const cleanDecDigits = decPartRaw.replace(/\D/g, '').slice(0, 2);
 
-    if (str.endsWith(',') && cleanDecDigits.length === 0) {
-      return `${formattedInt},`;
+    if (str.endsWith(decimal) && cleanDecDigits.length === 0) {
+      return `${formattedInt}${decimal}`;
     }
 
-    return `${formattedInt},${cleanDecDigits}`;
+    return `${formattedInt}${decimal}${cleanDecDigits}`;
   } else {
-    // No comma present: entire input is integer part (strip all dots inserted previously)
     const cleanIntDigits = str.replace(/\D/g, '');
     if (!cleanIntDigits) return '';
     const cleanInt = cleanIntDigits.length > 1 ? cleanIntDigits.replace(/^0+/, '') || '0' : cleanIntDigits;
-    return cleanInt.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return cleanInt.replace(/\B(?=(\d{3})+(?!\d))/g, group);
   }
 };
 
 export const formatCurrency = (amount: number): string => {
   const safeNum = isNaN(amount) ? 0 : amount;
-  return `₺${safeNum.toLocaleString('tr-TR', {
+  return new Intl.NumberFormat(getFormattingLocale(), { style: 'currency', currency: 'TRY',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  }).format(safeNum);
 };
 
 export const formatShortDate = (isoString?: string): string => {
-  if (!isoString) return new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+  if (!isoString) return new Date().toLocaleDateString(getFormattingLocale(), { day: 'numeric', month: 'short' });
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return isoString;
-  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString(getFormattingLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 export const formatDateTime = (isoString?: string): string => {
   if (!isoString) return '';
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return isoString;
-  const dateStr = date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-  const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = date.toLocaleDateString(getFormattingLocale(), { day: 'numeric', month: 'short' });
+  const timeStr = date.toLocaleTimeString(getFormattingLocale(), { hour: '2-digit', minute: '2-digit' });
   return `${dateStr} · ${timeStr}`;
 };
 
@@ -91,7 +117,7 @@ export const formatTimeOnly = (isoString?: string): string => {
   if (!isoString) return '';
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString(getFormattingLocale(), { hour: '2-digit', minute: '2-digit' });
 };
 
 export const formatMonthYear = (dateInput?: string | Date): string => {
@@ -104,7 +130,7 @@ export const formatMonthYear = (dateInput?: string | Date): string => {
     date = new Date(dateInput);
     if (isNaN(date.getTime())) date = new Date();
   }
-  const month = date.toLocaleDateString('tr-TR', { month: 'long' });
+  const month = date.toLocaleDateString(getFormattingLocale(), { month: 'long' });
   const year = date.getFullYear();
   return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
 };
@@ -187,7 +213,7 @@ export const advanceSubscriptionDueDate = (
  * Calculates days remaining from today to target date string accurately
  */
 export const getDaysRemainingText = (dueDateStr?: string): string => {
-  if (!dueDateStr) return '3 gün sonra';
+  if (!dueDateStr) return new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' }).format(3, 'day');
   const targetDate = new Date(dueDateStr);
   if (isNaN(targetDate.getTime())) return dueDateStr;
 
@@ -198,8 +224,9 @@ export const getDaysRemainingText = (dueDateStr?: string): string => {
   const diffTime = targetDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Bugün ödeniyor';
-  if (diffDays === 1) return 'Yarın ödeniyor';
-  if (diffDays < 0) return `${Math.abs(diffDays)} gün gecikti`;
-  return `${diffDays} gün sonra (${targetDate.getDate()} ${targetDate.toLocaleDateString('tr-TR', { month: 'short' })})`;
+  if (diffDays === 0) return getFormattingLocale() === 'tr-TR' ? 'Bugün ödeniyor' : new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' }).format(0, 'day');
+  if (diffDays === 1) return getFormattingLocale() === 'tr-TR' ? 'Yarın ödeniyor' : new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' }).format(1, 'day');
+  if (diffDays < 0) return getFormattingLocale() === 'tr-TR' ? `${Math.abs(diffDays)} gün gecikti` : new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' }).format(diffDays, 'day');
+  const date = targetDate.toLocaleDateString(getFormattingLocale(), { day: 'numeric', month: 'short' });
+  return getFormattingLocale() === 'tr-TR' ? `${diffDays} gün sonra (${date})` : `${new Intl.RelativeTimeFormat(getFormattingLocale()).format(diffDays, 'day')} (${date})`;
 };

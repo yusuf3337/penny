@@ -1,7 +1,9 @@
+import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../../constants/colors';
 
 interface BalanceCardProps {
   totalBalance: string;
@@ -18,6 +20,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   isHidden,
   onToggleHide,
 }) => {
+  const styles = useThemedStyles(lightStyles);
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
@@ -53,14 +56,14 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     borderRadius: 24,
     padding: 24,
     marginHorizontal: 20,
     marginBottom: 16,
-    shadowColor: COLORS.shadow,
+    shadowColor: LIGHT_COLORS.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -89,7 +92,7 @@ const styles = StyleSheet.create({
   mainBalance: {
     fontSize: 38,
     fontWeight: 'bold',
-    color: COLORS.primaryForeground,
+    color: LIGHT_COLORS.primaryForeground,
   },
   fractionText: {
     fontSize: 24,
@@ -99,7 +102,7 @@ const styles = StyleSheet.create({
   hiddenBalance: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: COLORS.primaryForeground,
+    color: LIGHT_COLORS.primaryForeground,
     letterSpacing: 6,
   },
   badgeRow: {

@@ -1,9 +1,13 @@
+import { useThemedStyles } from '../../context/ThemeContext';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../../constants/colors';
+import { useAppDialog } from '../../context/AppDialogContext';
 import { PendingCollection } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
+import { localizeFormat } from '../../context/LocaleContext';
 
 interface PendingCollectionsCardProps {
   collections: PendingCollection[];
@@ -18,15 +22,17 @@ export const PendingCollectionsCard: React.FC<PendingCollectionsCardProps> = ({
   onCollect,
   onDelete,
 }) => {
+  const styles = useThemedStyles(lightStyles);
+  const { alert } = useAppDialog();
   const totalExpected = collections.reduce((sum, item) => sum + item.expectedAmount, 0);
   const totalActual = collections.reduce((sum, item) => sum + item.actualAmount, 0);
   const percentage = totalExpected > 0 ? Math.min(Math.round((totalActual / totalExpected) * 100), 100) : 0;
 
   const handleCollectPress = (item: PendingCollection) => {
     const rem = item.expectedAmount - item.actualAmount;
-    Alert.alert(
+    alert(
       'Hakediş Tahsilatı',
-      `"${item.title}" (${formatCurrency(rem)}) tahsilatını gelirinize eklemek istediğinizden emin misiniz?`,
+      localizeFormat('"{0}" ({1}) tahsilatını gelirinize eklemek istiyor musunuz?', [item.title, formatCurrency(rem)]),
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -130,15 +136,15 @@ export const PendingCollectionsCard: React.FC<PendingCollectionsCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 24,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   header: {
     flexDirection: 'row',
@@ -149,19 +155,19 @@ const styles = StyleSheet.create({
   subLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     letterSpacing: 1.2,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 4,
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
@@ -170,7 +176,7 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
   progressSection: {
     marginBottom: 14,
@@ -182,21 +188,21 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   boldText: {
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   track: {
     height: 8,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     borderRadius: 4,
     overflow: 'hidden',
   },
   bar: {
     height: '100%',
-    backgroundColor: COLORS.income,
+    backgroundColor: LIGHT_COLORS.income,
     borderRadius: 4,
   },
   emptyBox: {
@@ -204,11 +210,11 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontStyle: 'italic',
   },
   itemCard: {
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
     borderRadius: 16,
     padding: 14,
     marginBottom: 10,
@@ -227,24 +233,24 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   badge: {
-    backgroundColor: COLORS.accentBg,
+    backgroundColor: LIGHT_COLORS.accentBg,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   completedBadge: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
   },
   badgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: COLORS.accentForeground,
+    color: LIGHT_COLORS.accentForeground,
   },
   completedBadgeText: {
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
   itemFooter: {
     flexDirection: 'row',
@@ -255,7 +261,7 @@ const styles = StyleSheet.create({
   amountText: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   btnRow: {
     flexDirection: 'row',
@@ -265,14 +271,14 @@ const styles = StyleSheet.create({
   collectBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
     gap: 4,
   },
   collectBtnText: {
-    color: COLORS.primaryForeground,
+    color: LIGHT_COLORS.primaryForeground,
     fontSize: 11,
     fontWeight: 'bold',
   },

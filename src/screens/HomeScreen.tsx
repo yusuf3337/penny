@@ -1,15 +1,12 @@
+import { useTheme, useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { useData } from '../context/DataContext';
-import { COLORS } from '../constants/colors';
+import { useAppDialog } from '../context/AppDialogContext';
+import { localizeFormat } from '../context/LocaleContext';
+import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import {
   formatCurrency,
   formatShortDate,
@@ -34,6 +31,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenSettingsModal,
   onOpenSplitModal,
 }) => {
+  const styles = useThemedStyles(lightStyles);
+  const { isDark, colors } = useTheme();
+  const { alert } = useAppDialog();
   const {
     userName,
     isBalanceHidden,
@@ -73,7 +73,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     await handleAddTransaction({
       title: preset.title,
       category: preset.category,
-      amount: `-₺${preset.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
+      amount: `-${formatCurrency(preset.amount)}`,
       rawAmount: preset.amount,
       type: 'expense',
       iconName: preset.icon,
@@ -81,7 +81,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       accountName: 'Banka Hesabı',
       date: selectedMonth ? selectedMonth.toISOString() : new Date().toISOString(),
     });
-    setQuickToastMessage(`✓ ${preset.title} (${preset.amount} ₺) eklendi!`);
+    setQuickToastMessage(`${preset.title} (${preset.amount} ₺) eklendi`);
     setTimeout(() => setQuickToastMessage(''), 2000);
   };
 
@@ -133,13 +133,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   // Batch delete handlers
   const handleConfirmDeleteCurrentMonth = () => {
     if (selectedMonthTransactions.length === 0) {
-      Alert.alert('Bilgi', `${currentMonthDisplay} döneminde silinecek kayıtlı bir işlem bulunmuyor.`);
+      alert('Bilgi', localizeFormat('{0} döneminde silinecek kayıtlı bir işlem bulunmuyor.', [currentMonthDisplay]));
       return;
     }
 
-    Alert.alert(
+    alert(
       'Bu Ayın İşlemlerini Sil',
-      `"${currentMonthDisplay}" dönemine ait tüm (${selectedMonthTransactions.length} adet) işlem kalıcı olarak silinecektir.\n\nDiğer aylara ait işlemler korunur. Emin misiniz?`,
+      localizeFormat('"{0}" dönemine ait tüm {1} işlem kalıcı olarak silinecektir. Diğer aylara ait işlemler korunur. Emin misiniz?', [currentMonthDisplay, selectedMonthTransactions.length]),
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -147,7 +147,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           style: 'destructive',
           onPress: async () => {
             await handleDeleteTransactionsForMonth(selectedMonth);
-            setQuickToastMessage(`✓ ${currentMonthDisplay} işlemleri silindi`);
+            setQuickToastMessage(localizeFormat('{0} işlemleri silindi', [currentMonthDisplay]));
             setTimeout(() => setQuickToastMessage(''), 2500);
           },
         },
@@ -157,13 +157,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const handleConfirmClearAll = () => {
     if (transactions.length === 0) {
-      Alert.alert('Bilgi', 'Silinecek herhangi bir işlem kaydı bulunmuyor.');
+      alert('Bilgi', 'Silinecek herhangi bir işlem kaydı bulunmuyor.');
       return;
     }
 
-    Alert.alert(
+    alert(
       'Tüm İşlemleri Sil (Geçmiş Dahil)',
-      `Tüm aylardaki geçmiş ve mevcut toplam ${transactions.length} işlem kaydı kalıcı olarak silinecektir.\n\nBu işlem geri alınamaz! Onaylıyor musunuz?`,
+      localizeFormat('Tüm aylardaki toplam {0} işlem kalıcı olarak silinecektir. Bu işlem geri alınamaz. Emin misiniz?', [transactions.length]),
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -171,7 +171,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           style: 'destructive',
           onPress: async () => {
             await handleClearAllTransactions();
-            setQuickToastMessage('✓ Tüm işlemler silindi');
+            setQuickToastMessage('Tüm işlemler silindi');
             setTimeout(() => setQuickToastMessage(''), 2500);
           },
         },
@@ -180,18 +180,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleOpenDeleteMenu = () => {
-    Alert.alert(
+    alert(
       'İşlemleri Temizle',
       'Nasıl bir temizleme işlemi yapmak istiyorsunuz?',
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
-          text: `🗑️ Bu Ayı Sil (${currentMonthDisplay} - ${selectedMonthTransactions.length} işlem)`,
+          text: localizeFormat('Bu Ayı Sil ({0} - {1} işlem)', [currentMonthDisplay, selectedMonthTransactions.length]),
           style: 'destructive',
           onPress: handleConfirmDeleteCurrentMonth,
         },
         {
-          text: `⚠️ Bütün Ayları Sil (${transactions.length} işlem)`,
+          text: localizeFormat('Bütün Ayları Sil ({0} işlem)', [transactions.length]),
           style: 'destructive',
           onPress: handleConfirmClearAll,
         },
@@ -368,8 +368,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View style={[styles.quickNavIcon, { backgroundColor: COLORS.emeraldBg }]}>
             <Ionicons name="flag" size={18} color={COLORS.emeraldText} />
           </View>
-          <Text style={styles.quickNavTitle}>Hedefler</Text>
-          <Text style={styles.quickNavSub}>Tasarruf Takibi</Text>
+          <Text style={styles.quickNavTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Hedefler</Text>
+          <Text style={styles.quickNavSub} numberOfLines={2}>Tasarruf Takibi</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -380,8 +380,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View style={[styles.quickNavIcon, { backgroundColor: COLORS.blueBg }]}>
             <Ionicons name="repeat" size={18} color={COLORS.blueText} />
           </View>
-          <Text style={styles.quickNavTitle}>Abonelikler</Text>
-          <Text style={styles.quickNavSub}>Yenilemeler</Text>
+          <Text style={styles.quickNavTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Abonelikler</Text>
+          <Text style={styles.quickNavSub} numberOfLines={2}>Yenilemeler</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -392,8 +392,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View style={[styles.quickNavIcon, { backgroundColor: COLORS.purpleBg }]}>
             <Ionicons name="pie-chart" size={18} color={COLORS.purpleText} />
           </View>
-          <Text style={styles.quickNavTitle}>Bütçe</Text>
-          <Text style={styles.quickNavSub}>Kategori Limiti</Text>
+          <Text style={styles.quickNavTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Bütçe</Text>
+          <Text style={styles.quickNavSub} numberOfLines={2}>Kategori Limiti</Text>
         </TouchableOpacity>
 
         {onOpenSplitModal ? (
@@ -405,8 +405,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <View style={[styles.quickNavIcon, { backgroundColor: '#FEE2E2' }]}>
               <Ionicons name="people" size={18} color="#EF4444" />
             </View>
-            <Text style={styles.quickNavTitle}>Hesap Bölüş</Text>
-            <Text style={styles.quickNavSub}>Ortak Harcama</Text>
+            <Text style={styles.quickNavTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Hesap Bölüş</Text>
+            <Text style={styles.quickNavSub} numberOfLines={2}>Ortak Harcama</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -434,7 +434,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             onPress={onOpenAddModal}
             activeOpacity={0.8}
           >
-            <Text style={styles.addText}>+ Yeni İşlem</Text>
+            <Ionicons name="add" size={16} color={COLORS.primary} />
+            <Text style={styles.addText}>Yeni İşlem</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -442,15 +443,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Account Filter Chips (Tümü / Banka / Nakit) */}
       <View style={styles.filterChipRow}>
         {(['all', 'bank', 'cash'] as const).map((filterKey) => {
-          const labels = { all: 'Tümü', bank: '💳 Banka', cash: '💵 Nakit' };
+          const labels = { all: 'Tümü', bank: 'Banka', cash: 'Nakit' };
           const isActive = accountFilter === filterKey;
           return (
             <TouchableOpacity
               key={filterKey}
-              style={[styles.accountFilterChip, isActive && styles.accountFilterChipActive]}
+              style={[styles.accountFilterChip, isActive && styles.accountFilterChipActive, isActive && isDark && { backgroundColor: colors.primaryLight, borderColor: colors.primaryLight }]}
               onPress={() => setAccountFilter(filterKey)}
             >
-              <Text style={[styles.accountFilterText, isActive && styles.accountFilterTextActive]}>
+              <Text style={[styles.accountFilterText, isActive && styles.accountFilterTextActive, isActive && isDark && { color: colors.primary }]}>
                 {labels[filterKey]}
               </Text>
             </TouchableOpacity>
@@ -465,7 +466,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <Ionicons name="receipt-outline" size={36} color={COLORS.subtleText} />
             <Text style={styles.emptyText}>Henüz kaydedilmiş işlem bulunmuyor.</Text>
             <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
-              <Text style={styles.emptyAddBtnText}>+ İlk İşlemini Ekle</Text>
+              <Ionicons name="add" size={16} color="#FFF" />
+              <Text style={styles.emptyAddBtnText}>İlk İşlemini Ekle</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -511,7 +513,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <View style={styles.yearlyStatDivider} />
                     <View style={styles.yearlyStatItem}>
                       <Text style={styles.yearlyStatLabel}>İşlem</Text>
-                      <Text style={styles.yearlyStatVal}>{monthTxs.length} Adet</Text>
+                      <Text style={styles.yearlyStatVal}>{monthTxs.length}</Text>
                     </View>
                   </View>
                 </View>
@@ -558,7 +560,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View style={styles.streamStatsRow}>
             <View style={styles.streamStatsLeft}>
               <Text style={styles.streamTxCountText}>
-                {selectedMonthTransactions.length} İşlem Kayıtlı
+                {localizeFormat('Kayıtlı işlem: {0}', [selectedMonthTransactions.length])}
               </Text>
               <Text
                 style={[
@@ -586,9 +588,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {selectedMonthTransactions.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="calendar-outline" size={38} color={COLORS.subtleText} />
-              <Text style={styles.emptyText}>{currentMonthDisplay} döneminde kayıtlı işlem yok.</Text>
+              <Text style={styles.emptyText}>{localizeFormat('{0} döneminde kayıtlı işlem yok.', [currentMonthDisplay])}</Text>
               <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
-                <Text style={styles.emptyAddBtnText}>+ Bu Aya İşlem Ekle</Text>
+                <Ionicons name="add" size={16} color="#FFF" />
+                <Text style={styles.emptyAddBtnText}>Bu Aya İşlem Ekle</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -606,14 +609,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                           styles.catIconWrap,
                           {
                             backgroundColor:
-                              tx.type === 'income' ? COLORS.emeraldBg : COLORS.secondary,
+                              tx.type === 'income' ? COLORS.emeraldBg : tx.type === 'transfer' ? COLORS.primaryLight : COLORS.secondary,
                           },
                         ]}
                       >
                         <Ionicons
                           name={(tx.iconName as any) || 'pricetag-outline'}
                           size={16}
-                          color={tx.type === 'income' ? COLORS.emeraldText : COLORS.mutedText}
+                          color={tx.type === 'income' ? COLORS.emeraldText : tx.type === 'transfer' ? COLORS.primary : COLORS.mutedText}
                         />
                       </View>
                       <View style={styles.txTextWrap}>
@@ -638,11 +641,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                           styles.txAmount,
                           {
                             color:
-                              tx.type === 'income' ? COLORS.emeraldText : COLORS.foreground,
+                              tx.type === 'income' ? COLORS.emeraldText : tx.type === 'transfer' ? COLORS.primary : COLORS.foreground,
                           },
                         ]}
                       >
-                        {`${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.rawAmount)}`}
+                        {`${tx.type === 'income' || (tx.type === 'transfer' && tx.transferDirection === 'in') ? '+' : '-'}${formatCurrency(tx.rawAmount)}`}
                       </Text>
                       <TouchableOpacity
                         onPress={() => handleDeleteTransaction(tx.id)}
@@ -662,10 +665,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
   },
   content: {
     paddingHorizontal: 18,
@@ -687,7 +690,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -698,12 +701,12 @@ const styles = StyleSheet.create({
   },
   greetingText: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   userNameText: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   rightHeaderActions: {
     flexDirection: 'row',
@@ -714,21 +717,21 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   settingsHeaderBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
 
   // Hero Card
@@ -746,12 +749,12 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   heroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'stretch',
+    gap: 12,
   },
   pillBadge: {
     flexDirection: 'row',
+    alignSelf: 'flex-start',
     alignItems: 'center',
     gap: 5,
     backgroundColor: 'rgba(52, 211, 153, 0.15)',
@@ -766,22 +769,30 @@ const styles = StyleSheet.create({
   },
   toggleRow: {
     flexDirection: 'row',
+    alignSelf: 'stretch',
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: 13,
     padding: 3,
   },
   toggleBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    flex: 1,
+    minWidth: 0,
+    minHeight: 42,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
     borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   toggleBtnActive: {
     backgroundColor: '#1E4D3E',
   },
   toggleText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#9CA3AF',
     fontWeight: '600',
+    textAlign: 'center',
+    flexShrink: 1,
   },
   toggleTextActive: {
     color: '#FFFFFF',
@@ -791,9 +802,11 @@ const styles = StyleSheet.create({
   balanceCardsScroll: {
     marginHorizontal: -20,
     marginTop: 18,
+    marginBottom: 16,
   },
   balanceCardsContent: {
     paddingHorizontal: 20,
+    paddingBottom: 8,
     gap: 12,
   },
   balanceCard: {
@@ -803,6 +816,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     justifyContent: 'space-between',
+    marginBottom: 2,
   },
   totalBalanceCard: {
     backgroundColor: '#174235',
@@ -852,13 +866,13 @@ const styles = StyleSheet.create({
   },
   heroYearLabel: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontWeight: '600',
   },
   heroBalanceText: {
     fontSize: 32,
     fontWeight: '800',
-    color: COLORS.emeraldText,
+    color: LIGHT_COLORS.emeraldText,
     letterSpacing: -0.6,
     marginTop: 4,
   },
@@ -867,8 +881,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
-    paddingTop: 14,
+    borderTopColor: LIGHT_COLORS.cardBorder,
+    paddingTop: 16,
+    marginTop: 4,
   },
   statCol: {
     flex: 1,
@@ -913,14 +928,14 @@ const styles = StyleSheet.create({
   },
   quickNavCard: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     paddingVertical: 13,
     paddingHorizontal: 5,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    shadowColor: COLORS.shadow,
+    borderColor: LIGHT_COLORS.cardBorder,
+    shadowColor: LIGHT_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.35,
     shadowRadius: 6,
@@ -937,14 +952,16 @@ const styles = StyleSheet.create({
   quickNavTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     textAlign: 'center',
+    alignSelf: 'stretch',
   },
   quickNavSub: {
     fontSize: 9,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 2,
     textAlign: 'center',
+    alignSelf: 'stretch',
   },
 
   // Stream section
@@ -978,16 +995,19 @@ const styles = StyleSheet.create({
   },
   addBtnHeader: {
     paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   addText: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
 
   // Monthly Stream Navigator Styles
@@ -998,23 +1018,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 10,
   },
   streamArrowBtn: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   streamMonthCenter: {
     alignItems: 'center',
@@ -1023,21 +1043,21 @@ const styles = StyleSheet.create({
   streamMonthTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   streamTodayBadge: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
     marginTop: 3,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   streamTodayBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
 
   streamStatsRow: {
@@ -1055,7 +1075,7 @@ const styles = StyleSheet.create({
   streamTxCountText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   streamNetText: {
     fontSize: 13,
@@ -1076,12 +1096,12 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
   monthTransactionsCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 20,
     padding: 17,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    shadowColor: COLORS.shadow,
+    borderColor: LIGHT_COLORS.cardBorder,
+    shadowColor: LIGHT_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 7,
@@ -1089,24 +1109,28 @@ const styles = StyleSheet.create({
   },
 
   emptyCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   emptyText: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 8,
   },
   emptyAddBtn: {
     marginTop: 14,
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
   },
   emptyAddBtnText: {
     color: '#FFF',
@@ -1115,13 +1139,13 @@ const styles = StyleSheet.create({
   },
 
   monthCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 20,
     padding: 17,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 12,
-    shadowColor: COLORS.shadow,
+    shadowColor: LIGHT_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 7,
@@ -1132,14 +1156,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
+    borderBottomColor: LIGHT_COLORS.cardBorder,
     paddingBottom: 10,
     marginBottom: 10,
   },
   monthTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   monthNetText: {
     fontSize: 14,
@@ -1152,12 +1176,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   yearlyStatItem: {
     flex: 1,
@@ -1166,18 +1190,18 @@ const styles = StyleSheet.create({
   yearlyStatLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginBottom: 4,
   },
   yearlyStatVal: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   yearlyStatDivider: {
     width: 1,
     height: 24,
-    backgroundColor: COLORS.cardBorder,
+    backgroundColor: LIGHT_COLORS.cardBorder,
   },
 
   txRow: {
@@ -1211,14 +1235,14 @@ const styles = StyleSheet.create({
   txTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     flexShrink: 1,
   },
   accountBadgeChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 5,
@@ -1226,11 +1250,11 @@ const styles = StyleSheet.create({
   accountBadgeText: {
     fontSize: 9,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   txSub: {
     fontSize: 10,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 2,
   },
   txRight: {
@@ -1249,11 +1273,11 @@ const styles = StyleSheet.create({
   },
   accountSubCard: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
     borderRadius: 14,
     padding: 10,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   accountTitleRow: {
     flexDirection: 'row',
@@ -1264,12 +1288,12 @@ const styles = StyleSheet.create({
   accountSubTitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   accountSubAmount: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   filterChipRow: {
     flexDirection: 'row',
@@ -1280,28 +1304,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   accountFilterChipActive: {
-    backgroundColor: COLORS.foreground,
-    borderColor: COLORS.foreground,
+    backgroundColor: LIGHT_COLORS.foreground,
+    borderColor: LIGHT_COLORS.foreground,
   },
   accountFilterText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   accountFilterTextActive: {
     color: '#FFF',
   },
   quickExpenseWrap: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 20,
   },
   quickHeaderRow: {
@@ -1313,10 +1337,10 @@ const styles = StyleSheet.create({
   quickTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   toastBox: {
-    backgroundColor: COLORS.emeraldBg,
+    backgroundColor: LIGHT_COLORS.emeraldBg,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
@@ -1325,7 +1349,7 @@ const styles = StyleSheet.create({
   toastText: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.emeraldText,
+    color: LIGHT_COLORS.emeraldText,
   },
   quickScroll: {
     flexDirection: 'row',
@@ -1334,16 +1358,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginRight: 8,
   },
   quickChipText: {
     fontSize: 12,
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
 });

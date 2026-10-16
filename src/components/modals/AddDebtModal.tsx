@@ -1,18 +1,11 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
 import { formatNumberInput, parseAmountSafely } from '../../utils/formatters';
+import { HeroUIModal } from '../common/HeroUIModal';
+import { HeroUIInput } from '../common/HeroUIInput';
+import { HeroUIButton } from '../common/HeroUIButton';
 
 interface AddDebtModalProps {
   visible: boolean;
@@ -40,7 +33,6 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
 
     onSave(personName.trim(), type, parsedAmount, description.trim());
 
-    // Reset fields
     setPersonName('');
     setAmountInput('');
     setDescription('');
@@ -49,239 +41,114 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Yeni Borç / Alacak Kaydı</Text>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={24} color={COLORS.foreground} />
-            </TouchableOpacity>
+    <HeroUIModal
+      isOpen={visible}
+      onClose={onClose}
+      title="Yeni Borç / Alacak"
+      subtitle="Kişisel borç ve alacaklarınızı düzenli takip edin."
+      badge={{
+        text: type === 'given' ? 'ALACAK' : 'BORÇ',
+        color: type === 'given' ? '#047857' : '#BE123C',
+        bg: type === 'given' ? '#ECFDF5' : '#FFF1F2',
+      }}
+      footer={
+        <HeroUIButton
+          variant={type === 'given' ? 'success' : 'danger'}
+          size="lg"
+          onPress={handleSave}
+          icon="save-outline"
+        >
+          Kaydı Oluştur
+        </HeroUIButton>
+      }
+    >
+      {/* HeroUI Segmented Tabs for Debt Type */}
+      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-[18px] p-1 mb-4 gap-1.5">
+        <TouchableOpacity
+          className={`flex-1 flex-row items-center gap-2 py-2.5 px-3 rounded-[14px] ${
+            type === 'given' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+          }`}
+          onPress={() => setType('given')}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="arrow-down-circle"
+            size={18}
+            color={type === 'given' ? '#10B981' : '#71717A'}
+          />
+          <View>
+            <Text
+              className={`text-[13px] font-bold ${
+                type === 'given' ? 'text-emerald-700 dark:text-[#70E0B0]' : 'text-zinc-500 dark:text-[#A9BDB2]'
+              }`}
+            >
+              Alacaklıyım
+            </Text>
+            <Text className="text-[10px] text-zinc-400 dark:text-[#82978B] mt-0.5">Bana Borçlu</Text>
           </View>
+        </TouchableOpacity>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Type Selector (Alacaklıyım vs Borçluyum) */}
-            <View style={styles.typeRow}>
-              <TouchableOpacity
-                style={[
-                  styles.typeTab,
-                  type === 'given' && styles.activeGivenTab,
-                ]}
-                onPress={() => setType('given')}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name="arrow-down-circle-outline"
-                  size={18}
-                  color={type === 'given' ? COLORS.primaryForeground : COLORS.mutedText}
-                />
-                <View style={styles.tabTextWrap}>
-                  <Text
-                    style={[
-                      styles.typeTabText,
-                      type === 'given' && styles.activeTypeTabText,
-                    ]}
-                  >
-                    Alacaklıyım
-                  </Text>
-                  <Text
-                    style={[
-                      styles.typeTabSubText,
-                      type === 'given' && styles.activeTypeTabSubText,
-                    ]}
-                  >
-                    Bana Borçlu
-                  </Text>
-                </View>
-              </TouchableOpacity>
+        <TouchableOpacity
+          className={`flex-1 flex-row items-center gap-2 py-2.5 px-3 rounded-[14px] ${
+            type === 'taken' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+          }`}
+          onPress={() => setType('taken')}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="arrow-up-circle"
+            size={18}
+            color={type === 'taken' ? '#F43F5E' : '#71717A'}
+          />
+          <View>
+            <Text
+              className={`text-[13px] font-bold ${
+                type === 'taken' ? 'text-rose-700 dark:text-[#FDA4AF]' : 'text-zinc-500 dark:text-[#A9BDB2]'
+              }`}
+            >
+              Borçluyum
+            </Text>
+            <Text className="text-[10px] text-zinc-400 dark:text-[#82978B] mt-0.5">Ben Borçluyum</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.typeTab,
-                  type === 'taken' && styles.activeTakenTab,
-                ]}
-                onPress={() => setType('taken')}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name="arrow-up-circle-outline"
-                  size={18}
-                  color={type === 'taken' ? COLORS.primaryForeground : COLORS.mutedText}
-                />
-                <View style={styles.tabTextWrap}>
-                  <Text
-                    style={[
-                      styles.typeTabText,
-                      type === 'taken' && styles.activeTypeTabText,
-                    ]}
-                  >
-                    Borçluyum
-                  </Text>
-                  <Text
-                    style={[
-                      styles.typeTabSubText,
-                      type === 'taken' && styles.activeTypeTabSubText,
-                    ]}
-                  >
-                    Ben Borçluyum
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
+      <HeroUIInput
+        label="Kişi İsmi"
+        placeholder="Örn: Ahmet Yılmaz, Ayşe Kaya..."
+        startIcon="person-outline"
+        value={personName}
+        onChangeText={(text) => {
+          setPersonName(text);
+          if (error) setError('');
+        }}
+        errorMessage={!personName.trim() && error ? error : undefined}
+      />
 
-            {/* Person Name Input */}
-            <Text style={styles.inputLabel}>Kişi İsmi</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: Ahmet Yılmaz"
-              placeholderTextColor={COLORS.mutedText}
-              value={personName}
-              onChangeText={(text) => {
-                setPersonName(text);
-                if (error) setError('');
-              }}
-            />
+      <HeroUIInput
+        label="Tutar"
+        prefix="₺"
+        placeholder="0,00"
+        keyboardType="numeric"
+        value={amountInput}
+        onChangeText={(text) => {
+          setAmountInput(formatNumberInput(text));
+          if (error) setError('');
+        }}
+        errorMessage={
+          personName.trim() && parseAmountSafely(amountInput) <= 0 && error
+            ? error
+            : undefined
+        }
+      />
 
-            {/* Amount Input */}
-            <Text style={styles.inputLabel}>Tutar (₺)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0,00 veya 1.000.000"
-              placeholderTextColor={COLORS.mutedText}
-              keyboardType="numeric"
-              value={amountInput}
-              onChangeText={(text) => {
-                setAmountInput(formatNumberInput(text));
-                if (error) setError('');
-              }}
-            />
-
-            {/* Description Input */}
-            <Text style={styles.inputLabel}>Açıklama / Not (Opsiyonel)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: Borç olarak verdim, borç aldım..."
-              placeholderTextColor={COLORS.mutedText}
-              value={description}
-              onChangeText={setDescription}
-            />
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Kaydet</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      <HeroUIInput
+        label="Açıklama (Opsiyonel)"
+        placeholder="Örn: Borç olarak verdim, laptop taksiti..."
+        startIcon="document-text-outline"
+        value={description}
+        onChangeText={setDescription}
+      />
+    </HeroUIModal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    maxHeight: '85%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.foreground,
-  },
-  typeRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 4,
-    marginBottom: 20,
-    gap: 6,
-  },
-  typeTab: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    gap: 6,
-  },
-  activeGivenTab: {
-    backgroundColor: COLORS.primary,
-  },
-  activeTakenTab: {
-    backgroundColor: COLORS.expense,
-  },
-  tabTextWrap: {
-    alignItems: 'flex-start',
-  },
-  typeTabText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.mutedText,
-  },
-  typeTabSubText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: COLORS.subtleText,
-    marginTop: 1,
-  },
-  activeTypeTabText: {
-    color: COLORS.primaryForeground,
-  },
-  activeTypeTabSubText: {
-    color: 'rgba(255, 255, 255, 0.85)',
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.mutedText,
-    marginBottom: 6,
-    marginTop: 10,
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  errorText: {
-    color: COLORS.expense,
-    fontSize: 12,
-    marginTop: 12,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  saveButtonText: {
-    color: COLORS.primaryForeground,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

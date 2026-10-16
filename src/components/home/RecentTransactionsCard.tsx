@@ -1,8 +1,12 @@
+import { useThemedStyles } from '../../context/ThemeContext';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../../constants/colors';
+import { useAppDialog } from '../../context/AppDialogContext';
 import { AppTransaction } from '../../types';
+import { localizeFormat } from '../../context/LocaleContext';
 
 interface RecentTransactionsCardProps {
   transactions: AppTransaction[];
@@ -15,6 +19,8 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
   onAddPress,
   onDeleteTransaction,
 }) => {
+  const styles = useThemedStyles(lightStyles);
+  const { alert } = useAppDialog();
   const [showAll, setShowAll] = useState(false);
 
   const visibleTransactions = showAll ? transactions : transactions.slice(0, 3);
@@ -33,9 +39,9 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
   };
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert(
+    alert(
       'İşlemi Sil',
-      `"${title}" işlemini silmek istediğinizden emin misiniz?`,
+      localizeFormat('"{0}" işlemini silmek istediğinizden emin misiniz?', [title]),
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -99,7 +105,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
                 <Text
                   style={[
                     styles.itemAmount,
-                    { color: item.type === 'income' ? COLORS.primary : COLORS.foreground },
+                    { color: item.type === 'income' || item.type === 'transfer' ? COLORS.primary : COLORS.foreground },
                   ]}
                 >
                   {item.amount}
@@ -123,15 +129,15 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 24,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 100,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   header: {
     flexDirection: 'row',
@@ -142,19 +148,19 @@ const styles = StyleSheet.create({
   subLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     letterSpacing: 1.2,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 4,
   },
   toggleBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
   emptyContainer: {
     paddingVertical: 24,
@@ -164,12 +170,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 10,
   },
   emptySubtitle: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     textAlign: 'center',
     marginTop: 4,
     paddingHorizontal: 20,
@@ -178,7 +184,7 @@ const styles = StyleSheet.create({
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
@@ -186,7 +192,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addBtnText: {
-    color: COLORS.primaryForeground,
+    color: LIGHT_COLORS.primaryForeground,
     fontSize: 13,
     fontWeight: 'bold',
   },
@@ -198,13 +204,13 @@ const styles = StyleSheet.create({
   },
   borderBottom: {
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
+    borderBottomColor: LIGHT_COLORS.cardBorder,
   },
   iconContainer: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -215,11 +221,11 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   itemSubtitle: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 2,
   },
   rightWrap: {

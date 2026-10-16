@@ -26,7 +26,6 @@ import {
   deleteSubscription as deleteSubService,
   getStoredBudgets,
   addOrUpdateBudget as addBudgetService,
-  saveStoredBudgets,
   getDebts,
   addDebt as addDebtService,
   payDebt as payDebtService,
@@ -38,7 +37,8 @@ import {
   markHasOnboarded as markOnboardedService,
   resetAllAppData,
 } from '../services/storageService';
-import { calculateNextDueDate, advanceSubscriptionDueDate } from '../utils/formatters';
+import { calculateNextDueDate, advanceSubscriptionDueDate, isSameMonthAndYear, formatCurrency } from '../utils/formatters';
+import { usePremium } from './PremiumContext';
 
 export type TabType = 'timeline' | 'goals' | 'subscriptions' | 'budget' | 'reports' | 'debts';
 
@@ -75,7 +75,7 @@ interface DataContextType {
   handleSaveBudget: (categoryName: string, allocatedAmount: number, iconName?: string, color?: string) => Promise<void>;
 
   debts: Debt[];
-  handleAddDebt: (personName: string, type: 'given' | 'taken', amount: number, desc?: string) => Promise<void>;
+  handleAddDebt: (personName: string, type: 'given' | 'taken', amount: number, desc?: string, options?: { source?: 'split_expense'; accountType?: 'bank' | 'cash' }) => Promise<void>;
   handlePayDebt: (id: string, paidAmount: number) => Promise<void>;
   handleDeleteDebt: (id: string) => Promise<void>;
 
@@ -99,6 +99,7 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isPro, checkGoalAllowed, checkBudgetAllowed } = usePremium();
   const [userName, setUserName] = useState<string>('Kullanıcı');
   const [hasOnboarded, setHasOnboarded] = useState<boolean>(false);
   const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(false);
@@ -184,7 +185,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 title: `${sub.title} Abonelik Ödemesi`,
                 category: sub.category || 'Eğlence',
                 date: new Date().toISOString(),
-                amount: `-₺${sub.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
+                amount: `-${formatCurrency(sub.amount)}`,
                 rawAmount: sub.amount,
                 type: 'expense',
                 iconName: sub.iconName || 'repeat-outline',
@@ -249,6 +250,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     iconName?: string,
     color?: string
   ) => {
+    if (!isPro) throw new Error('Özel kategori oluşturmak için Penny Pro gerekir.');
     const updated = await addCatService(name, type, iconName, color);
     setCategories(updated);
   };
@@ -256,18 +258,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleAddTransaction = async (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => {
     const updated = await addTxService(tx);
     setTransactions(updated);
-
-    // Update corresponding category budget usage dynamically
-    if (tx.type === 'expense') {
-      const updatedBudgets = budgets.map((b) => {
-        if (b.categoryName.toLowerCase() === tx.category.toLowerCase()) {
-          return { ...b, usedAmount: b.usedAmount + tx.rawAmount };
-        }
-        return b;
-      });
-      setBudgets(updatedBudgets);
-      await saveStoredBudgets(updatedBudgets);
-    }
   };
 
   const handleDeleteTransaction = async (id: string) => {
@@ -286,6 +276,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleSaveGoal = async (goal: Partial<SavingsGoal>) => {
+    if (!goal.id && !checkGoalAllowed(goals.length)) {
+      throw new Error('Ücretsiz plandaki hedef sınırına ulaşıldı.');
+    }
     const updated = await saveGoalService(goal);
     setGoals(updated);
   };
@@ -308,6 +301,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     iconName?: string,
     color?: string
   ) => {
+    const normalizedCategory = categoryName.trim().toLocaleLowerCase('tr-TR');
+    const alreadyExists = budgets.some((budget) => budget.categoryName.trim().toLocaleLowerCase('tr-TR') === normalizedCategory);
+    if (!alreadyExists && !checkBudgetAllowed(budgets.length)) {
+      throw new Error('Ücretsiz plandaki bütçe sınırına ulaşıldı.');
+    }
     const updated = await addBudgetService(categoryName, allocatedAmount, iconName, color);
     setBudgets(updated);
   };
@@ -321,15 +319,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     personName: string,
     type: 'given' | 'taken',
     amount: number,
-    desc?: string
+    desc?: string,
+    options?: { source?: 'split_expense'; accountType?: 'bank' | 'cash' }
   ) => {
-    const updated = await addDebtService(personName, type, amount, desc);
+    const updated = await addDebtService(personName, type, amount, desc, options);
     setDebts(updated);
   };
 
   const handlePayDebt = async (id: string, paidAmount: number) => {
     const updated = await payDebtService(id, paidAmount);
     setDebts(updated);
+    const debt = debts.find((item) => item.id === id);
+    if (debt?.type === 'given' && (debt.source === 'split_expense' || debt.description?.endsWith('Ortak Harcama Payı'))) {
+      const accountType = debt.accountType || 'bank';
+      const updatedTransactions = await addTxService({
+        title: `${debt.personName} · Ortak Harcama Tahsilatı`,
+        category: 'Ortak Harcama',
+        amount: '',
+        rawAmount: paidAmount,
+        type: 'transfer',
+        transferDirection: 'in',
+        iconName: 'arrow-down-outline',
+        accountType,
+        accountName: accountType === 'cash' ? 'Nakit Cüzdan' : 'Banka Hesabı',
+      });
+      setTransactions(updatedTransactions);
+    }
   };
 
   const handleDeleteDebt = async (id: string) => {
@@ -352,13 +367,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const bankIncome = useMemo(() => {
     return transactions
-      .filter((t) => t.type === 'income' && (t.accountType === 'bank' || !t.accountType || t.accountName?.includes('Banka')))
+      .filter((t) => (t.type === 'income' || (t.type === 'transfer' && t.transferDirection === 'in')) && (t.accountType === 'bank' || !t.accountType || t.accountName?.includes('Banka')))
       .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
   }, [transactions]);
 
   const bankExpense = useMemo(() => {
     return transactions
-      .filter((t) => t.type === 'expense' && (t.accountType === 'bank' || !t.accountType || t.accountName?.includes('Banka')))
+      .filter((t) => (t.type === 'expense' || (t.type === 'transfer' && t.transferDirection === 'out')) && (t.accountType === 'bank' || !t.accountType || t.accountName?.includes('Banka')))
       .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
   }, [transactions]);
 
@@ -366,13 +381,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const cashIncome = useMemo(() => {
     return transactions
-      .filter((t) => t.type === 'income' && (t.accountType === 'cash' || t.accountName?.includes('Nakit')))
+      .filter((t) => (t.type === 'income' || (t.type === 'transfer' && t.transferDirection === 'in')) && (t.accountType === 'cash' || t.accountName?.includes('Nakit')))
       .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
   }, [transactions]);
 
   const cashExpense = useMemo(() => {
     return transactions
-      .filter((t) => t.type === 'expense' && (t.accountType === 'cash' || t.accountName?.includes('Nakit')))
+      .filter((t) => (t.type === 'expense' || (t.type === 'transfer' && t.transferDirection === 'out')) && (t.accountType === 'cash' || t.accountName?.includes('Nakit')))
       .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
   }, [transactions]);
 
@@ -404,8 +419,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [budgets]);
 
   const totalUsedSpending = useMemo(() => {
-    return budgets.reduce((sum, b) => sum + (b.usedAmount || 0), 0);
-  }, [budgets]);
+    const now = new Date();
+    const budgetCategories = new Set(budgets.map((budget) => budget.categoryName.trim().toLocaleLowerCase('tr-TR')));
+    return transactions
+      .filter((tx) => tx.type === 'expense' && budgetCategories.has(tx.category.trim().toLocaleLowerCase('tr-TR')) && isSameMonthAndYear(tx.date, now))
+      .reduce((sum, tx) => sum + (tx.rawAmount || 0), 0);
+  }, [budgets, transactions]);
 
   return (
     <DataContext.Provider

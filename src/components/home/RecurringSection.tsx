@@ -1,7 +1,11 @@
+import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
+import { localizeFormat } from '../../context/LocaleContext';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../../constants/colors';
+import { useAppDialog } from '../../context/AppDialogContext';
 import { RecurringTransaction } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -18,6 +22,8 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
   onExecute,
   onDelete,
 }) => {
+  const styles = useThemedStyles(lightStyles);
+  const { alert } = useAppDialog();
   const getFreqLabel = (freq: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
     if (freq === 'daily') return 'Her Gün';
     if (freq === 'weekly') return 'Her Hafta';
@@ -26,9 +32,9 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
   };
 
   const handleExecutePress = (item: RecurringTransaction) => {
-    Alert.alert(
+    alert(
       'İşlemi Gerçekleştir',
-      `"${item.title}" (${formatCurrency(item.amount)}) işlemini ana finans kaydınıza eklemek istiyor musunuz?`,
+      localizeFormat('"{0}" ({1}) işlemini finans kayıtlarınıza eklemek istiyor musunuz?', [item.title, formatCurrency(item.amount)]),
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -102,15 +108,15 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 24,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   header: {
     flexDirection: 'row',
@@ -121,19 +127,19 @@ const styles = StyleSheet.create({
   subLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     letterSpacing: 1.2,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 4,
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
@@ -142,20 +148,20 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
   emptyBox: {
     paddingVertical: 10,
   },
   emptyText: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontStyle: 'italic',
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
     borderRadius: 16,
     padding: 12,
     marginBottom: 8,
@@ -164,7 +170,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -175,11 +181,11 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   itemSub: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 2,
   },
   btnGroup: {
@@ -190,14 +196,14 @@ const styles = StyleSheet.create({
   executeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
     gap: 3,
   },
   executeBtnText: {
-    color: COLORS.primaryForeground,
+    color: LIGHT_COLORS.primaryForeground,
     fontSize: 11,
     fontWeight: 'bold',
   },

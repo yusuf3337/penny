@@ -1,7 +1,9 @@
+import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../../constants/colors';
 
 interface SummaryCardsRowProps {
   incomeAmount: string;
@@ -16,6 +18,7 @@ export const SummaryCardsRow: React.FC<SummaryCardsRowProps> = ({
   expenseAmount,
   expenseChange,
 }) => {
+  const styles = useThemedStyles(lightStyles);
   return (
     <View style={styles.container}>
       <View style={styles.card}>
@@ -39,7 +42,7 @@ export const SummaryCardsRow: React.FC<SummaryCardsRowProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -48,35 +51,35 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   iconBox: {
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   cardTitle: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   cardAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 4,
   },
   cardChange: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
     marginTop: 6,
   },
 });

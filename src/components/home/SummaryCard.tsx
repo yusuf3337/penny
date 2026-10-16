@@ -1,6 +1,8 @@
+import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../common/LocalizedPrimitives';
+import { COLORS, LIGHT_COLORS } from '../../constants/colors';
 import { formatCurrency } from '../../utils/formatters';
 
 interface SummaryCardProps {
@@ -14,6 +16,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   totalIncome,
   totalExpense,
 }) => {
+  const styles = useThemedStyles(lightStyles);
   return (
     <View style={styles.card}>
       <Text style={styles.label}>Toplam Varlık</Text>
@@ -38,9 +41,9 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 20,

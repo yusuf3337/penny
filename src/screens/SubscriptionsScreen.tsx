@@ -1,23 +1,22 @@
+import { useThemedStyles } from '../context/ThemeContext';
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/common/Header';
 import { useData } from '../context/DataContext';
-import { COLORS } from '../constants/colors';
+import { useAppDialog } from '../context/AppDialogContext';
+import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import { formatCurrency, getDaysRemainingText } from '../utils/formatters';
+import { localizeFormat } from '../context/LocaleContext';
 
 interface SubscriptionsScreenProps {
   onOpenAddModal: (sub?: any) => void;
 }
 
 export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpenAddModal }) => {
+  const styles = useThemedStyles(lightStyles);
+  const { alert } = useAppDialog();
   const {
     subscriptions,
     totalMonthlySubscriptions,
@@ -26,7 +25,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
   } = useData();
 
   const confirmDelete = (id: string, title: string) => {
-    Alert.alert('Aboneliği Sil', `"${title}" aboneliğini silmek istediğinizden emin misiniz?`, [
+    alert('Aboneliği Sil', localizeFormat('"{0}" aboneliğini silmek istediğinizden emin misiniz?', [title]), [
       { text: 'Vazgeç', style: 'cancel' },
       { text: 'Sil', style: 'destructive', onPress: () => handleDeleteSubscription(id) },
     ]);
@@ -121,7 +120,8 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
           <Ionicons name="repeat-outline" size={36} color={COLORS.subtleText} />
           <Text style={styles.emptyText}>Henüz kaydedilmiş abonelik bulunmuyor.</Text>
           <TouchableOpacity style={styles.emptyAddBtn} onPress={() => onOpenAddModal()}>
-            <Text style={styles.emptyAddBtnText}>+ İlk Aboneliğini Ekle</Text>
+            <Ionicons name="add" size={16} color="#FFF" />
+            <Text style={styles.emptyAddBtnText}>İlk Aboneliğini Ekle</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -148,7 +148,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
               <View>
                 <Text style={styles.cardSubTitle}>{sub.title}</Text>
                 <Text style={styles.cardSubDetails}>
-                  {sub.cycle === 'monthly' ? 'Aylık' : 'Yıllık'} · {sub.accountType === 'cash' ? '💵 Nakit' : '💳 Banka'} · {getDaysRemainingText(sub.nextDueDate)}
+                  {sub.cycle === 'monthly' ? 'Aylık' : 'Yıllık'} · {sub.accountType === 'cash' ? 'Nakit' : 'Banka'} · {getDaysRemainingText(sub.nextDueDate)}
                 </Text>
               </View>
             </View>
@@ -171,10 +171,10 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -182,13 +182,13 @@ const styles = StyleSheet.create({
   },
 
   summaryCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 16,
-    shadowColor: COLORS.shadow,
+    shadowColor: LIGHT_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 10,
@@ -204,28 +204,28 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontWeight: '600',
     marginBottom: 4,
   },
   monthlyText: {
     fontSize: 22,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   yearlyText: {
     fontSize: 22,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
   summaryDivider: {
     width: 1,
     height: 36,
-    backgroundColor: COLORS.cardBorder,
+    backgroundColor: LIGHT_COLORS.cardBorder,
   },
 
   upcomingBox: {
-    backgroundColor: COLORS.emeraldBg,
+    backgroundColor: LIGHT_COLORS.emeraldBg,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
@@ -241,11 +241,11 @@ const styles = StyleSheet.create({
   boxTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.emeraldText,
+    color: LIGHT_COLORS.emeraldText,
   },
   emptySubText: {
     fontSize: 12,
-    color: COLORS.emeraldText,
+    color: LIGHT_COLORS.emeraldText,
   },
   upcomingRow: {
     flexDirection: 'row',
@@ -268,20 +268,20 @@ const styles = StyleSheet.create({
   subTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   dueTag: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   subAmount: {
     fontSize: 13,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
 
   reviewBox: {
-    backgroundColor: COLORS.amberBg,
+    backgroundColor: LIGHT_COLORS.amberBg,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
@@ -297,46 +297,50 @@ const styles = StyleSheet.create({
   reviewTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.amberText,
+    color: LIGHT_COLORS.amberText,
   },
   reviewItemName: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginBottom: 4,
   },
   reviewBody: {
     fontSize: 12,
-    color: COLORS.amberText,
+    color: LIGHT_COLORS.amberText,
     lineHeight: 18,
   },
 
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginBottom: 12,
   },
 
   emptyCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   emptyText: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 8,
   },
   emptyAddBtn: {
     marginTop: 14,
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
   },
   emptyAddBtnText: {
     color: '#FFF',
@@ -345,11 +349,11 @@ const styles = StyleSheet.create({
   },
 
   subCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -370,11 +374,11 @@ const styles = StyleSheet.create({
   cardSubTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   cardSubDetails: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 2,
   },
   subRight: {
@@ -384,6 +388,6 @@ const styles = StyleSheet.create({
   cardSubAmount: {
     fontSize: 14,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
 });

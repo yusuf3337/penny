@@ -1,16 +1,12 @@
+import { useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text } from '../components/common/LocalizedPrimitives';
 import Svg, { G, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/common/Header';
 import { useData } from '../context/DataContext';
-import { COLORS } from '../constants/colors';
+import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import {
   formatCurrency,
   formatShortDate,
@@ -18,12 +14,29 @@ import {
   changeMonth,
   isSameMonthAndYear,
 } from '../utils/formatters';
+import { usePremium } from '../context/PremiumContext';
+import { getActiveLanguage, getFormattingLocale, localize, localizeFormat } from '../context/LocaleContext';
+
+const topSpendingMessage = (month: string, category: string, percentage: number, amount: string): string => {
+  switch (getActiveLanguage()) {
+    case 'en': return `In ${month}, ${category} was your top spending category at ${percentage}% (${amount}).`;
+    case 'de': return `Im ${month} entfielen ${percentage}% Ihrer Ausgaben (${amount}) auf ${category}.`;
+    case 'fr': return `En ${month}, ${category} représentait ${percentage} % de vos dépenses (${amount}).`;
+    case 'ko': return `${month}에는 ${category} 지출이 ${percentage}%(${amount})로 가장 많았습니다.`;
+    case 'zh': return `${month}，${category}占支出的 ${percentage}%（${amount}），为最高支出类别。`;
+    case 'ja': return `${month}の最大支出は${category}で、全体の${percentage}%（${amount}）でした。`;
+    case 'ru': return `В ${month} категория «${category}» составила ${percentage} % расходов (${amount}) и была самой крупной.`;
+    case 'it': return `Nel ${month}, ${category} è stata la categoria di spesa maggiore: ${percentage}% (${amount}).`;
+    default: return `${month} döneminde en yüksek harcama ${category} kategorisinde: %${percentage} (${amount}).`;
+  }
+};
 
 interface ReportsScreenProps {
   onOpenAddModal: () => void;
 }
 
 export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) => {
+  const styles = useThemedStyles(lightStyles);
   const {
     transactions,
     totalBalance,
@@ -32,6 +45,8 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
     goals,
     totalSavedGoals,
   } = useData();
+
+  const { isPro, openPaywall } = usePremium();
 
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [activeSubTab, setActiveSubTab] = useState<'kategori' | 'genel' | 'icgoru' | 'trend' | 'zaman'>('kategori');
@@ -132,24 +147,50 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
     : 0;
 
   const currentMonthName = formatMonthYear(selectedMonth);
+  const previousMonth = changeMonth(selectedMonth, -1);
+  const previousMonthExpense = transactions
+    .filter((t) => t.type === 'expense' && isSameMonthAndYear(t.date, previousMonth))
+    .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
+  const expenseChange = previousMonthExpense > 0
+    ? Math.round(((monthExpense - previousMonthExpense) / previousMonthExpense) * 100)
+    : null;
+  const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
+  const elapsedDays = isCurrentMonthSelected ? Math.min(new Date().getDate(), daysInMonth) : daysInMonth;
+  const projectedExpense = isCurrentMonthSelected && elapsedDays > 0
+    ? (monthExpense / elapsedDays) * daysInMonth
+    : null;
+  const subscriptionBurden = isCurrentMonthSelected && monthIncome > 0
+    ? Math.round((totalMonthlySubscriptions / monthIncome) * 100)
+    : null;
+  const trendMonths = Array.from({ length: 6 }, (_, index) => {
+    const date = changeMonth(selectedMonth, index - 5);
+    const items = transactions.filter((t) => isSameMonthAndYear(t.date, date));
+    return {
+      key: `${date.getFullYear()}-${date.getMonth()}`,
+      label: date.toLocaleDateString(getFormattingLocale(), { month: 'short', year: '2-digit' }),
+      income: items.filter((t) => t.type === 'income').reduce((sum, t) => sum + (t.rawAmount || 0), 0),
+      expense: items.filter((t) => t.type === 'expense').reduce((sum, t) => sum + (t.rawAmount || 0), 0),
+    };
+  });
+  const trendMax = Math.max(1, ...trendMonths.flatMap((month) => [month.income, month.expense]));
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Header
         title="Rapor"
-        subtitle="Hangi kategori seni yiyor?"
+        subtitle="Gelir, gider ve zaman içindeki değişim"
         rightActionIcon="add"
         onRightActionPress={onOpenAddModal}
       />
 
       {/* Sub Navigation Tabs */}
-      <View style={styles.subTabRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabRow} contentContainerStyle={styles.subTabContent}>
         {[
-          { id: 'genel', label: 'Genel' },
-          { id: 'icgoru', label: 'İçgörüler' },
-          { id: 'kategori', label: 'Kategori' },
-          { id: 'trend', label: 'Trend' },
-          { id: 'zaman', label: 'Zaman' },
+          { id: 'genel', label: 'Genel', isProTab: false },
+          { id: 'kategori', label: 'Kategori', isProTab: false },
+          { id: 'icgoru', label: 'İçgörüler', isProTab: true },
+          { id: 'trend', label: 'Trend', isProTab: true },
+          { id: 'zaman', label: 'Zaman', isProTab: true },
         ].map((tab) => {
           const isActive = activeSubTab === tab.id;
           return (
@@ -158,13 +199,18 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
               style={[styles.subTabChip, isActive && styles.subTabChipActive]}
               onPress={() => setActiveSubTab(tab.id as any)}
             >
-              <Text style={[styles.subTabText, isActive && styles.subTabTextActive]}>
-                {tab.label}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={[styles.subTabText, isActive && styles.subTabTextActive]}>
+                  {tab.label}
+                </Text>
+                {tab.isProTab && !isPro && (
+                  <Ionicons name="lock-closed-outline" size={11} color={COLORS.mutedText} />
+                )}
+              </View>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* Month Selector */}
       <View style={styles.monthSelectorRow}>
@@ -202,7 +248,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {activeSubTab === 'kategori' && (
         <>
           <View style={styles.chartCard}>
-            <Text style={styles.chartCardTitle}>{currentMonthName} - Gider Kırılımı</Text>
+            <Text style={styles.chartCardTitle}>{localizeFormat('{0} - Gider Kırılımı', [currentMonthName])}</Text>
 
             {monthExpense > 0 ? (
               <View style={styles.donutContainer}>
@@ -254,7 +300,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
               {categories.length === 0 ? (
                 <View style={styles.emptyStateBox}>
                   <Ionicons name="pie-chart-outline" size={32} color={COLORS.subtleText} />
-                  <Text style={styles.emptyText}>{currentMonthName} için henüz kayıtlı gider yok.</Text>
+                  <Text style={styles.emptyText}>{localizeFormat('{0} için henüz kayıtlı gider yok.', [currentMonthName])}</Text>
                 </View>
               ) : (
                 categories.map((cat) => (
@@ -276,11 +322,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
 
           {/* Income Breakdown Card */}
           <View style={styles.incomeCard}>
-            <Text style={styles.incomeCardTitle}>{currentMonthName} - Gelir Kırılımı</Text>
+            <Text style={styles.incomeCardTitle}>{localizeFormat('{0} - Gelir Kırılımı', [currentMonthName])}</Text>
             {incomeCategories.length === 0 ? (
               <View style={styles.emptyStateBox}>
                 <Ionicons name="cash-outline" size={32} color={COLORS.subtleText} />
-                <Text style={styles.emptyText}>{currentMonthName} için henüz kayıtlı gelir yok.</Text>
+                <Text style={styles.emptyText}>{localizeFormat('{0} için henüz kayıtlı gelir yok.', [currentMonthName])}</Text>
               </View>
             ) : (
               incomeCategories.map((cat) => (
@@ -334,8 +380,39 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
         </View>
       )}
 
+      {/* ADVANCED PRO TABS GATE */}
+      {!isPro && (activeSubTab === 'icgoru' || activeSubTab === 'trend' || activeSubTab === 'zaman') && (
+        <View style={styles.proLockedCard}>
+          <View style={styles.proLockedCrownWrap}>
+            <Ionicons name="analytics-outline" size={28} color={COLORS.primary} />
+          </View>
+          <Text style={styles.proLockedTitle}>
+            {activeSubTab === 'icgoru'
+              ? 'Akıllı Finansal İçgörüler'
+              : activeSubTab === 'trend'
+              ? 'Gelir & Gider Trend Analizi'
+              : 'Detaylı Zaman Akışı'}
+          </Text>
+          <View style={styles.proLockedBadgePill}>
+            <Text style={styles.proLockedBadgeText}>PENNY PRO ANALİTİK</Text>
+          </View>
+          <Text style={styles.proLockedDesc}>
+            Altı aylık karşılaştırma, harcama değişimi, ay sonu tahmini ve abonelik yükünü tek yerde görün.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.proLockedBtn}
+            onPress={() => openPaywall('reports_advanced')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="analytics-outline" size={16} color="#0F172A" style={{ marginRight: 6 }} />
+            <Text style={styles.proLockedBtnText}>Analizleri Aç</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* TAB 3: İÇGÖRÜLER (Smart Financial Insights) */}
-      {activeSubTab === 'icgoru' && (
+      {isPro && activeSubTab === 'icgoru' && (
         <View style={styles.insightWrap}>
           {topExpenseCategory ? (
             <View style={styles.insightAlertCard}>
@@ -344,22 +421,45 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 <Text style={styles.insightAlertTitle}>En Yüksek Harcama Kategorisi</Text>
               </View>
               <Text style={styles.insightAlertBody}>
-                {currentMonthName} döneminde harcamalarınızın en büyük kısmını %{topExpenseCategory.percentage} oranıyla{' '}
-                <Text style={{ fontWeight: 'bold' }}>{topExpenseCategory.name}</Text> (
-                {formatCurrency(topExpenseCategory.rawAmount)}) oluşturuyor.
+                {topSpendingMessage(currentMonthName, topExpenseCategory.name, topExpenseCategory.percentage, formatCurrency(topExpenseCategory.rawAmount))}
               </Text>
             </View>
           ) : null}
 
           <View style={styles.insightCard}>
             <View style={styles.insightHeader}>
-              <Ionicons name="sparkles-outline" size={18} color={COLORS.primary} />
+              <Ionicons name="trending-up-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.insightTitle}>Harcama Değişimi</Text>
+            </View>
+            <Text style={styles.insightBody}>
+              {expenseChange === null
+                ? 'Önceki ayda harcama kaydı olmadığı için karşılaştırma yapılamıyor.'
+                : expenseChange === 0
+                ? 'Harcamalarınız önceki ayla aynı seviyede.'
+                : localizeFormat(expenseChange > 0 ? 'Harcamalarınız önceki aya göre %{0} arttı.' : 'Harcamalarınız önceki aya göre %{0} azaldı.', [Math.abs(expenseChange)])}
+            </Text>
+          </View>
+
+          {projectedExpense !== null && monthExpense > 0 && (
+            <View style={styles.insightCard}>
+              <View style={styles.insightHeader}>
+                <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.insightTitle}>Ay Sonu Harcama Tahmini</Text>
+              </View>
+              <Text style={styles.insightBody}>
+                {localizeFormat('Günlük ortalama korunursa ay sonu harcamanız yaklaşık {0} olur. Tahmin {1} günlük kayda dayanır.', [formatCurrency(projectedExpense), elapsedDays])}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.insightCard}>
+            <View style={styles.insightHeader}>
+              <Ionicons name="repeat-outline" size={18} color={COLORS.primary} />
               <Text style={styles.insightTitle}>Abonelik & Sabit Gider Yükü</Text>
             </View>
             <Text style={styles.insightBody}>
-              Aktif {subscriptions.length} aboneliğiniz için ayda ortalama{' '}
-              <Text style={{ fontWeight: 'bold' }}>{formatCurrency(totalMonthlySubscriptions)}</Text>{' '}
-              ödüyorsunuz. Bu yıllık <Text style={{ fontWeight: 'bold' }}>{formatCurrency(totalMonthlySubscriptions * 12)}</Text> yapıyor.
+              {localizeFormat('{0} aktif abonelik için ayda ortalama {1} ödüyorsunuz. Yıllık toplam {2}.', [subscriptions.length, formatCurrency(totalMonthlySubscriptions), formatCurrency(totalMonthlySubscriptions * 12)])}
+              {subscriptionBurden !== null ? ` ${localizeFormat('Bu, seçili ay gelirinizin yaklaşık %{0} kadarı.', [subscriptionBurden])}` : ''}
             </Text>
           </View>
 
@@ -369,46 +469,41 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
               <Text style={styles.insightTitle}>Tasarruf Hedefleri Durumu</Text>
             </View>
             <Text style={styles.insightBody}>
-              Toplam biriken hedef tutarınız:{' '}
-              <Text style={{ fontWeight: 'bold' }}>{formatCurrency(totalSavedGoals)}</Text>.
-              {goals.length === 0 ? ' Henüz bir hedef tanımlamadınız.' : ` ${goals.length} aktif hedefiniz takip ediliyor.`}
+              {localizeFormat('Toplam birikiminiz: {0}.', [formatCurrency(totalSavedGoals)])}
+              {goals.length === 0 ? ` ${localize('Henüz bir hedef tanımlamadınız.')}` : ` ${localizeFormat('{0} aktif hedefiniz takip ediliyor.', [goals.length])}`}
             </Text>
           </View>
         </View>
       )}
 
       {/* TAB 4: TREND (Income vs Expense Trend) */}
-      {activeSubTab === 'trend' && (
+      {isPro && activeSubTab === 'trend' && (
         <View style={styles.trendWrap}>
           <View style={styles.chartCard}>
-            <Text style={styles.chartCardTitle}>{currentMonthName} - Gelir & Gider Dengesi</Text>
-            {monthIncome === 0 && monthExpense === 0 ? (
+            <Text style={styles.chartCardTitle}>Son 6 Ay · Gelir ve Gider</Text>
+            {trendMonths.every((month) => month.income === 0 && month.expense === 0) ? (
               <View style={styles.emptyStateBox}>
                 <Ionicons name="bar-chart-outline" size={32} color={COLORS.subtleText} />
-                <Text style={styles.emptyText}>{currentMonthName} için henüz gelir veya gider kaydı bulunmuyor.</Text>
+                <Text style={styles.emptyText}>Bu dönemde karşılaştırılacak işlem kaydı bulunmuyor.</Text>
               </View>
             ) : (
-              <View style={styles.barRow}>
-                {(() => {
-                  const maxAmt = Math.max(monthIncome, monthExpense, 1);
-                  const incomeHeight = monthIncome > 0 ? Math.max((monthIncome / maxAmt) * 120, 16) : 8;
-                  const expenseHeight = monthExpense > 0 ? Math.max((monthExpense / maxAmt) * 120, 16) : 8;
-                  return (
-                    <>
-                      <View style={styles.barCol}>
-                        <Text style={styles.barLabel}>Gelir</Text>
-                        <View style={[styles.barFill, { height: incomeHeight, backgroundColor: COLORS.emerald }]} />
-                        <Text style={styles.barValue}>{formatCurrency(monthIncome)}</Text>
-                      </View>
-
-                      <View style={styles.barCol}>
-                        <Text style={styles.barLabel}>Gider</Text>
-                        <View style={[styles.barFill, { height: expenseHeight, backgroundColor: COLORS.rose }]} />
-                        <Text style={styles.barValue}>{formatCurrency(monthExpense)}</Text>
-                      </View>
-                    </>
-                  );
-                })()}
+              <View style={styles.trendList}>
+                <View style={styles.trendLegend}>
+                  <View style={[styles.legendDot, { backgroundColor: COLORS.emerald }]} />
+                  <Text style={styles.legendText}>Gelir</Text>
+                  <View style={[styles.legendDot, { backgroundColor: COLORS.rose }]} />
+                  <Text style={styles.legendText}>Gider</Text>
+                </View>
+                {trendMonths.map((month) => (
+                  <View key={month.key} style={styles.trendMonthRow}>
+                    <Text style={styles.trendMonthLabel}>{month.label}</Text>
+                    <View style={styles.trendBars}>
+                      <View style={[styles.trendBar, { width: `${(month.income / trendMax) * 100}%`, backgroundColor: COLORS.emerald }]} />
+                      <View style={[styles.trendBar, { width: `${(month.expense / trendMax) * 100}%`, backgroundColor: COLORS.rose }]} />
+                    </View>
+                    <Text style={styles.trendNet}>{formatCurrency(month.income - month.expense)}</Text>
+                  </View>
+                ))}
               </View>
             )}
           </View>
@@ -416,25 +511,25 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       )}
 
       {/* TAB 5: ZAMAN (Chronological Stream Breakdown) */}
-      {activeSubTab === 'zaman' && (
+      {isPro && activeSubTab === 'zaman' && (
         <View style={styles.zamanWrap}>
           <Text style={styles.sectionTitle}>{currentMonthName} İşlem Akışı</Text>
           {monthlyTransactions.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="time-outline" size={36} color={COLORS.subtleText} />
-              <Text style={styles.emptyText}>{currentMonthName} döneminde kaydedilmiş işlem yok.</Text>
+              <Text style={styles.emptyText}>{localizeFormat('{0} döneminde kaydedilmiş işlem yok.', [currentMonthName])}</Text>
             </View>
           ) : (
             monthlyTransactions.map((tx) => (
               <View key={tx.id} style={styles.zamanRow}>
                 <View style={styles.zamanLeft}>
-                  <View style={[styles.zamanDot, { backgroundColor: tx.type === 'income' ? COLORS.emerald : COLORS.rose }]} />
+                  <View style={[styles.zamanDot, { backgroundColor: tx.type === 'income' ? COLORS.emerald : tx.type === 'transfer' ? COLORS.primary : COLORS.rose }]} />
                   <View>
                     <Text style={styles.zamanTitle}>{tx.title}</Text>
                     <Text style={styles.zamanSub}>{tx.category} · {formatShortDate(tx.date)}</Text>
                   </View>
                 </View>
-                <Text style={[styles.zamanAmount, { color: tx.type === 'income' ? COLORS.emeraldText : COLORS.foreground }]}>
+                <Text style={[styles.zamanAmount, { color: tx.type === 'income' ? COLORS.emeraldText : tx.type === 'transfer' ? COLORS.primary : COLORS.foreground }]}>
                   {tx.amount}
                 </Text>
               </View>
@@ -446,10 +541,10 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
   );
 };
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: LIGHT_COLORS.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -458,30 +553,33 @@ const styles = StyleSheet.create({
 
   // Sub Tabs
   subTabRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.card,
-    padding: 4,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    flexGrow: 0,
     marginBottom: 16,
   },
+  subTabContent: {
+    flexDirection: 'row',
+    gap: 7,
+    paddingVertical: 2,
+  },
   subTabChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: LIGHT_COLORS.card,
+    borderWidth: 1,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   subTabChipActive: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: LIGHT_COLORS.primaryLight,
+    borderColor: LIGHT_COLORS.primary,
   },
   subTabText: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   subTabTextActive: {
-    color: '#FFF',
+    color: LIGHT_COLORS.primary,
     fontWeight: '700',
   },
 
@@ -501,30 +599,30 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   monthTitleText: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   currentMonthBadge: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: LIGHT_COLORS.secondary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   currentMonthBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: LIGHT_COLORS.primary,
   },
   emptyStateBox: {
     alignItems: 'center',
@@ -535,13 +633,13 @@ const styles = StyleSheet.create({
 
   // Chart Card
   chartCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
     marginBottom: 16,
-    shadowColor: COLORS.shadow,
+    shadowColor: LIGHT_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 10,
@@ -550,7 +648,7 @@ const styles = StyleSheet.create({
   chartCardTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -565,25 +663,25 @@ const styles = StyleSheet.create({
   },
   donutLabel: {
     fontSize: 10,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontWeight: '600',
   },
   donutTotalText: {
     fontSize: 16,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 2,
   },
 
   categoryList: {
     marginTop: 20,
     borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
+    borderTopColor: LIGHT_COLORS.cardBorder,
     paddingTop: 12,
   },
   emptyText: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     textAlign: 'center',
   },
   catRow: {
@@ -605,7 +703,7 @@ const styles = StyleSheet.create({
   catName: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   catRight: {
     flexDirection: 'row',
@@ -615,26 +713,26 @@ const styles = StyleSheet.create({
   catAmount: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   catPercent: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     width: 32,
     textAlign: 'right',
   },
 
   incomeCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   incomeCardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginBottom: 8,
   },
 
@@ -643,15 +741,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   metricCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   metricLabel: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     fontWeight: '600',
   },
   metricBigValue: {
@@ -661,7 +759,7 @@ const styles = StyleSheet.create({
   },
   metricSubText: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   rowTwo: {
     flexDirection: 'row',
@@ -669,21 +767,21 @@ const styles = StyleSheet.create({
   },
   halfCard: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   halfLabel: {
     fontSize: 12,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 8,
   },
   halfValue: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginTop: 2,
   },
 
@@ -692,7 +790,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   insightAlertCard: {
-    backgroundColor: COLORS.amberBg,
+    backgroundColor: LIGHT_COLORS.amberBg,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
@@ -707,19 +805,19 @@ const styles = StyleSheet.create({
   insightAlertTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.amberText,
+    color: LIGHT_COLORS.amberText,
   },
   insightAlertBody: {
     fontSize: 13,
-    color: COLORS.amberText,
+    color: LIGHT_COLORS.amberText,
     lineHeight: 18,
   },
   insightCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   insightHeader: {
     flexDirection: 'row',
@@ -730,17 +828,64 @@ const styles = StyleSheet.create({
   insightTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   insightBody: {
     fontSize: 13,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     lineHeight: 18,
   },
 
   // Trend Tab Styles
   trendWrap: {
     gap: 12,
+  },
+  trendList: {
+    gap: 15,
+  },
+  trendLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 6,
+    marginBottom: 3,
+  },
+  legendDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  legendText: {
+    fontSize: 11,
+    color: LIGHT_COLORS.mutedText,
+    fontWeight: '600',
+  },
+  trendMonthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  trendMonthLabel: {
+    width: 48,
+    fontSize: 11,
+    fontWeight: '700',
+    color: LIGHT_COLORS.mutedText,
+  },
+  trendBars: {
+    flex: 1,
+    gap: 4,
+  },
+  trendBar: {
+    height: 8,
+    borderRadius: 4,
+  },
+  trendNet: {
+    width: 90,
+    textAlign: 'right',
+    fontSize: 10,
+    fontWeight: '700',
+    color: LIGHT_COLORS.foreground,
   },
   barRow: {
     flexDirection: 'row',
@@ -762,12 +907,12 @@ const styles = StyleSheet.create({
   barLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
   },
   barValue: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
 
   // Zaman Tab Styles
@@ -777,18 +922,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
     marginBottom: 8,
   },
   zamanRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
   },
   zamanLeft: {
     flexDirection: 'row',
@@ -803,11 +948,11 @@ const styles = StyleSheet.create({
   zamanTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.foreground,
+    color: LIGHT_COLORS.foreground,
   },
   zamanSub: {
     fontSize: 11,
-    color: COLORS.mutedText,
+    color: LIGHT_COLORS.mutedText,
     marginTop: 2,
   },
   zamanAmount: {
@@ -816,11 +961,85 @@ const styles = StyleSheet.create({
   },
 
   emptyCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: LIGHT_COLORS.card,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: LIGHT_COLORS.cardBorder,
+  },
+
+  // Pro Lock Gate Card
+  proLockedCard: {
+    backgroundColor: '#183B35',
+    borderRadius: 22,
+    padding: 24,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#31584F',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  proLockedCrownWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#285148',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#42695E',
+  },
+  proLockedTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  proLockedBadgePill: {
+    backgroundColor: '#285148',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  proLockedBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B9DED0',
+    letterSpacing: 0.8,
+  },
+  proLockedDesc: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 19,
+    paddingHorizontal: 12,
+    marginBottom: 20,
+  },
+  proLockedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D9F0E5',
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+    borderRadius: 14,
+    shadowColor: '#102923',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  proLockedBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
   },
 });
