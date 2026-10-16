@@ -22,17 +22,17 @@ Yeni borç/alacak kaydı oluşturma Pro kapsamındadır. Aboneliği sona eren ku
 
 App Store Connect'te aynı abonelik grubunda iki otomatik yenilenen ürün oluşturun:
 
-- `com.yusufcepni.penny.pro.monthly` — aylık
-- `com.yusufcepni.penny.pro.yearly` — yıllık
+- `com.yourdomain.penny.pro.monthly` — aylık
+- `com.yourdomain.penny.pro.yearly` — yıllık
 
-Farklı ürün kimlikleri kullanırsanız `.env.example` içindeki `EXPO_PUBLIC_IOS_PRO_MONTHLY_ID` ve `EXPO_PUBLIC_IOS_PRO_YEARLY_ID` değerlerini `.env.local` dosyanızda belirtin. Fiyatlar ve para birimi App Store'dan gelir; uygulama sabit fiyat göstermez. Satın alma, geri yükleme ve abonelik yönetimi Pro ekranındadır.
+Farklı ürün kimlikleri kullanırsanız `.env.example` içindeki `EXPO_PUBLIC_IOS_PRO_MONTHLY_ID` ve `EXPO_PUBLIC_IOS_PRO_YEARLY_ID` değerlerini `.env` dosyanızda belirtin. Fiyatlar ve para birimi App Store'dan gelir; uygulama sabit fiyat göstermez. Satın alma, geri yükleme ve abonelik yönetimi Pro ekranındadır.
 
 App Store Connect'te Türkiye fiyatını koruyup ABD ve Euro kullanan mağazalar için ayrı fiyat belirleyebilirsiniz. Diğer mağazalarda Apple'ın önerdiği karşılıkları gözden geçirip gerekirse değiştirebilirsiniz. Ekrandaki abonelik tutarı Apple hesabının App Store ülkesine göre yerel para biriminde gösterilir; arayüz dili veya fiziksel konum fiyatı belirlemez. Uygulamadaki kişisel finans kayıtları ise hâlâ TRY cinsindedir, otomatik döviz çevrimi yapılmaz.
 
 App Store'a göndermeden önce:
 
 1. App Store Connect'te ürünlerin süre, fiyat, yerelleştirme ve inceleme bilgilerini tamamlayın. Ürün kimliklerinin kodla birebir eşleştiğini doğrulayın.
-2. [PRIVACY.md](PRIVACY.md) metnine destek iletişim bilgilerinizi ekleyip herkese açık bir HTTPS adreste yayımlayın. Bu adresi `.env.local` içinde `EXPO_PUBLIC_PRIVACY_POLICY_URL` olarak ve App Store Connect gizlilik politikası alanında belirtin.
+2. [PRIVACY.md](PRIVACY.md) metnine destek iletişim bilgilerinizi ekleyip herkese açık bir HTTPS adreste yayımlayın. Bu adresi `.env` içinde `EXPO_PUBLIC_PRIVACY_POLICY_URL` olarak ve App Store Connect gizlilik politikası alanında belirtin.
 3. TestFlight sürümünde gerçek bir cihaz ve sandbox Apple hesabıyla aylık/yıllık satın alma, geri yükleme, yenileme ve iptali deneyin.
 4. App Store Connect'te uygulama gizlilik beyanını, ekran görüntülerini, açıklamayı ve abonelik ürünlerini tamamlayın. Geliştirme modundaki Pro test düğmesi üretim sürümünde görünmez.
 
@@ -40,7 +40,7 @@ Bu hesap ve ürün ayarları olmadan kodun paketlenmesi mümkündür, fakat ger�
 
 ## TestFlight yüklemesi
 
-EAS projesi `@yusuf3337/penny` olarak bağlıdır. `production` profili App Store dağıtımı ve uzaktan artan iOS derleme numarası için ayarlanmıştır. İlk imzalı derlemede Apple Developer hesabıyla giriş ve iki aşamalı doğrulama istenir:
+EAS projesi kendi Expo hesabınıza bağlıdır. `production` profili App Store dağıtımı ve uzaktan artan iOS derleme numarası için ayarlanmıştır. İlk imzalı derlemede Apple Developer hesabıyla giriş ve iki aşamalı doğrulama istenir:
 
 ```sh
 eas build --platform ios --profile production
