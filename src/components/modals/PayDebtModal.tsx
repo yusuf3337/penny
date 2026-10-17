@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -100,7 +101,7 @@ export const PayDebtModal: React.FC<PayDebtModalProps> = ({
 
       <HeroUIInput
         label={isGiven ? 'Tahsil Edilen Tutar' : 'Ödenen Tutar'}
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder={formatCurrency(debt.remainingAmount)}
         keyboardType="numeric"
         value={payAmountInput}

@@ -14,6 +14,7 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { parseAmountSafely, formatCurrency } from '../utils/formatters';
 import { getFormattingLocale, localize } from '../context/LocaleContext';
+import { getActiveCurrency, getCurrencySymbol } from '../context/CurrencyContext';
 
 const STORAGE_KEYS = {
   USER_NAME: '@penny_user_name_v1',
@@ -84,8 +85,8 @@ export const addCategory = async (
 
 export const getAccounts = async (): Promise<Account[]> => {
   return loadStoredItem(STORAGE_KEYS.ACCOUNTS, [
-    { id: 'acc_cash', name: 'Nakit Cüzdan', type: 'cash', balance: 0, currency: '₺', color: '#10B981', createdAt: new Date().toISOString() },
-    { id: 'acc_bank', name: 'Banka Hesabı', type: 'bank', balance: 0, currency: '₺', color: '#3B82F6', createdAt: new Date().toISOString() },
+    { id: 'acc_cash', name: 'Nakit Cüzdan', type: 'cash', balance: 0, currency: getCurrencySymbol(), color: '#10B981', createdAt: new Date().toISOString() },
+    { id: 'acc_bank', name: 'Banka Hesabı', type: 'bank', balance: 0, currency: getCurrencySymbol(), color: '#3B82F6', createdAt: new Date().toISOString() },
   ]);
 };
 
@@ -129,6 +130,27 @@ export const addTransaction = async (
     date: tx.date || new Date().toISOString(),
   };
   const updated = [created, ...current];
+  await saveTransactions(updated);
+  return updated;
+};
+
+export const updateTransaction = async (
+  id: string,
+  changes: Omit<AppTransaction, 'id' | 'date'> & { date?: string }
+): Promise<AppTransaction[]> => {
+  const current = await getStoredTransactions();
+  const existing = current.find((tx) => tx.id === id);
+  if (!existing || existing.type === 'transfer') throw new Error('İşlem düzenlenemedi.');
+  const rawAmount = parseAmountSafely(changes.rawAmount);
+  if (rawAmount <= 0) throw new Error('Geçersiz tutar.');
+  const updated = current.map((tx) => tx.id === id ? {
+    ...tx,
+    ...changes,
+    id,
+    date: changes.date || tx.date,
+    rawAmount,
+    amount: `${changes.type === 'income' ? '+' : '-'}${formatCurrency(rawAmount)}`,
+  } : tx);
   await saveTransactions(updated);
   return updated;
 };
@@ -404,7 +426,7 @@ export const exportAllDataJSON = async (): Promise<string> => {
 export const exportTransactionsCSV = async (): Promise<string> => {
   const txs = await getStoredTransactions();
   const locale = getFormattingLocale();
-  const decimal = new Intl.NumberFormat(locale).formatToParts(1.5).find((part) => part.type === 'decimal')?.value ?? ',';
+  const decimal = ['tr', 'de', 'fr', 'ru', 'it'].includes(locale.split('-')[0]) ? ',' : '.';
   const delimiter = decimal === ',' ? ';' : ',';
   const amountFormatter = new Intl.NumberFormat(locale, { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const cell = (value: string | number) => {
@@ -414,7 +436,7 @@ export const exportTransactionsCSV = async (): Promise<string> => {
     return `"${safe.replace(/"/g, '""')}"`;
   };
   const rows = [
-    ['Tarih', 'İşlem Tipi', 'Kategori', 'Başlık', 'Hesap', 'Tutar (TL)'].map((label) => localize(label)),
+    ['Tarih', 'İşlem Tipi', 'Kategori', 'Başlık', 'Hesap', `Tutar (${getActiveCurrency()})`].map((label) => localize(label)),
     ...[...txs]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .map((t) => [

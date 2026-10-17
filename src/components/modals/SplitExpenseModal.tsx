@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -65,7 +66,7 @@ export const SplitExpenseModal: React.FC<SplitExpenseModalProps> = ({
       return;
     }
     if (totalCents < totalPeople) {
-      setError('Tutar, kişi başına en az 0,01 ₺ düşecek kadar büyük olmalı.');
+      setError(`Tutar, kişi başına en az 0,01 ${getCurrencySymbol()} düşecek kadar büyük olmalı.`);
       return;
     }
 
@@ -180,7 +181,7 @@ export const SplitExpenseModal: React.FC<SplitExpenseModalProps> = ({
 
       <HeroUIInput
         label="Toplam Hesap Tutarı"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="Örn: 1.200"
         keyboardType="numeric"
         value={totalAmountInput}

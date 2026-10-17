@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState } from 'react';
 import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
@@ -70,7 +71,7 @@ export const AddPendingCollectionModal: React.FC<AddPendingCollectionModalProps>
 
       <HeroUIInput
         label="Beklenen Tutar"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="0,00"
         keyboardType="numeric"
         value={amountInput}

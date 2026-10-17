@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -14,12 +15,14 @@ import { usePremium } from '../../context/PremiumContext';
 
 interface AddTransactionModalProps {
   visible: boolean;
+  initialTransaction?: AppTransaction | null;
   onClose: () => void;
-  onSave: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => void;
+  onSave: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => Promise<void> | void;
 }
 
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   visible,
+  initialTransaction,
   onClose,
   onSave,
 }) => {
@@ -43,6 +46,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [categoryError, setCategoryError] = useState('');
   const [selectionError, setSelectionError] = useState('');
   const [creatingCategory, setCreatingCategory] = useState(false);
+  const [saving, setSaving] = useState(false);
   const pendingCategoryPaywall = useRef(false);
 
   const filteredCategories = useMemo(() => {
@@ -61,15 +65,23 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      setTxDate(new Date());
+      setType(initialTransaction?.type === 'income' ? 'income' : 'expense');
+      setTitle(initialTransaction?.title ?? '');
+      setAmountInput(initialTransaction ? formatNumberInput(String(initialTransaction.rawAmount)) : '');
+      setSelectedCategory(initialTransaction?.category ?? '');
+      const existingDate = initialTransaction?.date ? new Date(initialTransaction.date) : new Date();
+      setTxDate(Number.isNaN(existingDate.getTime()) ? new Date() : existingDate);
+      setError('');
+      setSelectionError('');
+      setShowDetails(false);
       getAccounts().then((accs) => {
         setAccounts(accs);
-        if (accs.length > 0 && !selectedAccountId) {
-          setSelectedAccountId(accs[0].id);
-        }
+        const matching = accs.find((acc) => acc.id === initialTransaction?.accountId)
+          ?? accs.find((acc) => acc.type === initialTransaction?.accountType);
+        setSelectedAccountId(matching?.id ?? accs[0]?.id ?? '');
       });
     }
-  }, [visible]);
+  }, [visible, initialTransaction]);
 
   const createCategory = async () => {
     if (!isPro) return;
@@ -126,8 +138,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     return d.toDateString() === yest.toDateString();
   };
 
-  const handleSave = () => {
-    if (creatingCategory) return;
+  const handleSave = async () => {
+    if (creatingCategory || saving) return;
     if (!title.trim()) {
       setError('Lütfen bir başlık veya açıklama girin.');
       return;
@@ -154,7 +166,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const selectedAcc = accounts.find((a) => a.id === selectedAccountId);
     const accountType: 'bank' | 'cash' = selectedAcc ? (selectedAcc.type === 'cash' ? 'cash' : 'bank') : 'bank';
 
-    onSave({
+    setSaving(true);
+    try {
+    await onSave({
       title: title.trim(),
       category: categoryToUse,
       amount: formattedAmount,
@@ -177,6 +191,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setShowDetails(false);
     setShowCategoryInput(false);
     onClose();
+    } catch {
+      setError('İşlem kaydedilemedi. Tekrar deneyin.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -189,8 +208,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           openPaywall('custom_category');
         }
       }}
-      title="Yeni İşlem Ekle"
-      subtitle="Gelir veya gider hareketlerinizi anında kaydedin."
+      title={initialTransaction ? 'İşlemi Düzenle' : 'Yeni İşlem Ekle'}
+      subtitle={initialTransaction ? 'İşlem bilgilerini güncelleyin.' : 'Gelir veya gider hareketlerinizi anında kaydedin.'}
       badge={{
         text: type === 'expense' ? 'GİDER' : 'GELİR',
         color: type === 'expense' ? '#BE123C' : '#047857',
@@ -201,10 +220,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           variant={type === 'expense' ? 'danger' : 'success'}
           size="lg"
           onPress={handleSave}
-          disabled={creatingCategory}
+          disabled={creatingCategory || saving}
           icon={type === 'expense' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'}
         >
-          {type === 'expense' ? 'Gideri Kaydet' : 'Geliri Kaydet'}
+          {initialTransaction ? 'Değişiklikleri Kaydet' : type === 'expense' ? 'Gideri Kaydet' : 'Geliri Kaydet'}
         </HeroUIButton>
       }
     >
@@ -269,7 +288,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       {/* Amount Input */}
       <HeroUIInput
         label="Tutar"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="0,00"
         keyboardType="numeric"
         value={amountInput}
@@ -281,6 +300,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           title.trim() && parseAmountSafely(amountInput) <= 0 && error ? error : undefined
         }
       />
+      {!!error && !!title.trim() && parseAmountSafely(amountInput) > 0 && (
+        <Text className="text-xs text-rose-500 font-semibold mb-3">{error}</Text>
+      )}
 
       {/* Category selection stays visible so envelope spending is attributed correctly. */}
       <View className="flex-row items-center justify-between mb-2">

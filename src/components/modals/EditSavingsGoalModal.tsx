@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { SavingsGoal } from '../../types';
@@ -5,6 +6,7 @@ import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
 import { HeroUIButton } from '../common/HeroUIButton';
 import { localizeFormat } from '../../context/LocaleContext';
+import { formatNumberInput, parseAmountSafely } from '../../utils/formatters';
 
 interface EditSavingsGoalModalProps {
   visible: boolean;
@@ -25,17 +27,17 @@ export const EditSavingsGoalModal: React.FC<EditSavingsGoalModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      setTargetInput(currentGoal.targetAmount ? currentGoal.targetAmount.toString() : '');
-      setSavedInput(currentGoal.savedAmount ? currentGoal.savedAmount.toString() : '');
+      setTargetInput(currentGoal.targetAmount ? formatNumberInput(currentGoal.targetAmount.toString()) : '');
+      setSavedInput(currentGoal.savedAmount ? formatNumberInput(currentGoal.savedAmount.toString()) : '');
       setError('');
     }
   }, [visible, currentGoal]);
 
   const handleSave = () => {
-    const targetVal = parseFloat(targetInput.replace(',', '.'));
-    const savedVal = parseFloat(savedInput.replace(',', '.')) || 0;
+    const targetVal = parseAmountSafely(targetInput);
+    const savedVal = parseAmountSafely(savedInput);
 
-    if (isNaN(targetVal) || targetVal <= 0) {
+    if (targetVal <= 0) {
       setError('Lütfen geçerli bir hedef tutar girin.');
       return;
     }
@@ -77,12 +79,12 @@ export const EditSavingsGoalModal: React.FC<EditSavingsGoalModalProps> = ({
     >
       <HeroUIInput
         label="Hedef Tutar"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="Örn: 10.000"
         keyboardType="numeric"
         value={targetInput}
         onChangeText={(text) => {
-          setTargetInput(text);
+          setTargetInput(formatNumberInput(text));
           if (error) setError('');
         }}
         errorMessage={error}
@@ -90,12 +92,12 @@ export const EditSavingsGoalModal: React.FC<EditSavingsGoalModalProps> = ({
 
       <HeroUIInput
         label="Şu Ana Kadar Biriken Tutar"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="Örn: 6.800"
         keyboardType="numeric"
         value={savedInput}
         onChangeText={(text) => {
-          setSavedInput(text);
+          setSavedInput(formatNumberInput(text));
           if (error) setError('');
         }}
         description="Mevcut birikim durumunuzu buradan elle düzeltebilirsiniz."

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
+import { AppTransaction } from '../types';
 import { useData } from '../context/DataContext';
 import { useAppDialog } from '../context/AppDialogContext';
 import { localizeFormat } from '../context/LocaleContext';
@@ -20,6 +21,7 @@ const BALANCE_CARD_WIDTH = 248;
 
 interface HomeScreenProps {
   onOpenAddModal: () => void;
+  onEditTransaction: (tx: AppTransaction) => void;
   onOpenNameModal: () => void;
   onOpenSettingsModal: () => void;
   onOpenSplitModal?: () => void;
@@ -27,6 +29,7 @@ interface HomeScreenProps {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenAddModal,
+  onEditTransaction,
   onOpenNameModal,
   onOpenSettingsModal,
   onOpenSplitModal,
@@ -81,7 +84,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       accountName: 'Banka Hesabı',
       date: selectedMonth ? selectedMonth.toISOString() : new Date().toISOString(),
     });
-    setQuickToastMessage(`${preset.title} (${preset.amount} ₺) eklendi`);
+    setQuickToastMessage(`${preset.title} (${formatCurrency(preset.amount)}) eklendi`);
     setTimeout(() => setQuickToastMessage(''), 2000);
   };
 
@@ -647,6 +650,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       >
                         {`${tx.type === 'income' || (tx.type === 'transfer' && tx.transferDirection === 'in') ? '+' : '-'}${formatCurrency(tx.rawAmount)}`}
                       </Text>
+                      {tx.type !== 'transfer' && (
+                        <TouchableOpacity
+                          onPress={() => onEditTransaction(tx)}
+                          accessibilityLabel="İşlemi Düzenle"
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons name="create-outline" size={15} color={COLORS.primary} />
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         onPress={() => handleDeleteTransaction(tx.id)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

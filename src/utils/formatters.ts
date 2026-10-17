@@ -2,18 +2,20 @@
  * Safe currency, date, and subscription formatters for Penny
  */
 import { getFormattingLocale } from '../context/LocaleContext';
+import { getActiveCurrency } from '../context/CurrencyContext';
 
 const separators = () => {
-  const parts = new Intl.NumberFormat(getFormattingLocale()).formatToParts(1234.5);
-  return {
-    decimal: parts.find((part) => part.type === 'decimal')?.value ?? ',',
-    group: parts.find((part) => part.type === 'group')?.value ?? '.',
-  };
+  // Hermes on iOS does not reliably implement NumberFormat.formatToParts.
+  // Amount entry must never depend on it: one keystroke used to crash TestFlight.
+  const language = getFormattingLocale().split('-')[0];
+  return ['tr', 'de', 'fr', 'ru', 'it'].includes(language)
+    ? { decimal: ',', group: '.' }
+    : { decimal: '.', group: ',' };
 };
 
 export const parseAmountSafely = (input: string | number | undefined | null): number => {
   if (input === undefined || input === null) return 0;
-  if (typeof input === 'number') return isNaN(input) ? 0 : Math.round(input * 100) / 100;
+  if (typeof input === 'number') return Number.isFinite(input) ? Math.round(input * 100) / 100 : 0;
 
   const str = input.toString().replace(/[^\d.,]/g, '');
   const lastDot = str.lastIndexOf('.');
@@ -27,12 +29,12 @@ export const parseAmountSafely = (input: string | number | undefined | null): nu
     const intPart = str.slice(0, decimalIndex).replace(/\D/g, '');
     const decPart = str.slice(decimalIndex + 1).replace(/\D/g, '').slice(0, 2);
     const parsed = parseFloat(`${intPart || '0'}.${decPart || '0'}`);
-    return isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100;
+    return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
   } else {
     const intPart = str.replace(/\D/g, '');
     if (!intPart) return 0;
     const parsed = parseFloat(intPart);
-    return isNaN(parsed) ? 0 : parsed;
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 };
 
@@ -90,11 +92,16 @@ export const formatNumberInput = (input: string): string => {
 };
 
 export const formatCurrency = (amount: number): string => {
-  const safeNum = isNaN(amount) ? 0 : amount;
-  return new Intl.NumberFormat(getFormattingLocale(), { style: 'currency', currency: 'TRY',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(safeNum);
+  const safeNum = Number.isFinite(amount) ? amount : 0;
+  const currency = getActiveCurrency();
+  try {
+    return new Intl.NumberFormat(getFormattingLocale(), { style: 'currency', currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(safeNum);
+  } catch {
+    return `${currency} ${safeNum.toFixed(2)}`;
+  }
 };
 
 export const formatShortDate = (isoString?: string): string => {
@@ -213,7 +220,7 @@ export const advanceSubscriptionDueDate = (
  * Calculates days remaining from today to target date string accurately
  */
 export const getDaysRemainingText = (dueDateStr?: string): string => {
-  if (!dueDateStr) return new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' }).format(3, 'day');
+  if (!dueDateStr) return '';
   const targetDate = new Date(dueDateStr);
   if (isNaN(targetDate.getTime())) return dueDateStr;
 
@@ -224,9 +231,22 @@ export const getDaysRemainingText = (dueDateStr?: string): string => {
   const diffTime = targetDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return getFormattingLocale() === 'tr-TR' ? 'Bugün ödeniyor' : new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' }).format(0, 'day');
-  if (diffDays === 1) return getFormattingLocale() === 'tr-TR' ? 'Yarın ödeniyor' : new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' }).format(1, 'day');
-  if (diffDays < 0) return getFormattingLocale() === 'tr-TR' ? `${Math.abs(diffDays)} gün gecikti` : new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' }).format(diffDays, 'day');
+  const language = getFormattingLocale().split('-')[0];
+  const copy: Record<string, { today: string; tomorrow: string; late: (n: number) => string; future: (n: number) => string }> = {
+    tr: { today: 'Bugün ödeniyor', tomorrow: 'Yarın ödeniyor', late: n => `${n} gün gecikti`, future: n => `${n} gün sonra` },
+    en: { today: 'Due today', tomorrow: 'Due tomorrow', late: n => `${n} days overdue`, future: n => `In ${n} days` },
+    de: { today: 'Heute fällig', tomorrow: 'Morgen fällig', late: n => `${n} Tage überfällig`, future: n => `In ${n} Tagen` },
+    fr: { today: "À payer aujourd’hui", tomorrow: 'À payer demain', late: n => `${n} jours de retard`, future: n => `Dans ${n} jours` },
+    ko: { today: '오늘 결제 예정', tomorrow: '내일 결제 예정', late: n => `${n}일 연체`, future: n => `${n}일 후` },
+    zh: { today: '今天到期', tomorrow: '明天到期', late: n => `逾期 ${n} 天`, future: n => `${n} 天后` },
+    ja: { today: '今日が支払日', tomorrow: '明日が支払日', late: n => `${n}日超過`, future: n => `${n}日後` },
+    ru: { today: 'Оплата сегодня', tomorrow: 'Оплата завтра', late: n => `Просрочено на ${n} дн.`, future: n => `Через ${n} дн.` },
+    it: { today: 'Scade oggi', tomorrow: 'Scade domani', late: n => `${n} giorni di ritardo`, future: n => `Tra ${n} giorni` },
+  };
+  const words = copy[language] ?? copy.en;
+  if (diffDays === 0) return words.today;
+  if (diffDays === 1) return words.tomorrow;
+  if (diffDays < 0) return words.late(Math.abs(diffDays));
   const date = targetDate.toLocaleDateString(getFormattingLocale(), { day: 'numeric', month: 'short' });
-  return getFormattingLocale() === 'tr-TR' ? `${diffDays} gün sonra (${date})` : `${new Intl.RelativeTimeFormat(getFormattingLocale()).format(diffDays, 'day')} (${date})`;
+  return `${words.future(diffDays)} (${date})`;
 };

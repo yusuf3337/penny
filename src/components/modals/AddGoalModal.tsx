@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -135,7 +136,7 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
 
       <HeroUIInput
         label="Hedef Tutar"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="Örn: 50.000 veya 1.000.000"
         keyboardType="numeric"
         value={targetAmountInput}
@@ -152,7 +153,7 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
 
       <HeroUIInput
         label="Mevcut Birikim (Opsiyonel)"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="0"
         keyboardType="numeric"
         value={savedAmountInput}

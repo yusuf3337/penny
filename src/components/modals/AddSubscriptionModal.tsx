@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -272,7 +273,7 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
 
       <HeroUIInput
         label="Tutar"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="Örn: 79,99"
         keyboardType="numeric"
         value={amountInput}

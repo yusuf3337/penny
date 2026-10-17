@@ -46,7 +46,7 @@ const DEFAULT_PRODUCTS: any[] = [
   {
     id: process.env.EXPO_PUBLIC_IOS_PRO_YEARLY_ID || 'com.yusufcepni.penny.pro.yearly',
     title: 'Penny Pro Yıllık',
-    displayPrice: '₺249,99',
+    displayPrice: '',
     platform: 'ios',
     subscriptionPeriodUnitIOS: 'year',
     type: 'subs',
@@ -54,7 +54,7 @@ const DEFAULT_PRODUCTS: any[] = [
   {
     id: process.env.EXPO_PUBLIC_IOS_PRO_MONTHLY_ID || 'com.yusufcepni.penny.pro.monthly',
     title: 'Penny Pro Aylık',
-    displayPrice: '₺49,99',
+    displayPrice: '',
     platform: 'ios',
     subscriptionPeriodUnitIOS: 'month',
     type: 'subs',
