@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
+import { AppState } from 'react-native';
 import {
   AppTransaction,
   SavingsGoal,
@@ -14,6 +15,7 @@ import {
   getStoredTransactions,
   saveTransactions,
   addTransaction as addTxService,
+  updateTransaction as updateTxService,
   deleteTransaction as deleteTxService,
   deleteTransactionsForMonth as deleteMonthTxService,
   clearAllTransactions as clearAllTxService,
@@ -39,6 +41,9 @@ import {
 } from '../services/storageService';
 import { calculateNextDueDate, advanceSubscriptionDueDate, isSameMonthAndYear, formatCurrency } from '../utils/formatters';
 import { usePremium } from './PremiumContext';
+import { useLocale } from './LocaleContext';
+import { useCurrency } from './CurrencyContext';
+import { notifySubscriptionRecorded, requestNotificationPermissions, syncSubscriptionReminders } from '../services/notificationService';
 
 export type TabType = 'timeline' | 'goals' | 'subscriptions' | 'budget' | 'reports' | 'debts';
 
@@ -59,6 +64,7 @@ interface DataContextType {
 
   transactions: AppTransaction[];
   handleAddTransaction: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => Promise<void>;
+  handleUpdateTransaction: (id: string, tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => Promise<void>;
   handleDeleteTransaction: (id: string) => Promise<void>;
   handleDeleteTransactionsForMonth: (date: Date) => Promise<void>;
   handleClearAllTransactions: () => Promise<void>;
@@ -100,11 +106,14 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isPro, checkGoalAllowed, checkBudgetAllowed } = usePremium();
+  const { language } = useLocale();
+  const { currency } = useCurrency();
   const [userName, setUserName] = useState<string>('Kullanıcı');
   const [hasOnboarded, setHasOnboarded] = useState<boolean>(false);
   const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<TabType>('timeline');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const loadingData = useRef<Promise<void> | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
@@ -116,9 +125,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     loadAllData();
+    const listener = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void loadAllData();
+    });
+    return () => listener.remove();
   }, []);
 
-  const loadAllData = async () => {
+  useEffect(() => {
+    if (isLoading) return;
+    void (async () => {
+      if (subscriptions.some((sub) => sub.isActive)) await requestNotificationPermissions();
+      await syncSubscriptionReminders(subscriptions);
+    })().catch((error) => console.warn('Could not schedule subscription reminders:', error));
+  }, [subscriptions, isLoading, language, currency]);
+
+  const loadAllData = (): Promise<void> => {
+    if (loadingData.current) return loadingData.current;
+    const task = (async () => {
     try {
       setIsLoading(true);
       const [name, onboardedStatus, catList, txs, goalList, subList, budgetList, debtList, pendingList] = await Promise.all([
@@ -153,6 +176,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let updatedTxs = deduplicatedTxs;
       let updatedSubs = [...subList];
+      const recordedSubscriptions: SubscriptionItem[] = [];
 
       const now = new Date();
       updatedSubs = updatedSubs.map((sub) => {
@@ -193,6 +217,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 accountName: sub.accountType === 'cash' ? 'Nakit Cüzdan' : 'Banka Hesabı',
               };
               updatedTxs = [autoTx, ...updatedTxs];
+              recordedSubscriptions.push(sub);
             }
 
             hasChanges = true;
@@ -209,6 +234,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (hasChanges) {
         await saveTransactions(updatedTxs);
         await saveStoredSubscriptions(updatedSubs);
+        for (const sub of recordedSubscriptions) void notifySubscriptionRecorded(sub);
       }
 
       setUserName(name);
@@ -225,6 +251,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
+    })();
+    loadingData.current = task;
+    void task.finally(() => { if (loadingData.current === task) loadingData.current = null; });
+    return task;
   };
 
   const markOnboarded = async () => {
@@ -233,6 +263,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleResetAllData = async () => {
+    if (loadingData.current) await loadingData.current;
     await resetAllAppData();
     await loadAllData();
   };
@@ -257,6 +288,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleAddTransaction = async (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => {
     const updated = await addTxService(tx);
+    setTransactions(updated);
+  };
+
+  const handleUpdateTransaction = async (id: string, tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => {
+    const updated = await updateTxService(id, tx);
     setTransactions(updated);
   };
 
@@ -443,6 +479,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleAddCategory,
         transactions,
         handleAddTransaction,
+        handleUpdateTransaction,
         handleDeleteTransaction,
         handleDeleteTransactionsForMonth,
         handleClearAllTransactions,

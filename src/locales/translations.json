@@ -562,7 +562,13 @@
     "Zarf": "Envelope",
     "Özel kategoriler Penny Pro ile kullanılabilir.": "Custom categories are available with Penny Pro.",
     "Bütçe kaydedilemedi. Tekrar deneyin.": "Could not save budget. Please try again.",
-    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Spending in this category is automatically deducted from your envelope."
+    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Spending in this category is automatically deducted from your envelope.",
+    "İşlemi Düzenle": "Edit transaction",
+    "İşlem bilgilerini güncelleyin.": "Update the transaction details.",
+    "İşlem kaydedilemedi. Tekrar deneyin.": "Could not save the transaction. Try again.",
+    "Veriler sıfırlanamadı. Tekrar deneyin.": "Could not reset the data. Try again.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Transactions, goals, subscription records and budgets will be deleted. Your App Store subscription will remain active.",
+    "Evet, Sıfırla": "Yes, reset"
   },
   "de": {
     "Akış": "Stream",
@@ -1127,7 +1133,13 @@
     "Zarf": "Umschlag",
     "Özel kategoriler Penny Pro ile kullanılabilir.": "Eigene Kategorien sind mit Penny Pro verfügbar.",
     "Bütçe kaydedilemedi. Tekrar deneyin.": "Budget konnte nicht gespeichert werden. Bitte erneut versuchen.",
-    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Ausgaben in dieser Kategorie werden automatisch von Ihrem Umschlag abgezogen."
+    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Ausgaben in dieser Kategorie werden automatisch von Ihrem Umschlag abgezogen.",
+    "İşlemi Düzenle": "Buchung bearbeiten",
+    "İşlem bilgilerini güncelleyin.": "Buchungsdetails aktualisieren.",
+    "İşlem kaydedilemedi. Tekrar deneyin.": "Buchung konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "Veriler sıfırlanamadı. Tekrar deneyin.": "Daten konnten nicht zurückgesetzt werden. Bitte erneut versuchen.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Buchungen, Ziele, Abo-Einträge und Budgets werden gelöscht. Ihr App-Store-Abo bleibt aktiv.",
+    "Evet, Sıfırla": "Ja, zurücksetzen"
   },
   "fr": {
     "Akış": "Flux",
@@ -1692,7 +1704,13 @@
     "Zarf": "Enveloppe",
     "Özel kategoriler Penny Pro ile kullanılabilir.": "Les catégories personnalisées sont disponibles avec Penny Pro.",
     "Bütçe kaydedilemedi. Tekrar deneyin.": "Impossible d’enregistrer le budget. Réessayez.",
-    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Les dépenses de cette catégorie sont automatiquement déduites de votre enveloppe."
+    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Les dépenses de cette catégorie sont automatiquement déduites de votre enveloppe.",
+    "İşlemi Düzenle": "Modifier la transaction",
+    "İşlem bilgilerini güncelleyin.": "Modifiez les détails de la transaction.",
+    "İşlem kaydedilemedi. Tekrar deneyin.": "Impossible d’enregistrer la transaction. Réessayez.",
+    "Veriler sıfırlanamadı. Tekrar deneyin.": "Impossible de réinitialiser les données. Réessayez.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Les transactions, objectifs, abonnements enregistrés et budgets seront supprimés. Votre abonnement App Store restera actif.",
+    "Evet, Sıfırla": "Oui, réinitialiser"
   },
   "ko": {
     "Akış": "스트림",
@@ -2257,7 +2275,13 @@
     "Zarf": "예산 봉투",
     "Özel kategoriler Penny Pro ile kullanılabilir.": "사용자 지정 카테고리는 Penny Pro에서 사용할 수 있습니다.",
     "Bütçe kaydedilemedi. Tekrar deneyin.": "예산을 저장할 수 없습니다. 다시 시도해 주세요.",
-    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "이 카테고리의 지출은 예산 봉투에서 자동으로 차감됩니다."
+    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "이 카테고리의 지출은 예산 봉투에서 자동으로 차감됩니다.",
+    "İşlemi Düzenle": "거래 수정",
+    "İşlem bilgilerini güncelleyin.": "거래 정보를 수정하세요.",
+    "İşlem kaydedilemedi. Tekrar deneyin.": "거래를 저장하지 못했습니다. 다시 시도하세요.",
+    "Veriler sıfırlanamadı. Tekrar deneyin.": "데이터를 초기화하지 못했습니다. 다시 시도하세요.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "거래, 목표, 구독 기록 및 예산이 삭제됩니다. App Store 구독은 유지됩니다.",
+    "Evet, Sıfırla": "예, 초기화"
   },
   "zh-CN": {
     "Akış": "流",
@@ -2822,7 +2846,13 @@
     "Zarf": "预算信封",
     "Özel kategoriler Penny Pro ile kullanılabilir.": "自定义类别仅适用于 Penny Pro。",
     "Bütçe kaydedilemedi. Tekrar deneyin.": "无法保存预算。请重试。",
-    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "此类别的支出会自动从预算信封中扣除。"
+    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "此类别的支出会自动从预算信封中扣除。",
+    "İşlemi Düzenle": "编辑交易",
+    "İşlem bilgilerini güncelleyin.": "更新交易详情。",
+    "İşlem kaydedilemedi. Tekrar deneyin.": "无法保存交易，请重试。",
+    "Veriler sıfırlanamadı. Tekrar deneyin.": "无法重置数据，请重试。",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "交易、目标、订阅记录和预算将被删除。您的 App Store 订阅仍然有效。",
+    "Evet, Sıfırla": "是，重置"
   },
   "ja": {
     "Borçluyum": "借りがあります",
@@ -3387,7 +3417,13 @@
     "Zarf": "予算封筒",
     "Özel kategoriler Penny Pro ile kullanılabilir.": "カスタムカテゴリは Penny Pro で利用できます。",
     "Bütçe kaydedilemedi. Tekrar deneyin.": "予算を保存できませんでした。もう一度お試しください。",
-    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "このカテゴリの支出は予算封筒から自動的に差し引かれます。"
+    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "このカテゴリの支出は予算封筒から自動的に差し引かれます。",
+    "İşlemi Düzenle": "取引を編集",
+    "İşlem bilgilerini güncelleyin.": "取引内容を更新してください。",
+    "İşlem kaydedilemedi. Tekrar deneyin.": "取引を保存できませんでした。もう一度お試しください。",
+    "Veriler sıfırlanamadı. Tekrar deneyin.": "データをリセットできませんでした。もう一度お試しください。",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "取引、目標、購読の記録、予算が削除されます。App Store の定期購入は継続します。",
+    "Evet, Sıfırla": "はい、リセット"
   },
   "ru": {
     "Akış": "Стрим",
@@ -3952,7 +3988,13 @@
     "Zarf": "Конверт",
     "Özel kategoriler Penny Pro ile kullanılabilir.": "Пользовательские категории доступны в Penny Pro.",
     "Bütçe kaydedilemedi. Tekrar deneyin.": "Не удалось сохранить бюджет. Повторите попытку.",
-    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Расходы в этой категории автоматически вычитаются из вашего конверта."
+    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Расходы в этой категории автоматически вычитаются из вашего конверта.",
+    "İşlemi Düzenle": "Изменить операцию",
+    "İşlem bilgilerini güncelleyin.": "Обновите данные операции.",
+    "İşlem kaydedilemedi. Tekrar deneyin.": "Не удалось сохранить операцию. Повторите попытку.",
+    "Veriler sıfırlanamadı. Tekrar deneyin.": "Не удалось сбросить данные. Повторите попытку.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Операции, цели, записи о подписках и бюджеты будут удалены. Подписка App Store останется активной.",
+    "Evet, Sıfırla": "Да, сбросить"
   },
   "it": {
     "Akış": "Flusso",
@@ -4517,6 +4559,12 @@
     "Zarf": "Busta",
     "Özel kategoriler Penny Pro ile kullanılabilir.": "Le categorie personalizzate sono disponibili con Penny Pro.",
     "Bütçe kaydedilemedi. Tekrar deneyin.": "Impossibile salvare il budget. Riprova.",
-    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Le spese di questa categoria vengono detratte automaticamente dalla tua busta."
+    "Bu kategorideki harcamalar zarfınızdan otomatik düşer.": "Le spese di questa categoria vengono detratte automaticamente dalla tua busta.",
+    "İşlemi Düzenle": "Modifica transazione",
+    "İşlem bilgilerini güncelleyin.": "Aggiorna i dettagli della transazione.",
+    "İşlem kaydedilemedi. Tekrar deneyin.": "Impossibile salvare la transazione. Riprova.",
+    "Veriler sıfırlanamadı. Tekrar deneyin.": "Impossibile reimpostare i dati. Riprova.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Transazioni, obiettivi, abbonamenti registrati e budget verranno eliminati. L’abbonamento App Store resterà attivo.",
+    "Evet, Sıfırla": "Sì, reimposta"
   }
 }

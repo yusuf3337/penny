@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text, TextInput } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,20 @@ import { usePremium } from '../../context/PremiumContext';
 import { HeroUIModal } from '../common/HeroUIModal';
 import { useAppDialog } from '../../context/AppDialogContext';
 import { ThemePreference, useTheme } from '../../context/ThemeContext';
-import { LANGUAGE_OPTIONS, LanguagePreference, getLanguageName, useLocale } from '../../context/LocaleContext';
+import { LANGUAGE_OPTIONS, LanguagePreference, AppLanguage, getLanguageName, useLocale } from '../../context/LocaleContext';
+import { CURRENCY_OPTIONS, CurrencyPreference, useCurrency } from '../../context/CurrencyContext';
+
+const currencyCopy: Record<AppLanguage, { title: string; system: string; note: string }> = {
+  tr: { title: 'Para birimi', system: 'Sistem', note: 'Para birimi değişirse kayıtlı tutarlar dönüştürülmez.' },
+  en: { title: 'Currency', system: 'System', note: 'Changing currency does not convert existing amounts.' },
+  de: { title: 'Währung', system: 'System', note: 'Beim Währungswechsel werden bestehende Beträge nicht umgerechnet.' },
+  fr: { title: 'Devise', system: 'Système', note: 'Changer de devise ne convertit pas les montants existants.' },
+  ko: { title: '통화', system: '시스템', note: '통화를 변경해도 기존 금액은 환산되지 않습니다.' },
+  zh: { title: '货币', system: '系统', note: '更改货币不会换算已有金额。' },
+  ja: { title: '通貨', system: 'システム', note: '通貨を変更しても既存の金額は換算されません。' },
+  ru: { title: 'Валюта', system: 'Система', note: 'При смене валюты сохранённые суммы не пересчитываются.' },
+  it: { title: 'Valuta', system: 'Sistema', note: 'Cambiare valuta non converte gli importi esistenti.' },
+};
 
 interface SettingsModalProps {
   visible: boolean;
@@ -26,15 +39,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   const { alert } = useAppDialog();
   const { preference, setPreference, colors } = useTheme();
   const { language, preference: languagePreference, setPreference: setLanguagePreference, t } = useLocale();
+  const { currency, preference: currencyPreference, setPreference: setCurrencyPreference } = useCurrency();
   const { userName, updateUserName, reloadAllData, handleResetAllData } = useData();
   const { isPro, isBillingConfigured, openPaywall, toggleDevPro, resetPremiumStatus } = usePremium();
   const [nameInput, setNameInput] = useState(userName);
   const [statusMsg, setStatusMsg] = useState('');
   const [showTextFallback, setShowTextFallback] = useState(false);
   const [jsonText, setJsonText] = useState('');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const resetPending = useRef(false);
 
   useEffect(() => {
-    if (visible) setNameInput(userName);
+    if (visible) {
+      setNameInput(userName);
+      if (!resetting) setShowResetConfirm(false);
+    }
   }, [visible, userName]);
 
   const handleSaveName = async () => {
@@ -112,35 +132,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
     }
   };
 
-  const handleConfirmReset = () => {
-    alert(
-      'Tüm Verileri Sıfırla',
-      'Uygulamadaki işlemler, hedefler ve bütçeler silinecek. Mağaza aboneliğiniz bu işlemden etkilenmez. Emin misiniz?',
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Sıfırla',
-          style: 'destructive',
-          onPress: () => {
-            onClose();
-            setTimeout(async () => {
-              try {
-                await resetPremiumStatus();
-                await handleResetAllData();
-              } catch (e) {
-                console.error('Reset error:', e);
-              }
-            }, 300);
-          },
-        },
-      ]
-    );
+  const handleResetAfterDismiss = () => {
+    if (!resetPending.current) return;
+    resetPending.current = false;
+    void (async () => {
+      try {
+        await resetPremiumStatus();
+        await handleResetAllData();
+      } catch (error) {
+        console.error('Reset error:', error);
+        alert('Hata', 'Veriler sıfırlanamadı. Tekrar deneyin.');
+      } finally {
+        setResetting(false);
+        setShowResetConfirm(false);
+      }
+    })();
   };
 
   return (
     <HeroUIModal
       isOpen={visible}
       onClose={onClose}
+      onDismiss={handleResetAfterDismiss}
       title="Ayarlar & Yedekleme"
       subtitle="Verilerinizi yönetin, dışa aktarın veya geri yükleyin."
       badge={{ text: 'SİSTEM', color: '#6366F1', bg: '#EEF2FF' }}
@@ -250,6 +263,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         })}
       </View>
 
+      <Text localize={false} className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">
+        {currencyCopy[language].title} · {currency}
+      </Text>
+      <View className="flex-row flex-wrap gap-2 mb-2">
+        {(['system', ...CURRENCY_OPTIONS.map((item) => item.code)] as CurrencyPreference[]).map((option) => {
+          const selected = currencyPreference === option;
+          return (
+            <TouchableOpacity
+              key={option}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              onPress={() => void setCurrencyPreference(option)}
+              className={`min-w-[22%] min-h-11 px-3 rounded-xl border items-center justify-center ${selected ? 'bg-[#E3F2EC] dark:bg-[#203E35] border-[#137C70]' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            >
+              <Text localize={false} style={{ color: selected ? colors.primary : colors.secondaryForeground, fontSize: 12, fontWeight: selected ? '700' : '500' }}>
+                {option === 'system' ? currencyCopy[language].system : option}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <Text localize={false} className="text-xs text-zinc-500 dark:text-[#A9BDB2] mb-5">{currencyCopy[language].note}</Text>
+
       {/* Dosya Bazlı Yedekleme & İndirme */}
       <Text className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">
         Dosya İle Yedekleme (Dosya Paylaş & Yükle)
@@ -358,13 +394,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
 
       {/* Sıfırlama Butonu */}
       <Text className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-2">Tehlikeli Bölge</Text>
-      <TouchableOpacity
-        className="flex-row items-center justify-center gap-2 bg-rose-50 dark:bg-[#44252E] p-3.5 rounded-2xl border border-rose-200 dark:border-[#68404A] active:bg-rose-100 mb-2"
-        onPress={handleConfirmReset}
-      >
-        <Ionicons name="trash-outline" size={18} color="#E11D48" />
-        <Text className="text-sm font-bold text-rose-600">Tüm Verileri Sıfırla</Text>
-      </TouchableOpacity>
+      {showResetConfirm ? (
+        <View className="bg-rose-50 dark:bg-[#44252E] p-3.5 rounded-2xl border border-rose-200 dark:border-[#68404A] mb-2">
+          <Text className="text-sm font-bold text-rose-600 mb-1">Tüm Verileri Sıfırla</Text>
+          <Text className="text-xs text-rose-700 dark:text-[#FDA4AF] mb-3">
+            İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.
+          </Text>
+          <View className="flex-row gap-2">
+            <TouchableOpacity className="flex-1 items-center rounded-xl bg-white dark:bg-[#22332D] py-3" onPress={() => setShowResetConfirm(false)}>
+              <Text className="text-xs font-bold text-zinc-700 dark:text-[#CCDCD2]">Vazgeç</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="flex-1 items-center rounded-xl bg-rose-600 py-3"
+              disabled={resetting}
+              onPress={() => { setResetting(true); resetPending.current = true; onClose(); }}
+            >
+              <Text className="text-xs font-bold text-white">Evet, Sıfırla</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <TouchableOpacity
+          className="flex-row items-center justify-center gap-2 bg-rose-50 dark:bg-[#44252E] p-3.5 rounded-2xl border border-rose-200 dark:border-[#68404A] active:bg-rose-100 mb-2"
+          onPress={() => setShowResetConfirm(true)}
+        >
+          <Ionicons name="trash-outline" size={18} color="#E11D48" />
+          <Text className="text-sm font-bold text-rose-600">Tüm Verileri Sıfırla</Text>
+        </TouchableOpacity>
+      )}
     </HeroUIModal>
   );
 };

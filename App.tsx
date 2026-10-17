@@ -27,11 +27,14 @@ import { ProUpgradeModal } from './src/components/modals/ProUpgradeModal';
 import { COLORS } from './src/constants/colors';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LocaleProvider, useLocale } from './src/context/LocaleContext';
+import { AppTransaction } from './src/types';
+import { CurrencyProvider, useCurrency } from './src/context/CurrencyContext';
 
 import { SplitExpenseModal } from './src/components/modals/SplitExpenseModal';
 
 const MainNavigator = () => {
   useLocale(); // Re-render date and currency labels when the language changes.
+  useCurrency(); // Re-render amounts when the selected currency changes.
   const {
     activeTab,
     setActiveTab,
@@ -41,6 +44,7 @@ const MainNavigator = () => {
     markOnboarded,
     isLoading,
     handleAddTransaction,
+    handleUpdateTransaction,
     handleSaveGoal,
     handleAddSubscription,
     handleSaveBudget,
@@ -52,6 +56,7 @@ const MainNavigator = () => {
 
   // Modals state per active tab
   const [isAddTxModalVisible, setIsAddTxModalVisible] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<AppTransaction | null>(null);
   const [isAddGoalModalVisible, setIsAddGoalModalVisible] = useState(false);
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const [isAddSubModalVisible, setIsAddSubModalVisible] = useState(false);
@@ -140,6 +145,12 @@ const MainNavigator = () => {
         <HomeScreen
           onOpenAddModal={() => {
             triggerAddHaptic();
+            setEditingTransaction(null);
+            setIsAddTxModalVisible(true);
+          }}
+          onEditTransaction={(tx) => {
+            triggerAddHaptic();
+            setEditingTransaction(tx);
             setIsAddTxModalVisible(true);
           }}
           onOpenNameModal={() => setIsNameModalVisible(true)}
@@ -210,8 +221,9 @@ const MainNavigator = () => {
       {/* Screen Specific Modals */}
       <AddTransactionModal
         visible={isAddTxModalVisible}
-        onClose={() => setIsAddTxModalVisible(false)}
-        onSave={handleAddTransaction}
+        initialTransaction={editingTransaction}
+        onClose={() => { setIsAddTxModalVisible(false); setEditingTransaction(null); }}
+        onSave={(tx) => editingTransaction ? handleUpdateTransaction(editingTransaction.id, tx) : handleAddTransaction(tx)}
       />
 
       <AddGoalModal
@@ -293,6 +305,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <LocaleProvider>
+        <CurrencyProvider>
         <HeroUINativeProvider>
           <SafeAreaProvider>
             <ThemeProvider>
@@ -306,6 +319,7 @@ export default function App() {
             </ThemeProvider>
           </SafeAreaProvider>
         </HeroUINativeProvider>
+        </CurrencyProvider>
       </LocaleProvider>
     </GestureHandlerRootView>
   );

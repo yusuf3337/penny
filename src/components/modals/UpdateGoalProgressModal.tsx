@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -102,7 +103,7 @@ export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = (
 
       <HeroUIInput
         label="Eklenecek Birikim Tutarı"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="Örn: 1.000 veya 10.000"
         keyboardType="numeric"
         value={addAmountInput}

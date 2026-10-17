@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useRef, useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -205,7 +206,7 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
       {/* Allocated Amount */}
       <HeroUIInput
         label="Aylık Bütçe Limiti"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="Örn: 2.500 veya 10.000"
         keyboardType="numeric"
         value={amountInput}

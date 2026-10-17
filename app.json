@@ -32,6 +32,7 @@
     "plugins": [
       "expo-font",
       "expo-sharing",
+      "expo-notifications",
       "expo-iap",
       [
         "expo-splash-screen",

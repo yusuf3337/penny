@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -127,7 +128,7 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
 
       <HeroUIInput
         label="Tutar"
-        prefix="₺"
+        prefix={getCurrencySymbol()}
         placeholder="0,00"
         keyboardType="numeric"
         value={amountInput}
