@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { Linking, View, TouchableOpacity } from 'react-native';
 import { Text, TextInput } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
@@ -17,6 +17,19 @@ import { useAppDialog } from '../../context/AppDialogContext';
 import { ThemePreference, useTheme } from '../../context/ThemeContext';
 import { LANGUAGE_OPTIONS, LanguagePreference, AppLanguage, getLanguageName, useLocale } from '../../context/LocaleContext';
 import { CURRENCY_OPTIONS, CurrencyPreference, useCurrency } from '../../context/CurrencyContext';
+import { getReminderStatus, scheduleReminderTest } from '../../services/notificationService';
+
+const reminderCopy: Record<AppLanguage, { title: string; allowed: string; quiet: string; blocked: string; count: (n: number) => string; test: string; settings: string; testReady: string; testFailed: string }> = {
+  tr: { title: 'Abonelik bildirimleri', allowed: 'Bildirim izni açık', quiet: 'Bildirimler sessiz veya kilit ekranında kapalı', blocked: 'Bildirim izni kapalı', count: n => `${n} hatırlatma planlandı`, test: '15 saniyelik test bildirimi', settings: 'Telefon ayarlarını aç', testReady: 'Telefonu kilitleyin; test bildirimi 15 saniye sonra gelmeli.', testFailed: 'Bildirim izni verilemedi. Telefon ayarlarını kontrol edin.' },
+  en: { title: 'Subscription notifications', allowed: 'Notifications enabled', quiet: 'Notifications are quiet or hidden on the lock screen', blocked: 'Notifications disabled', count: n => `${n} reminders scheduled`, test: '15-second test notification', settings: 'Open phone settings', testReady: 'Lock your phone; the test should arrive in 15 seconds.', testFailed: 'Notification permission is unavailable. Check phone settings.' },
+  de: { title: 'Abo-Benachrichtigungen', allowed: 'Benachrichtigungen aktiviert', quiet: 'Benachrichtigungen sind stumm oder auf dem Sperrbildschirm verborgen', blocked: 'Benachrichtigungen deaktiviert', count: n => `${n} Erinnerungen geplant`, test: 'Test in 15 Sekunden', settings: 'Telefoneinstellungen öffnen', testReady: 'Sperren Sie das Telefon; der Test sollte in 15 Sekunden erscheinen.', testFailed: 'Keine Berechtigung. Prüfen Sie die Telefoneinstellungen.' },
+  fr: { title: 'Notifications d’abonnement', allowed: 'Notifications activées', quiet: 'Notifications silencieuses ou masquées sur l’écran verrouillé', blocked: 'Notifications désactivées', count: n => `${n} rappels programmés`, test: 'Test dans 15 secondes', settings: 'Ouvrir les réglages', testReady: 'Verrouillez le téléphone ; le test arrivera dans 15 secondes.', testFailed: 'Autorisation indisponible. Vérifiez les réglages du téléphone.' },
+  ko: { title: '구독 알림', allowed: '알림이 켜져 있습니다', quiet: '알림이 조용히 전달되거나 잠금 화면에서 숨겨집니다', blocked: '알림이 꺼져 있습니다', count: n => `${n}개 알림 예약됨`, test: '15초 테스트 알림', settings: '휴대전화 설정 열기', testReady: '휴대전화를 잠그세요. 15초 후 테스트 알림이 옵니다.', testFailed: '알림 권한이 없습니다. 휴대전화 설정을 확인하세요.' },
+  zh: { title: '订阅通知', allowed: '通知已开启', quiet: '通知为静默模式或在锁屏上隐藏', blocked: '通知已关闭', count: n => `已安排 ${n} 条提醒`, test: '15 秒测试通知', settings: '打开手机设置', testReady: '锁定手机；测试通知应在 15 秒后出现。', testFailed: '无法获得通知权限。请检查手机设置。' },
+  ja: { title: '購読通知', allowed: '通知が有効です', quiet: '通知は静かに配信されるかロック画面で非表示です', blocked: '通知が無効です', count: n => `${n} 件の通知を予約済み`, test: '15 秒後にテスト通知', settings: '端末の設定を開く', testReady: '端末をロックしてください。15 秒後に通知が届きます。', testFailed: '通知の許可がありません。端末の設定を確認してください。' },
+  ru: { title: 'Уведомления о подписках', allowed: 'Уведомления включены', quiet: 'Уведомления без звука или скрыты на экране блокировки', blocked: 'Уведомления выключены', count: n => `Запланировано напоминаний: ${n}`, test: 'Проверка через 15 секунд', settings: 'Открыть настройки телефона', testReady: 'Заблокируйте телефон; уведомление придёт через 15 секунд.', testFailed: 'Нет разрешения на уведомления. Проверьте настройки телефона.' },
+  it: { title: 'Notifiche abbonamenti', allowed: 'Notifiche attive', quiet: 'Notifiche silenziose o nascoste nella schermata di blocco', blocked: 'Notifiche disattivate', count: n => `${n} promemoria programmati`, test: 'Notifica di prova tra 15 secondi', settings: 'Apri impostazioni telefono', testReady: 'Blocca il telefono; la prova arriverà tra 15 secondi.', testFailed: 'Autorizzazione non disponibile. Controlla le impostazioni.' },
+};
 
 const currencyCopy: Record<AppLanguage, { title: string; system: string; note: string }> = {
   tr: { title: 'Para birimi', system: 'Sistem', note: 'Para birimi değişirse kayıtlı tutarlar dönüştürülmez.' },
@@ -49,13 +62,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
   const resetPending = useRef(false);
+  const [reminderStatus, setReminderStatus] = useState<Awaited<ReturnType<typeof getReminderStatus>> | null>(null);
+  const [testingReminder, setTestingReminder] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState('');
 
   useEffect(() => {
     if (visible) {
       setNameInput(userName);
       if (!resetting) setShowResetConfirm(false);
+      void getReminderStatus().then(setReminderStatus).catch((error) => console.warn('Could not read notification status:', error));
     }
   }, [visible, userName]);
+
+  const handleReminderTest = async () => {
+    if (testingReminder) return;
+    setTestingReminder(true);
+    try {
+      const scheduled = await scheduleReminderTest();
+      setReminderMessage(scheduled ? reminderCopy[language].testReady : reminderCopy[language].testFailed);
+      setReminderStatus(await getReminderStatus());
+    } catch (error) {
+      console.warn('Could not schedule test notification:', error);
+      setReminderMessage(reminderCopy[language].testFailed);
+    } finally {
+      setTestingReminder(false);
+    }
+  };
 
   const handleSaveName = async () => {
     if (!nameInput.trim()) return;
@@ -261,6 +293,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             </TouchableOpacity>
           );
         })}
+      </View>
+
+      <Text localize={false} className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">
+        {reminderCopy[language].title}
+      </Text>
+      <View className="bg-zinc-100 dark:bg-[#22332D] rounded-2xl p-3.5 mb-5">
+        <Text localize={false} className="text-sm font-semibold text-zinc-800 dark:text-[#EAF2EE]">
+          {reminderStatus ? reminderCopy[language][reminderStatus.status] : '…'}
+        </Text>
+        {reminderStatus ? (
+          <Text localize={false} className="text-xs text-zinc-500 dark:text-[#A9BDB2] mt-1">
+            {reminderCopy[language].count(reminderStatus.scheduled)}
+          </Text>
+        ) : null}
+        {reminderMessage ? (
+          <Text localize={false} className="text-xs text-[#137C70] dark:text-[#66C9AE] mt-2">{reminderMessage}</Text>
+        ) : null}
+        <View className="flex-row flex-wrap gap-2 mt-3">
+          <TouchableOpacity
+            disabled={testingReminder}
+            className="rounded-xl bg-[#137C70] px-3 py-2.5"
+            onPress={() => void handleReminderTest()}
+          >
+            <Text localize={false} className="text-xs font-bold text-white">{reminderCopy[language].test}</Text>
+          </TouchableOpacity>
+          {reminderStatus?.status !== 'allowed' ? (
+            <TouchableOpacity
+              className="rounded-xl border border-[#137C70] px-3 py-2.5"
+              onPress={() => void Linking.openSettings()}
+            >
+              <Text localize={false} className="text-xs font-bold text-[#137C70] dark:text-[#66C9AE]">{reminderCopy[language].settings}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       <Text localize={false} className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">

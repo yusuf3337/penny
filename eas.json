@@ -15,7 +15,10 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://github.com/yusuf3337/penny-app-support/blob/main/PRIVACY.md"
+      }
     }
   },
   "submit": {

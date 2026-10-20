@@ -1,58 +1,58 @@
-# Penny
+# 🪙 Penny — Kişisel Bütçe ve Finans Takibi
 
-Penny, finans kayıtlarını cihazda tutan bir kişisel bütçe uygulamasıdır. İşlemler, bütçeler, hedefler, abonelikler ve borç/alacaklar uygulama içinde yönetilir. Koyu görünüm sistem temasını izleyebilir veya Ayarlar'dan seçilebilir.
+Penny, kişisel finansınızı ve bütçenizi en sade, modern ve güvenli şekilde yönetmenizi sağlayan yerel (local-first) bir mobil uygulamadır. 
 
-Arayüz Türkçe, İngilizce, Almanca, Fransızca, Korece, Basitleştirilmiş Çince, Japonca, Rusça ve İtalyanca sunulur. Ayarlar'dan dil seçilebilir veya cihaz/uygulama dili izlenebilir. Çeviriler uygulamanın içinde bulunur; çalışma sırasında çeviri hizmetine veri gönderilmez. Yayından önce abonelik, finans ve gizlilik metinlerini ana dili konuşan kişilerle gözden geçirin.
+Kullanıcı hesabı oluşturma zorunluluğu olmadan, tüm verilerinizi yalnızca kendi cihazınızda saklayarak paranızı tam kontrol altına almanızı sağlar.
 
-## Geliştirme
+---
 
-```sh
-npm install
-npx expo start --go
-```
+## ✨ Öne Çıkan Özellikler
 
-Expo Go'da arayüz ve Pro özellikleri geliştirme anahtarıyla test edilebilir. Gerçek App Store satın alımı Expo Go'da çalışmaz; StoreKit içeren iOS development build veya TestFlight gerekir.
-Yeni dil sistemi ek bir native yerelleştirme modülü gerektirmez. Eski Metro oturumu açıkken `ExpoLocalization` hatası görülürse oturumu kapatıp `npx expo start --go --clear` ile yeniden başlatın.
+### 📊 Akıllı Bütçe Yönetimi
+- **Zarf Bütçeleme Yöntemi:** Harcama kategorilerinize özel limitler belirleyin.
+- **Anlık Harcama Durumu:** Kategori bazlı kalan bütçenizi renkli ilerleme göstergeleriyle takip edin.
 
-## App Store abonelikleri
+### 👥 Ortak Harcama Bölüştürme
+- **Hesabı Tek Tıkla Bölün:** Restoran, tatil veya ev harcamalarını katılan kişiler arasında eşit olarak paylaştırın.
+- **Otomatik Alacak Kaydı:** Kendi payınız gider olarak yazılırken, diğer kişilerin payları otomatik olarak alacak listenize eklenir.
 
-Penny, iOS'ta `expo-iap` aracılığıyla doğrudan Apple StoreKit kullanır. RevenueCat veya başka bir ödeme servisi kullanılmaz. Pro hakkı cihazdaki StoreKit etkin aboneliği ve Apple doğrulamasıyla açılır. Yerel test anahtarı üretim sürümünde geçerli değildir.
+### 🤝 Kişi Bazlı Borç & Alacak Takibi
+- **Net Bakiye Takibi:** Kime ne kadar borcunuz olduğunu veya kimden ne kadar alacağınız olduğunu kişi bazında görün.
+- **Tek Dokunuşla Tahsilat / Ödeme:** Yapılan ödemeleri kaydedin ve borç bakiyesini güncelleyin.
 
-Yeni borç/alacak kaydı oluşturma Pro kapsamındadır. Aboneliği sona eren kullanıcılar önceki kayıtlarını görmeye, ödeme kaydetmeye ve silmeye devam edebilir.
+### 🎯 Birikim Hedefleri
+- **Hedef Belirleme:** Araba, tatil, acil durum fonu gibi birikimlerinizi ayrı ayrı planlayın.
+- **Canlı İlerleme:** Birikim ekledikçe tamamlanma yüzdesini ve hedefe kalan tutarı izleyin.
 
-App Store Connect'te aynı abonelik grubunda iki otomatik yenilenen ürün oluşturun:
+### 🔄 Sabit Abonelik Takibi
+- **Aylık & Yıllık Yük:** Spotify, Netflix, spor salonu gibi düzenli giderlerinizin toplam bütçenize etkisini görün.
+- **Yaklaşan Yenilemeler:** Ödeme günleri yaklaşan abonelikleri önceden fark edin, sürpriz çekimleri engelleyin.
 
-- `com.yourdomain.penny.pro.monthly` — aylık
-- `com.yourdomain.penny.pro.yearly` — yıllık
+### 📈 Akıllı Raporlar & Finansal İçgörüler
+- **Dönemsel Trendler:** 6 aylık gelir ve gider dengenizi karşılaştırmalı grafiklerle inceleyin.
+- **Ay Sonu Harcama Tahmini:** Mevcut harcama hızınıza göre ay sonunda oluşacak tahmini gideri önceden görün.
+- **Kategorik Dağılım:** En çok hangi kategoriye harcama yaptığınızı analiz edin.
 
-Farklı ürün kimlikleri kullanırsanız `.env.example` içindeki `EXPO_PUBLIC_IOS_PRO_MONTHLY_ID` ve `EXPO_PUBLIC_IOS_PRO_YEARLY_ID` değerlerini `.env` dosyanızda belirtin. Fiyatlar ve para birimi App Store'dan gelir; uygulama sabit fiyat göstermez. Satın alma, geri yükleme ve abonelik yönetimi Pro ekranındadır.
+### 🔒 %100 Gizlilik & Çevrimdışı Çalışma
+- **Hesap Gerektirmez:** Giriş yapma, e-posta veya telefon numarası verme zorunluluğu yoktur.
+- **Sunucusuz Mimari:** Finansal kayıtlarınız hiçbir uzak sunucuya aktarılmaz, yalnızca telefonunuzun güvenli hafızasında tutulur.
+- **Yedekleme & Dışa Aktarma:** Verilerinizi dilediğiniz an JSON formatında yedekleyebilir veya Excel (CSV) olarak dışa aktarabilirsiniz.
 
-App Store Connect'te Türkiye fiyatını koruyup ABD ve Euro kullanan mağazalar için ayrı fiyat belirleyebilirsiniz. Diğer mağazalarda Apple'ın önerdiği karşılıkları gözden geçirip gerekirse değiştirebilirsiniz. Ekrandaki abonelik tutarı Apple hesabının App Store ülkesine göre yerel para biriminde gösterilir; arayüz dili veya fiziksel konum fiyatı belirlemez. Uygulamadaki kişisel finans kayıtları ise hâlâ TRY cinsindedir, otomatik döviz çevrimi yapılmaz.
+---
 
-App Store'a göndermeden önce:
+## 🎨 Tasarım ve Kullanıcı Deneyimi
 
-1. App Store Connect'te ürünlerin süre, fiyat, yerelleştirme ve inceleme bilgilerini tamamlayın. Ürün kimliklerinin kodla birebir eşleştiğini doğrulayın.
-2. [PRIVACY.md](PRIVACY.md) metnine destek iletişim bilgilerinizi ekleyip herkese açık bir HTTPS adreste yayımlayın. Bu adresi `.env` içinde `EXPO_PUBLIC_PRIVACY_POLICY_URL` olarak ve App Store Connect gizlilik politikası alanında belirtin.
-3. TestFlight sürümünde gerçek bir cihaz ve sandbox Apple hesabıyla aylık/yıllık satın alma, geri yükleme, yenileme ve iptali deneyin.
-4. App Store Connect'te uygulama gizlilik beyanını, ekran görüntülerini, açıklamayı ve abonelik ürünlerini tamamlayın. Geliştirme modundaki Pro test düğmesi üretim sürümünde görünmez.
+- **Modern & Akıcı UI:** HeroUI Native ve Tailwind CSS ile tasarlanmış modern arayüz.
+- **Koyu ve Açık Tema:** Sistem tercihine duyarlı veya kullanıcı tarafından seçilebilen göz yormayan temalar.
+- **Haptic Dokunsal Geri Bildirim:** iOS Taptic Engine ile zenginleştirilmiş etkileşimler.
+- **Çoklu Dil Desteği:** Türkçe, İngilizce, Almanca, Fransızca, İtalyanca, İspanyolca, Rusça, Japonca ve Korece.
 
-Bu hesap ve ürün ayarları olmadan kodun paketlenmesi mümkündür, fakat gerçek satın alma akışı doğrulanamaz.
+---
 
-## TestFlight yüklemesi
+## 🛠️ Teknoloji Mimarisi
 
-EAS projesi kendi Expo hesabınıza bağlıdır. `production` profili App Store dağıtımı ve uzaktan artan iOS derleme numarası için ayarlanmıştır. İlk imzalı derlemede Apple Developer hesabıyla giriş ve iki aşamalı doğrulama istenir:
-
-```sh
-eas build --platform ios --profile production
-eas submit --platform ios --profile production
-```
-
-İkinci komut ilk komut başarıyla tamamlandıktan sonra çalıştırılmalıdır. EAS Submit derlemeyi TestFlight'a yollar; App Store yayını için ayrıca App Review gönderimi gerekir. Apple oturum açma bilgilerini veya doğrulama kodlarını proje dosyalarına koymayın.
-
-Desktop/iCloud altında yerel iOS derlemesinde Xcode, üretilen `ExpoModulesJSI.framework` dosyasındaki Finder niteliklerini imzalamayı reddedebilir. Böyle bir durumda projeyi iCloud eşitlemesi dışında bir dizinde derleyin; aynı kaynaklarla bu yöntemle simülatör derlemesi başarıyla tamamlandı.
-
-## Veri
-
-Finans kayıtları AsyncStorage'da tutulur. Ayarlardan JSON yedeği paylaşılabilir veya geri yüklenebilir. Pro üyeler işlemlerini seçilen dile uygun tarih, sayı biçimi ve CSV ayıracıyla dışa aktarabilir.
-
-Kontroller: `npm run check:locales`, `npx tsc --noEmit`, `npx expo-doctor` ve `npx expo export --platform ios`.
+- **Framework:** React Native (Expo SDK 57)
+- **Dil:** TypeScript
+- **Stil & Tasarım:** Tailwind CSS / NativeWind & HeroUI Native
+- **Veri Saklama:** React Native AsyncStorage (Local-first)
+- **Monetizasyon:** Apple StoreKit (`expo-iap`)
