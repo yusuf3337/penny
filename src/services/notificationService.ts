@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 const CHANNEL_ID = 'subscription-reminders';
 const PREFIX = 'penny-subscription-';
 const MAX_REMINDERS = 60; // iOS keeps at most 64 pending local notifications.
+const TEST_ID = 'penny-notification-test';
 
 const paymentCopy: Record<string, {
   tomorrow: (name: string, amount: string) => string;
@@ -38,6 +39,49 @@ const isAllowed = async (): Promise<boolean> => {
   return permissions.granted || permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 };
 
+export const getReminderStatus = async (): Promise<{ status: 'allowed' | 'quiet' | 'blocked'; scheduled: number }> => {
+  if (Platform.OS === 'web') return { status: 'blocked', scheduled: 0 };
+  const [permissions, pending] = await Promise.all([
+    Notifications.getPermissionsAsync(),
+    Notifications.getAllScheduledNotificationsAsync(),
+  ]);
+  const quiet = Platform.OS === 'ios' && (
+    permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL ||
+    permissions.ios?.allowsAlert === false ||
+    permissions.ios?.allowsDisplayOnLockScreen === false
+  );
+  return {
+    status: quiet ? 'quiet' : permissions.granted ? 'allowed' : 'blocked',
+    scheduled: pending.filter((item) => item.identifier.startsWith(PREFIX)).length,
+  };
+};
+
+export const scheduleReminderTest = async (): Promise<boolean> => {
+  if (!await requestNotificationPermissions()) return false;
+  await setupChannel();
+  await Notifications.cancelScheduledNotificationAsync(TEST_ID);
+  await Notifications.scheduleNotificationAsync({
+    identifier: TEST_ID,
+    content: {
+      title: paymentCopy[getActiveLanguage()]?.title ?? paymentCopy.en.title,
+      body: {
+        tr: 'Penny bildirimleri çalışıyor. Bu mesaj uygulama kapalıyken de görünmelidir.',
+        en: 'Penny notifications are working. This message should also appear when the app is closed.',
+        de: 'Penny-Benachrichtigungen funktionieren. Diese Nachricht sollte auch bei geschlossener App erscheinen.',
+        fr: 'Les notifications Penny fonctionnent. Ce message doit aussi apparaître quand l’app est fermée.',
+        ko: 'Penny 알림이 작동합니다. 앱을 닫아도 이 메시지가 표시되어야 합니다.',
+        zh: 'Penny 通知已启用。关闭应用后也应看到此消息。',
+        ja: 'Penny の通知は有効です。アプリを閉じてもこの通知が表示されます。',
+        ru: 'Уведомления Penny работают. Сообщение должно появиться и при закрытом приложении.',
+        it: 'Le notifiche Penny funzionano. Il messaggio dovrebbe apparire anche con l’app chiusa.',
+      }[getActiveLanguage()] ?? 'Penny notifications are working.',
+      sound: 'default',
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(Date.now() + 15_000), ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : {}) },
+  });
+  return true;
+};
+
 const setupChannel = async () => {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
@@ -52,8 +96,6 @@ export const syncSubscriptionReminders = (subscriptions: SubscriptionItem[]): Pr
   syncQueue = syncQueue.catch(() => {}).then(async () => {
     if (Platform.OS === 'web') return;
     const existing = await Notifications.getAllScheduledNotificationsAsync();
-    await Promise.all(existing.filter((item) => item.identifier.startsWith(PREFIX))
-      .map((item) => Notifications.cancelScheduledNotificationAsync(item.identifier)));
     if (!await isAllowed()) return;
     await setupChannel();
 
@@ -69,13 +111,20 @@ export const syncSubscriptionReminders = (subscriptions: SubscriptionItem[]): Pr
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() - 1);
         const amount = formatCurrency(sub.amount);
-        if (tomorrow.getTime() > now + 30_000) reminders.push({ id: `${PREFIX}${sub.id}-${cycle}-tomorrow`, date: tomorrow, body: copy.tomorrow(sub.title, amount), subId: sub.id });
-        if (today.getTime() > now + 30_000) reminders.push({ id: `${PREFIX}${sub.id}-${cycle}-today`, date: today, body: copy.today(sub.title, amount), subId: sub.id });
+        if (tomorrow.getTime() > now + 30_000) reminders.push({ id: `${PREFIX}${sub.id}-${tomorrow.getTime()}-tomorrow`, date: tomorrow, body: copy.tomorrow(sub.title, amount), subId: sub.id });
+        if (today.getTime() > now + 30_000) reminders.push({ id: `${PREFIX}${sub.id}-${today.getTime()}-today`, date: today, body: copy.today(sub.title, amount), subId: sub.id });
         due = new Date(advanceSubscriptionDueDate(due.toISOString(), sub.paymentDay, sub.cycle));
       }
     }
     reminders.sort((a, b) => a.date.getTime() - b.date.getTime());
-    for (const reminder of reminders.slice(0, MAX_REMINDERS)) {
+    const selected = reminders.slice(0, MAX_REMINDERS);
+    const selectedById = new Map(selected.map((item) => [item.id, item]));
+    const current = existing.filter((item) => item.identifier.startsWith(PREFIX));
+    await Promise.all(current.filter((item) => !selectedById.has(item.identifier) || item.content.title !== copy.title || item.content.body !== selectedById.get(item.identifier)?.body)
+      .map((item) => Notifications.cancelScheduledNotificationAsync(item.identifier)));
+    const retainedIds = new Set(current.filter((item) => selectedById.has(item.identifier) && item.content.title === copy.title && item.content.body === selectedById.get(item.identifier)?.body).map((item) => item.identifier));
+    for (const reminder of selected) {
+      if (retainedIds.has(reminder.id)) continue;
       await Notifications.scheduleNotificationAsync({
         identifier: reminder.id,
         content: { title: copy.title, body: reminder.body, sound: 'default', data: { pennySubscriptionId: reminder.subId } },
