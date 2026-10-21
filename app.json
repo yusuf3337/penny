@@ -16,7 +16,17 @@
       "bundleIdentifier": "com.yusufcepni.penny",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleLocalizations": ["tr", "en", "de", "fr", "ko", "zh-Hans", "ja", "ru", "it"]
+        "CFBundleLocalizations": [
+          "tr",
+          "en",
+          "de",
+          "fr",
+          "ko",
+          "zh-Hans",
+          "ja",
+          "ru",
+          "it"
+        ]
       }
     },
     "android": {
@@ -37,15 +47,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/icon.png",
-          "imageWidth": 124,
-          "backgroundColor": "#F5F7F5",
+          "backgroundColor": "#240F00",
           "dark": {
-            "image": "./assets/icon.png",
-            "backgroundColor": "#0F1816"
+            "backgroundColor": "#240F00"
           }
         }
-      ]
+      ],
+      "expo-video"
     ],
     "extra": {
       "eas": {

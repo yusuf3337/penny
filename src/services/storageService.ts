@@ -398,7 +398,7 @@ export const markHasOnboarded = async (): Promise<void> => {
 
 // Backup & Restore
 export const exportAllDataJSON = async (): Promise<string> => {
-  const [name, txs, goalList, subList, budgetList, debtList, catList] = await Promise.all([
+  const [name, txs, goalList, subList, budgetList, debtList, catList, pendingList] = await Promise.all([
     getUserName(),
     getStoredTransactions(),
     getStoredGoals(),
@@ -406,6 +406,7 @@ export const exportAllDataJSON = async (): Promise<string> => {
     getStoredBudgets(),
     getDebts(),
     getCategories(),
+    getPendingCollections(),
   ]);
 
   const backupObj = {
@@ -418,6 +419,7 @@ export const exportAllDataJSON = async (): Promise<string> => {
     budgets: budgetList,
     debts: debtList,
     categories: catList,
+    pendingCollections: pendingList,
   };
 
   return JSON.stringify(backupObj, null, 2);
@@ -451,19 +453,87 @@ export const exportTransactionsCSV = async (): Promise<string> => {
   return `\uFEFF${rows.map((row) => row.map(cell).join(delimiter)).join('\r\n')}\r\n`;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
+
+const isAmount = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0;
+
+const isDateString = (value: unknown): value is string =>
+  isNonEmptyString(value) && Number.isFinite(Date.parse(value));
+
+const backupItemChecks: Record<string, (value: Record<string, unknown>) => boolean> = {
+  transactions: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
+    isNonEmptyString(item.category) && isDateString(item.date) &&
+    isNonEmptyString(item.amount) && isAmount(item.rawAmount) &&
+    ['income', 'expense', 'transfer'].includes(String(item.type)) && isNonEmptyString(item.iconName),
+  goals: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
+    isAmount(item.savedAmount) && isAmount(item.targetAmount),
+  subscriptions: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
+    isAmount(item.amount) && isNonEmptyString(item.category) &&
+    ['monthly', 'yearly'].includes(String(item.cycle)) &&
+    typeof item.paymentDay === 'number' && item.paymentDay >= 1 && item.paymentDay <= 31 &&
+    isDateString(item.nextDueDate) && typeof item.isActive === 'boolean',
+  budgets: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.categoryName) &&
+    isAmount(item.allocatedAmount) && isAmount(item.usedAmount),
+  debts: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.personName) &&
+    ['given', 'taken'].includes(String(item.type)) && isAmount(item.amount) &&
+    isAmount(item.remainingAmount) && typeof item.isCompleted === 'boolean',
+  categories: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.name) &&
+    isNonEmptyString(item.icon) && isNonEmptyString(item.color) &&
+    ['income', 'expense', 'transfer'].includes(String(item.type)),
+  pendingCollections: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
+    isAmount(item.expectedAmount) && isAmount(item.actualAmount) &&
+    ['pending', 'completed'].includes(String(item.status)),
+};
+
+const backupStorageKeys: Record<string, string> = {
+  transactions: STORAGE_KEYS.TRANSACTIONS,
+  goals: STORAGE_KEYS.SAVINGS_GOALS,
+  subscriptions: STORAGE_KEYS.SUBSCRIPTIONS,
+  budgets: STORAGE_KEYS.BUDGETS,
+  debts: STORAGE_KEYS.DEBTS,
+  categories: STORAGE_KEYS.CATEGORIES,
+  pendingCollections: STORAGE_KEYS.PENDING_COLLECTIONS,
+};
+const requiredBackupSections = ['transactions', 'goals', 'subscriptions', 'budgets', 'debts', 'categories'];
+
 export const importAllDataJSON = async (jsonString: string): Promise<boolean> => {
   try {
-    const data = JSON.parse(jsonString);
-    if (!data || typeof data !== 'object') return false;
+    const data: unknown = JSON.parse(jsonString);
+    if (!isRecord(data) || data.version !== '1.0' || !isNonEmptyString(data.userName) ||
+      requiredBackupSections.some((section) => !Array.isArray(data[section]))) return false;
+    const backupUserName = data.userName as string;
 
-    if (Array.isArray(data.transactions)) await saveStoredItem(STORAGE_KEYS.TRANSACTIONS, data.transactions);
-    if (Array.isArray(data.goals)) await saveStoredItem(STORAGE_KEYS.SAVINGS_GOALS, data.goals);
-    if (Array.isArray(data.subscriptions)) await saveStoredItem(STORAGE_KEYS.SUBSCRIPTIONS, data.subscriptions);
-    if (Array.isArray(data.budgets)) await saveStoredItem(STORAGE_KEYS.BUDGETS, data.budgets);
-    if (Array.isArray(data.debts)) await saveStoredItem(STORAGE_KEYS.DEBTS, data.debts);
-    if (Array.isArray(data.categories)) await saveStoredItem(STORAGE_KEYS.CATEGORIES, data.categories);
-    if (data.userName) await saveUserName(data.userName);
-    await markHasOnboarded();
+    const presentSections = Object.keys(backupStorageKeys);
+    for (const section of presentSections) {
+      const values = section === 'pendingCollections' && data[section] === undefined ? [] : data[section];
+      if (!Array.isArray(values) || !values.every((value) => isRecord(value) && backupItemChecks[section](value))) {
+        return false;
+      }
+    }
+
+    const entries: [string, string][] = presentSections.map((section) =>
+      [backupStorageKeys[section], JSON.stringify(section === 'pendingCollections' && data[section] === undefined ? [] : data[section])]);
+    entries.push([STORAGE_KEYS.USER_NAME, backupUserName.trim()]);
+    entries.push([STORAGE_KEYS.HAS_ONBOARDED, JSON.stringify(true)]);
+    const previous = await AsyncStorage.multiGet(entries.map(([key]) => key));
+    try {
+      await AsyncStorage.multiSet(entries);
+    } catch (writeError) {
+      const existing = previous.filter(([, value]) => value !== null) as [string, string][];
+      const absent = previous.filter(([, value]) => value === null).map(([key]) => key);
+      try {
+        if (existing.length) await AsyncStorage.multiSet(existing);
+        if (absent.length) await AsyncStorage.multiRemove(absent);
+      } catch (rollbackError) {
+        console.error('Could not roll back failed backup import:', rollbackError);
+      }
+      throw writeError;
+    }
     return true;
   } catch (err) {
     console.error('Error importing backup JSON:', err);
@@ -551,7 +621,14 @@ export const pickAndImportBackupFileJSON = async (): Promise<{ success: boolean;
       return { success: false, message: 'İptal edildi' };
     }
 
-    const fileUri = res.assets[0].uri;
+    const selectedFile = res.assets[0];
+    if (!selectedFile.name.toLowerCase().endsWith('.json')) {
+      return { success: false, message: 'Lütfen Penny tarafından oluşturulmuş bir .json yedek dosyası seçin.' };
+    }
+    if (selectedFile.size !== undefined && selectedFile.size > 20 * 1024 * 1024) {
+      return { success: false, message: 'Yedek dosyası çok büyük (en fazla 20 MB).' };
+    }
+    const fileUri = selectedFile.uri;
     const jsonStr = await FileSystem.readAsStringAsync(fileUri, {
       encoding: FileSystem.EncodingType.UTF8,
     });

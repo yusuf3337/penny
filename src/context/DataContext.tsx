@@ -257,6 +257,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return task;
   };
 
+  const reloadAllData = async (): Promise<void> => {
+    if (loadingData.current) await loadingData.current;
+    await loadAllData();
+  };
+
   const markOnboarded = async () => {
     setHasOnboarded(true);
     await markOnboardedService();
@@ -469,7 +474,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateUserName,
         hasOnboarded,
         markOnboarded,
-        reloadAllData: loadAllData,
+        reloadAllData,
         handleResetAllData,
         isBalanceHidden,
         toggleBalanceHidden,
