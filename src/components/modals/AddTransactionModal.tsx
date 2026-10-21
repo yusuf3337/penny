@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppTransaction, Account } from '../../types';
 import { getAccounts, DEFAULT_CATEGORIES } from '../../services/storageService';
 import { formatNumberInput, parseAmountSafely, formatCurrency } from '../../utils/formatters';
-import { getFormattingLocale } from '../../context/LocaleContext';
+import { AppLanguage, getFormattingLocale, useLocale } from '../../context/LocaleContext';
 import { useData } from '../../context/DataContext';
 import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
@@ -20,6 +20,18 @@ interface AddTransactionModalProps {
   onSave: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => Promise<void> | void;
 }
 
+const accountCopy: Record<AppLanguage, { title: string; required: string }> = {
+  tr: { title: 'Hesap seçimi', required: 'Banka veya nakit hesabı seçin.' },
+  en: { title: 'Account', required: 'Choose bank or cash.' },
+  de: { title: 'Konto', required: 'Bank oder Bargeld auswählen.' },
+  fr: { title: 'Compte', required: 'Choisissez banque ou espèces.' },
+  ko: { title: '계좌 선택', required: '은행 또는 현금을 선택하세요.' },
+  zh: { title: '选择账户', required: '请选择银行或现金。' },
+  ja: { title: '口座を選択', required: '銀行または現金を選択してください。' },
+  ru: { title: 'Счёт', required: 'Выберите банк или наличные.' },
+  it: { title: 'Conto', required: 'Scegli banca o contanti.' },
+};
+
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   visible,
   initialTransaction,
@@ -28,6 +40,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 }) => {
   const { categories: contextCategories, budgets, handleAddCategory } = useData();
   const { isPro, openPaywall } = usePremium();
+  const { language, t } = useLocale();
   const categoriesList = contextCategories && contextCategories.length > 0
     ? contextCategories
     : DEFAULT_CATEGORIES;
@@ -38,6 +51,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [accountError, setAccountError] = useState(false);
   const [txDate, setTxDate] = useState<Date>(new Date());
   const [error, setError] = useState('');
   const [showDetails, setShowDetails] = useState(false);
@@ -73,12 +87,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setTxDate(Number.isNaN(existingDate.getTime()) ? new Date() : existingDate);
       setError('');
       setSelectionError('');
+      setAccountError(false);
+      setSelectedAccountId('');
       setShowDetails(false);
       getAccounts().then((accs) => {
         setAccounts(accs);
         const matching = accs.find((acc) => acc.id === initialTransaction?.accountId)
           ?? accs.find((acc) => acc.type === initialTransaction?.accountType);
-        setSelectedAccountId(matching?.id ?? accs[0]?.id ?? '');
+        setSelectedAccountId(matching?.id ?? '');
       });
     }
   }, [visible, initialTransaction]);
@@ -150,6 +166,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       return;
     }
 
+    const selectedAcc = accounts.find((account) => account.id === selectedAccountId);
+    if (!selectedAcc) {
+      setAccountError(true);
+      return;
+    }
+
     const categoryToUse = filteredCategories.find((category) => category.name === selectedCategory)?.name;
     if (!categoryToUse) {
       setSelectionError('Kategori Seçin');
@@ -163,8 +185,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (foundCat) iconName = foundCat.icon;
     else if (type === 'income') iconName = 'arrow-down-left';
 
-    const selectedAcc = accounts.find((a) => a.id === selectedAccountId);
-    const accountType: 'bank' | 'cash' = selectedAcc ? (selectedAcc.type === 'cash' ? 'cash' : 'bank') : 'bank';
+    const accountType: 'bank' | 'cash' = selectedAcc.type === 'cash' ? 'cash' : 'bank';
 
     setSaving(true);
     try {
@@ -176,7 +197,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       type,
       iconName,
       accountId: selectedAccountId,
-      accountName: selectedAcc ? selectedAcc.name : 'Banka Hesabı',
+      accountName: selectedAcc.name,
       accountType,
       date: txDate.toISOString(),
     });
@@ -187,6 +208,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setError('');
     setSelectedCategory('');
     setSelectionError('');
+    setSelectedAccountId('');
+    setAccountError(false);
     setTxDate(new Date());
     setShowDetails(false);
     setShowCategoryInput(false);
@@ -304,6 +327,40 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         <Text className="text-xs text-rose-500 font-semibold mb-3">{error}</Text>
       )}
 
+      <View className="mb-4">
+        <Text localize={false} className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">
+          {accountCopy[language].title}
+        </Text>
+        <View className="flex-row gap-2">
+          {accounts.filter((account) => account.type === 'bank' || account.type === 'cash').sort((a, b) => Number(a.type === 'cash') - Number(b.type === 'cash')).map((acc) => {
+            const isSelected = selectedAccountId === acc.id;
+            return (
+              <TouchableOpacity
+                key={acc.id}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={acc.type === 'cash' ? t('Nakit') : t('Banka')}
+                className={`flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border-[1.5px] py-3 ${
+                  isSelected
+                    ? 'bg-teal-50 dark:bg-[#193C35] border-brand'
+                    : accountError
+                      ? 'bg-zinc-100 dark:bg-[#22332D] border-rose-400'
+                      : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                }`}
+                onPress={() => { setSelectedAccountId(acc.id); setAccountError(false); }}
+                activeOpacity={0.75}
+              >
+                <Ionicons name={acc.type === 'cash' ? 'wallet-outline' : 'card-outline'} size={18} color={isSelected ? '#0D9488' : '#71717A'} />
+                <Text localize={false} className={`text-sm font-bold ${isSelected ? 'text-teal-800 dark:text-[#A8E4CF]' : 'text-zinc-600 dark:text-[#A9BDB2]'}`}>
+                  {acc.type === 'cash' ? t('Nakit') : t('Banka')}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {accountError && <Text localize={false} className="text-xs font-semibold text-rose-500 mt-1.5">{accountCopy[language].required}</Text>}
+      </View>
+
       {/* Category selection stays visible so envelope spending is attributed correctly. */}
       <View className="flex-row items-center justify-between mb-2">
         <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8]">Kategori</Text>
@@ -321,8 +378,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           className="flex-row items-center gap-1"
         >
           <Ionicons name={isPro ? 'add' : 'lock-closed-outline'} size={15} color="#0D9488" />
-          <Text className="text-xs font-bold text-[#0D9488] dark:text-[#66C9AE]">Yeni Kategori</Text>
-          {!isPro && <Text className="text-[10px] font-bold text-[#0D9488] dark:text-[#66C9AE]">PRO</Text>}
+          <Text className="text-xs font-bold text-brand dark:text-brand">Yeni Kategori</Text>
+          {!isPro && <Text className="text-[10px] font-bold text-brand dark:text-brand">PRO</Text>}
         </TouchableOpacity>
       </View>
 
@@ -349,7 +406,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <Text className="text-sm font-semibold text-zinc-700 dark:text-[#CCDCD2]">Vazgeç</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 items-center justify-center rounded-xl bg-[#0D9488] py-2.5"
+              className="flex-1 items-center justify-center rounded-xl bg-brand py-2.5"
               onPress={createCategory}
               disabled={creatingCategory}
             >
@@ -384,7 +441,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <Text className={`text-[13px] ${isSelected ? (type === 'income' ? 'text-emerald-700 dark:text-[#70E0B0] font-bold' : 'text-rose-700 dark:text-[#FDA4AF] font-bold') : 'text-zinc-500 dark:text-[#A9BDB2] font-semibold'}`}>
                 {cat.name}
               </Text>
-              {hasBudget && <Text className="text-[11px] font-bold text-[#0D9488] dark:text-[#66C9AE]">Zarf</Text>}
+              {hasBudget && <Text className="text-[11px] font-bold text-brand dark:text-brand">Zarf</Text>}
             </TouchableOpacity>
           );
         })}
@@ -395,45 +452,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         className="flex-row items-center justify-between rounded-xl bg-zinc-100 dark:bg-[#22332D] px-3 py-2.5 mb-3"
         onPress={() => setShowDetails((current) => !current)}
       >
-        <Text className="text-[13px] font-semibold text-zinc-600 dark:text-[#A9BDB2]">Hesap ve tarih</Text>
+        <Text className="text-[13px] font-semibold text-zinc-600 dark:text-[#A9BDB2]">İşlem Tarihi</Text>
         <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color="#71717A" />
       </TouchableOpacity>
-
-      {showDetails && accounts.length > 0 && (
-        <View className="mb-4">
-          <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Hesap / Kasa</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {accounts.map((acc) => {
-              const isSelected = selectedAccountId === acc.id;
-              return (
-                <TouchableOpacity
-                  key={acc.id}
-                  className={`flex-row items-center gap-1.5 py-2 px-3 rounded-[14px] border-[1.5px] ${
-                    isSelected
-                      ? 'bg-teal-50 border-[#0D9488]'
-                      : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
-                  }`}
-                  onPress={() => setSelectedAccountId(acc.id)}
-                  activeOpacity={0.75}
-                >
-                  <Ionicons
-                    name={acc.type === 'cash' ? 'wallet-outline' : 'card-outline'}
-                    size={15}
-                    color={isSelected ? '#0D9488' : '#71717A'}
-                  />
-                  <Text
-                    className={`text-[13px] ${
-                      isSelected ? 'font-bold text-teal-800' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
-                    }`}
-                  >
-                    {acc.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
 
       {/* Date Selector */}
       {showDetails && <>
@@ -443,7 +464,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <TouchableOpacity
             className={`py-2 px-3 rounded-xl border ${
               isToday(txDate)
-                ? 'bg-teal-50 border-[#0D9488]'
+                ? 'bg-teal-50 border-brand'
                 : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
             }`}
             onPress={setToday}
@@ -460,7 +481,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <TouchableOpacity
             className={`py-2 px-3 rounded-xl border ${
               isYesterday(txDate)
-                ? 'bg-teal-50 border-[#0D9488]'
+                ? 'bg-teal-50 border-brand'
                 : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
             }`}
             onPress={setYesterday}

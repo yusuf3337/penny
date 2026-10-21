@@ -47,7 +47,7 @@ export const HeroUIInput: React.FC<HeroUIInputProps> = ({
           errorMessage
             ? 'border-rose-500 bg-rose-50 dark:bg-[#44252E]/50'
             : isFocused
-            ? 'border-[#137C70] bg-white dark:bg-[#182521]'
+            ? 'border-brand bg-white dark:bg-[#182521]'
             : 'border-[#E1E9E5] dark:border-[#2C4039]'
         } ${inputContainerClassName}`}
       >

@@ -3,23 +3,27 @@ import { Appearance, StyleSheet, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Uniwind } from 'uniwind';
 import * as SystemUI from 'expo-system-ui';
-import { AppColors, DARK_COLORS, LIGHT_COLORS, setActiveColors } from '../constants/colors';
+import { AccentPreference, ACCENT_PALETTES, AppColors, DARK_COLORS, LIGHT_COLORS, getAccentColors, setActiveColors } from '../constants/colors';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 interface ThemeContextValue {
   preference: ThemePreference;
   isDark: boolean;
   colors: AppColors;
+  accent: AccentPreference;
   setPreference: (value: ThemePreference) => Promise<void>;
+  setAccent: (value: AccentPreference) => Promise<void>;
 }
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 const STORAGE_KEY = '@penny_theme_preference_v1';
+const ACCENT_KEY = '@penny_accent_preference_v1';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemScheme = useColorScheme();
   const [preference, updatePreference] = useState<ThemePreference>('system');
+  const [accent, updateAccent] = useState<AccentPreference>('blue');
   const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
-  setActiveColors(isDark);
+  setActiveColors(isDark, accent);
 
   useEffect(() => {
     void AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
@@ -28,17 +32,32 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
+    void AsyncStorage.getItem(ACCENT_KEY).then((stored) => {
+      if (stored && Object.prototype.hasOwnProperty.call(ACCENT_PALETTES, stored)) updateAccent(stored as AccentPreference);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     Appearance.setColorScheme(preference === 'system' ? 'unspecified' : preference);
     Uniwind.setTheme(isDark ? 'dark' : 'light');
+    Uniwind.updateCSSVariables(isDark ? 'dark' : 'light', {
+      '--color-brand': isDark ? ACCENT_PALETTES[accent].dark : ACCENT_PALETTES[accent].light,
+      '--color-brand-soft': isDark ? ACCENT_PALETTES[accent].darkSoft : ACCENT_PALETTES[accent].lightSoft,
+    });
     void SystemUI.setBackgroundColorAsync(isDark ? DARK_COLORS.background : LIGHT_COLORS.background).catch(() => {});
-  }, [isDark, preference]);
+  }, [isDark, preference, accent]);
 
   const setPreference = async (value: ThemePreference) => {
     await AsyncStorage.setItem(STORAGE_KEY, value);
     updatePreference(value);
   };
 
-  return <ThemeContext.Provider value={{ preference, isDark, colors: isDark ? DARK_COLORS : LIGHT_COLORS, setPreference }}>
+  const setAccent = async (value: AccentPreference) => {
+    await AsyncStorage.setItem(ACCENT_KEY, value);
+    updateAccent(value);
+  };
+
+  return <ThemeContext.Provider value={{ preference, isDark, accent, colors: getAccentColors(isDark, accent), setPreference, setAccent }}>
     {children}
   </ThemeContext.Provider>;
 };
@@ -77,11 +96,22 @@ const themeStyle = (style: Record<string, unknown>) => Object.fromEntries(
 );
 
 export const useThemedStyles = <T extends Record<string, any>>(lightStyles: T): T => {
-  const { isDark } = useTheme();
+  const { isDark, accent } = useTheme();
   return useMemo(() => {
-    if (!isDark) return lightStyles;
     return Object.fromEntries(Object.entries(lightStyles).map(([name, style]) => [
-      name, themeStyle(StyleSheet.flatten(style) as Record<string, unknown>),
+      name, Object.fromEntries(Object.entries(isDark ? themeStyle(StyleSheet.flatten(style) as Record<string, unknown>) : StyleSheet.flatten(style) as Record<string, unknown>).map(([property, value]) => {
+        if (typeof value !== 'string' || !/color/i.test(property)) return [property, value];
+        const palette = ACCENT_PALETTES[accent];
+        const replacements: Record<string, string> = {
+          '#137c70': isDark ? palette.dark : palette.light,
+          '#0d9488': isDark ? palette.dark : palette.light,
+          '#66c9ae': palette.dark,
+          '#e3f2ec': isDark ? palette.darkSoft : palette.lightSoft,
+          '#203e35': palette.darkSoft,
+          '#0d635a': isDark ? palette.darkHover : palette.lightHover,
+        };
+        return [property, replacements[value.toLowerCase()] ?? value];
+      })),
     ])) as T;
-  }, [isDark, lightStyles]);
+  }, [isDark, accent, lightStyles]);
 };

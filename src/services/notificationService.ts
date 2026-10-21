@@ -56,32 +56,6 @@ export const getReminderStatus = async (): Promise<{ status: 'allowed' | 'quiet'
   };
 };
 
-export const scheduleReminderTest = async (): Promise<boolean> => {
-  if (!await requestNotificationPermissions()) return false;
-  await setupChannel();
-  await Notifications.cancelScheduledNotificationAsync(TEST_ID);
-  await Notifications.scheduleNotificationAsync({
-    identifier: TEST_ID,
-    content: {
-      title: paymentCopy[getActiveLanguage()]?.title ?? paymentCopy.en.title,
-      body: {
-        tr: 'Penny bildirimleri çalışıyor. Bu mesaj uygulama kapalıyken de görünmelidir.',
-        en: 'Penny notifications are working. This message should also appear when the app is closed.',
-        de: 'Penny-Benachrichtigungen funktionieren. Diese Nachricht sollte auch bei geschlossener App erscheinen.',
-        fr: 'Les notifications Penny fonctionnent. Ce message doit aussi apparaître quand l’app est fermée.',
-        ko: 'Penny 알림이 작동합니다. 앱을 닫아도 이 메시지가 표시되어야 합니다.',
-        zh: 'Penny 通知已启用。关闭应用后也应看到此消息。',
-        ja: 'Penny の通知は有効です。アプリを閉じてもこの通知が表示されます。',
-        ru: 'Уведомления Penny работают. Сообщение должно появиться и при закрытом приложении.',
-        it: 'Le notifiche Penny funzionano. Il messaggio dovrebbe apparire anche con l’app chiusa.',
-      }[getActiveLanguage()] ?? 'Penny notifications are working.',
-      sound: 'default',
-    },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(Date.now() + 15_000), ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : {}) },
-  });
-  return true;
-};
-
 const setupChannel = async () => {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
@@ -95,6 +69,7 @@ let syncQueue: Promise<void> = Promise.resolve();
 export const syncSubscriptionReminders = (subscriptions: SubscriptionItem[]): Promise<void> => {
   syncQueue = syncQueue.catch(() => {}).then(async () => {
     if (Platform.OS === 'web') return;
+    await Notifications.cancelScheduledNotificationAsync(TEST_ID).catch(() => {});
     const existing = await Notifications.getAllScheduledNotificationsAsync();
     if (!await isAllowed()) return;
     await setupChannel();

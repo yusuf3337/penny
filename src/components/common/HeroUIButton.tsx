@@ -50,7 +50,7 @@ export const HeroUIButton: React.FC<HeroUIButtonProps> = ({
     switch (variant) {
       case 'primary':
         return {
-          container: 'bg-[#137C70] active:bg-[#0D635A]',
+          container: 'bg-brand active:bg-brand',
           text: 'text-white',
           iconColor: '#FFFFFF',
           spinnerColor: '#FFFFFF',
@@ -78,8 +78,8 @@ export const HeroUIButton: React.FC<HeroUIButtonProps> = ({
         };
       case 'flat':
         return {
-          container: 'bg-[#E3F2EC] dark:bg-[#203E35] active:bg-[#D1E9DE]',
-          text: 'text-[#137C70] dark:text-[#66C9AE]',
+          container: 'bg-brand-soft dark:bg-brand-soft active:bg-[#D1E9DE]',
+          text: 'text-brand dark:text-brand',
           iconColor: colors.primary,
           spinnerColor: colors.primary,
         };
@@ -93,13 +93,13 @@ export const HeroUIButton: React.FC<HeroUIButtonProps> = ({
       case 'ghost':
         return {
           container: 'bg-transparent active:bg-zinc-100',
-          text: 'text-[#137C70] dark:text-[#66C9AE]',
+          text: 'text-brand dark:text-brand',
           iconColor: colors.primary,
           spinnerColor: colors.primary,
         };
       default:
         return {
-          container: 'bg-[#137C70] active:bg-[#0D635A]',
+          container: 'bg-brand active:bg-brand',
           text: 'text-white',
           iconColor: '#FFFFFF',
           spinnerColor: '#FFFFFF',

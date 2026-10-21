@@ -198,7 +198,7 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
         >
           <Text
             className={`text-[13px] ${
-              cycle === 'monthly' ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              cycle === 'monthly' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
             }`}
           >
             Aylık Ödeme
@@ -214,7 +214,7 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
         >
           <Text
             className={`text-[13px] ${
-              cycle === 'yearly' ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              cycle === 'yearly' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
             }`}
           >
             Yıllık Ödeme
@@ -247,7 +247,7 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
         >
           <Text
             className={`text-[13px] ${
-              accountType === 'bank' ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              accountType === 'bank' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
             }`}
           >
             Banka Hesabı
@@ -263,7 +263,7 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
         >
           <Text
             className={`text-[13px] ${
-              accountType === 'cash' ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              accountType === 'cash' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
             }`}
           >
             Nakit Cüzdan

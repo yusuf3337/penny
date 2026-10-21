@@ -7,7 +7,7 @@ import { AppTransaction } from '../types';
 import { useData } from '../context/DataContext';
 import { useAppDialog } from '../context/AppDialogContext';
 import { localizeFormat } from '../context/LocaleContext';
-import { COLORS, LIGHT_COLORS } from '../constants/colors';
+import { ACCENT_PALETTES, AccentPreference, COLORS, LIGHT_COLORS } from '../constants/colors';
 import {
   formatCurrency,
   formatShortDate,
@@ -18,24 +18,28 @@ import {
 } from '../utils/formatters';
 
 const BALANCE_CARD_WIDTH = 248;
+const HERO_PALETTES: Record<AccentPreference, { background: string; border: string; balance: string; balanceBorder: string }> = {
+  teal: { background: '#0F2C23', border: '#1E4D3E', balance: '#174235', balanceBorder: '#265C4B' },
+  blue: { background: '#14283E', border: '#284563', balance: '#203B58', balanceBorder: '#345775' },
+  violet: { background: '#281F3D', border: '#46365E', balance: '#382B53', balanceBorder: '#574471' },
+  coral: { background: '#3A2426', border: '#633B3C', balance: '#4B3032', balanceBorder: '#71494A' },
+};
 
 interface HomeScreenProps {
   onOpenAddModal: () => void;
   onEditTransaction: (tx: AppTransaction) => void;
-  onOpenNameModal: () => void;
   onOpenSettingsModal: () => void;
-  onOpenSplitModal?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenAddModal,
   onEditTransaction,
-  onOpenNameModal,
   onOpenSettingsModal,
-  onOpenSplitModal,
 }) => {
   const styles = useThemedStyles(lightStyles);
-  const { isDark, colors } = useTheme();
+  const { isDark, colors, accent } = useTheme();
+  const heroPalette = HERO_PALETTES[accent];
+  const heroAccent = ACCENT_PALETTES[accent].dark;
   const { alert } = useAppDialog();
   const {
     userName,
@@ -47,11 +51,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     totalIncome,
     totalExpense,
     transactions,
-    handleAddTransaction,
     handleDeleteTransaction,
     handleDeleteTransactionsForMonth,
     handleClearAllTransactions,
-    setActiveTab,
   } = useData();
 
   const [activeFilter, setActiveFilter] = useState<'yearly' | 'monthly'>('monthly');
@@ -64,29 +66,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const handleCurrentMonth = () => setSelectedMonth(new Date());
   const isCurrentMonthSelected = isSameMonthAndYear(selectedMonth, new Date());
   const currentMonthDisplay = formatMonthYear(selectedMonth);
-
-  const quickExpensePresets = [
-    { title: 'Kahve', amount: 50, category: 'Yemek', icon: 'cafe-outline' },
-    { title: 'Taksi / Ulaşım', amount: 150, category: 'Ulaşım', icon: 'car-outline' },
-    { title: 'Market Alışverişi', amount: 300, category: 'Ev', icon: 'cart-outline' },
-    { title: 'Akaryakıt', amount: 500, category: 'Ulaşım', icon: 'speedometer-outline' },
-  ];
-
-  const handleQuickExpense = async (preset: typeof quickExpensePresets[0]) => {
-    await handleAddTransaction({
-      title: preset.title,
-      category: preset.category,
-      amount: `-${formatCurrency(preset.amount)}`,
-      rawAmount: preset.amount,
-      type: 'expense',
-      iconName: preset.icon,
-      accountType: 'bank',
-      accountName: 'Banka Hesabı',
-      date: selectedMonth ? selectedMonth.toISOString() : new Date().toISOString(),
-    });
-    setQuickToastMessage(`${preset.title} (${formatCurrency(preset.amount)}) eklendi`);
-    setTimeout(() => setQuickToastMessage(''), 2000);
-  };
 
   // Split balance for hero display
   const balanceStr = isBalanceHidden ? '••••••' : formatCurrency(totalBalance);
@@ -244,18 +223,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </View>
 
       {/* Hero Timeline Card (Zaman Tüneli / Yıllık Özet) */}
-      <View style={styles.heroCard}>
+      <View style={[styles.heroCard, { backgroundColor: heroPalette.background, borderColor: heroPalette.border, shadowColor: heroPalette.background }]}>
         <View style={styles.heroHeader}>
-          <View style={styles.pillBadge}>
-            <Ionicons name="time" size={12} color={COLORS.emeraldText} />
-            <Text style={styles.pillBadgeText}>Zaman Tüneli</Text>
+          <View style={[styles.pillBadge, { backgroundColor: `${heroAccent}26` }]}>
+            <Ionicons name="time" size={12} color={heroAccent} />
+            <Text style={[styles.pillBadgeText, { color: heroAccent }]}>Zaman Tüneli</Text>
           </View>
 
           <View style={styles.toggleRow}>
             <TouchableOpacity
               style={[
                 styles.toggleBtn,
-                activeFilter === 'yearly' && styles.toggleBtnActive,
+                activeFilter === 'yearly' && [styles.toggleBtnActive, { backgroundColor: heroPalette.border }],
               ]}
               onPress={() => setActiveFilter('yearly')}
             >
@@ -272,7 +251,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <TouchableOpacity
               style={[
                 styles.toggleBtn,
-                activeFilter === 'monthly' && styles.toggleBtnActive,
+                activeFilter === 'monthly' && [styles.toggleBtnActive, { backgroundColor: heroPalette.border }],
               ]}
               onPress={() => setActiveFilter('monthly')}
             >
@@ -297,36 +276,36 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           snapToInterval={BALANCE_CARD_WIDTH + 12}
           decelerationRate="fast"
         >
-          <View style={[styles.balanceCard, styles.totalBalanceCard]}>
+          <View style={[styles.balanceCard, styles.totalBalanceCard, { backgroundColor: heroPalette.balance, borderColor: heroPalette.balanceBorder }]}>
             <View style={styles.balanceCardTopRow}>
               <View style={styles.balanceIconWrap}>
                 <Ionicons name="wallet" size={18} color="#34D399" />
               </View>
               <Text style={styles.balanceCardHint}>Genel durum</Text>
             </View>
-            <Text style={styles.balanceCardLabel}>Toplam Bakiye</Text>
+            <Text style={[styles.balanceCardLabel, { color: heroAccent }]}>Toplam Bakiye</Text>
             <Text style={styles.balanceCardAmount}>{balanceStr}</Text>
           </View>
 
-          <View style={[styles.balanceCard, styles.cashBalanceCard]}>
+          <View style={[styles.balanceCard, styles.cashBalanceCard, { backgroundColor: heroPalette.balance, borderColor: heroPalette.balanceBorder }]}>
             <View style={styles.balanceCardTopRow}>
               <View style={styles.balanceIconWrap}>
                 <Ionicons name="cash-outline" size={18} color="#34D399" />
               </View>
               <Text style={styles.balanceCardHint}>Cüzdan</Text>
             </View>
-            <Text style={styles.balanceCardLabel}>Nakit Bakiye</Text>
+            <Text style={[styles.balanceCardLabel, { color: heroAccent }]}>Nakit Bakiye</Text>
             <Text style={styles.balanceCardAmount}>{cashStr}</Text>
           </View>
 
-          <View style={[styles.balanceCard, styles.bankBalanceCard]}>
+          <View style={[styles.balanceCard, styles.bankBalanceCard, { backgroundColor: heroPalette.balance, borderColor: heroPalette.balanceBorder }]}>
             <View style={styles.balanceCardTopRow}>
               <View style={styles.balanceIconWrap}>
                 <Ionicons name="card-outline" size={18} color="#60A5FA" />
               </View>
               <Text style={styles.balanceCardHint}>Hesap</Text>
             </View>
-            <Text style={styles.balanceCardLabel}>Banka Bakiyesi</Text>
+            <Text style={[styles.balanceCardLabel, { color: heroAccent }]}>Banka Bakiyesi</Text>
             <Text style={styles.balanceCardAmount}>{bankStr}</Text>
           </View>
         </ScrollView>
@@ -359,59 +338,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </Text>
           </View>
         </View>
-      </View>
-
-      {/* Quick Navigation Cards */}
-      <View style={styles.quickNavRow}>
-        <TouchableOpacity
-          style={styles.quickNavCard}
-          activeOpacity={0.8}
-          onPress={() => setActiveTab('goals')}
-        >
-          <View style={[styles.quickNavIcon, { backgroundColor: COLORS.emeraldBg }]}>
-            <Ionicons name="flag" size={18} color={COLORS.emeraldText} />
-          </View>
-          <Text style={styles.quickNavTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Hedefler</Text>
-          <Text style={styles.quickNavSub} numberOfLines={2}>Tasarruf Takibi</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.quickNavCard}
-          activeOpacity={0.8}
-          onPress={() => setActiveTab('subscriptions')}
-        >
-          <View style={[styles.quickNavIcon, { backgroundColor: COLORS.blueBg }]}>
-            <Ionicons name="repeat" size={18} color={COLORS.blueText} />
-          </View>
-          <Text style={styles.quickNavTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Abonelikler</Text>
-          <Text style={styles.quickNavSub} numberOfLines={2}>Yenilemeler</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.quickNavCard}
-          activeOpacity={0.8}
-          onPress={() => setActiveTab('budget')}
-        >
-          <View style={[styles.quickNavIcon, { backgroundColor: COLORS.purpleBg }]}>
-            <Ionicons name="pie-chart" size={18} color={COLORS.purpleText} />
-          </View>
-          <Text style={styles.quickNavTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Bütçe</Text>
-          <Text style={styles.quickNavSub} numberOfLines={2}>Kategori Limiti</Text>
-        </TouchableOpacity>
-
-        {onOpenSplitModal ? (
-          <TouchableOpacity
-            style={styles.quickNavCard}
-            activeOpacity={0.8}
-            onPress={onOpenSplitModal}
-          >
-            <View style={[styles.quickNavIcon, { backgroundColor: '#FEE2E2' }]}>
-              <Ionicons name="people" size={18} color="#EF4444" />
-            </View>
-            <Text style={styles.quickNavTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Hesap Bölüş</Text>
-            <Text style={styles.quickNavSub} numberOfLines={2}>Ortak Harcama</Text>
-          </TouchableOpacity>
-        ) : null}
       </View>
 
       {/* Timeline Stream Section (Ay ay akış / Yıllık özet) */}
@@ -930,50 +856,6 @@ const lightStyles = StyleSheet.create({
     height: 32,
     backgroundColor: '#2C5A4E',
     marginHorizontal: 14,
-  },
-
-  // Quick Navigation
-  quickNavRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 18,
-  },
-  quickNavCard: {
-    flex: 1,
-    backgroundColor: LIGHT_COLORS.card,
-    borderRadius: 18,
-    paddingVertical: 13,
-    paddingHorizontal: 5,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: LIGHT_COLORS.cardBorder,
-    shadowColor: LIGHT_COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  quickNavIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  quickNavTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: LIGHT_COLORS.foreground,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-  quickNavSub: {
-    fontSize: 9,
-    color: LIGHT_COLORS.mutedText,
-    marginTop: 2,
-    textAlign: 'center',
-    alignSelf: 'stretch',
   },
 
   // Stream section

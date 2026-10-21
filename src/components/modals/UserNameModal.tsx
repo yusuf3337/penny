@@ -6,29 +6,55 @@ import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
 import { HeroUIButton } from '../common/HeroUIButton';
 import { COLORS } from '../../constants/colors';
+import { isValidNickname, sanitizeNickname } from '../../utils/nickname';
+import { AppLanguage, useLocale } from '../../context/LocaleContext';
+
+const saveError: Record<AppLanguage, string> = {
+  tr: 'İsim kaydedilemedi. Tekrar deneyin.',
+  en: 'Could not save your name. Try again.',
+  de: 'Name konnte nicht gespeichert werden. Erneut versuchen.',
+  fr: 'Impossible d’enregistrer votre nom. Réessayez.',
+  ko: '이름을 저장할 수 없습니다. 다시 시도하세요.',
+  zh: '无法保存姓名，请重试。',
+  ja: '名前を保存できませんでした。もう一度お試しください。',
+  ru: 'Не удалось сохранить имя. Попробуйте ещё раз.',
+  it: 'Impossibile salvare il nome. Riprova.',
+};
 
 interface UserNameModalProps {
   visible: boolean;
-  onSave: (name: string) => void;
+  onSave: (name: string) => Promise<void> | void;
 }
 
 export const UserNameModal: React.FC<UserNameModalProps> = ({ visible, onSave }) => {
+  const { language } = useLocale();
   const [nameInput, setNameInput] = useState('');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = () => {
-    if (!nameInput.trim()) {
+  const handleSubmit = async () => {
+    const name = nameInput.trim();
+    if (!isValidNickname(name)) {
       setError('Lütfen bir isim giriniz.');
       return;
     }
+    if (saving) return;
     setError('');
-    onSave(nameInput.trim());
+    setSaving(true);
+    try {
+      await onSave(name);
+    } catch {
+      setError(saveError[language]);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <HeroUIModal
       isOpen={visible}
       onClose={() => {}}
+      dismissible={false}
       title="Penny'ye Hoş Geldin"
       subtitle="Kişisel finans asistanını senin için hazırlayalım."
       badge={{ text: 'BAŞLANGIÇ', color: COLORS.primary }}
@@ -37,6 +63,7 @@ export const UserNameModal: React.FC<UserNameModalProps> = ({ visible, onSave })
           variant="primary"
           size="lg"
           onPress={handleSubmit}
+          disabled={saving || !isValidNickname(nameInput.trim())}
           icon="arrow-forward"
           iconPosition="right"
         >
@@ -59,11 +86,14 @@ export const UserNameModal: React.FC<UserNameModalProps> = ({ visible, onSave })
         startIcon="person-outline"
         value={nameInput}
         onChangeText={(text) => {
-          setNameInput(text);
+          setNameInput(sanitizeNickname(text));
           if (error) setError('');
         }}
         errorMessage={error}
         autoFocus
+        autoCapitalize="words"
+        autoCorrect={false}
+        maxLength={40}
         returnKeyType="done"
         onSubmitEditing={handleSubmit}
       />

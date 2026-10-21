@@ -613,7 +613,7 @@ export const shareTransactionsFileCSV = async (): Promise<boolean> => {
 export const pickAndImportBackupFileJSON = async (): Promise<{ success: boolean; message?: string }> => {
   try {
     const res = await DocumentPicker.getDocumentAsync({
-      type: '*/*',
+      type: 'application/json',
       copyToCacheDirectory: true,
     });
 

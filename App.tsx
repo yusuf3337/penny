@@ -1,6 +1,6 @@
 import './global.css';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -17,6 +17,7 @@ import { ReportsScreen } from './src/screens/ReportsScreen';
 import { DebtsScreen } from './src/screens/DebtsScreen';
 import { BottomNavBar } from './src/components/common/BottomNavBar';
 import { SplashIntro } from './src/components/common/SplashIntro';
+import { MoreScreen } from './src/screens/MoreScreen';
 import { AddTransactionModal } from './src/components/modals/AddTransactionModal';
 import { AddGoalModal } from './src/components/modals/AddGoalModal';
 import { AddSubscriptionModal } from './src/components/modals/AddSubscriptionModal';
@@ -30,6 +31,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LocaleProvider, useLocale } from './src/context/LocaleContext';
 import { AppTransaction } from './src/types';
 import { CurrencyProvider, useCurrency } from './src/context/CurrencyContext';
+import { isValidNickname } from './src/utils/nickname';
 
 import { SplitExpenseModal } from './src/components/modals/SplitExpenseModal';
 
@@ -39,11 +41,6 @@ const MainNavigator = () => {
   const {
     activeTab,
     setActiveTab,
-    userName,
-    updateUserName,
-    hasOnboarded,
-    markOnboarded,
-    isLoading,
     handleAddTransaction,
     handleUpdateTransaction,
     handleSaveGoal,
@@ -65,7 +62,6 @@ const MainNavigator = () => {
   const [isAddBudgetModalVisible, setIsAddBudgetModalVisible] = useState(false);
   const [isAddDebtModalVisible, setIsAddDebtModalVisible] = useState(false);
   const [isSplitModalVisible, setIsSplitModalVisible] = useState(false);
-  const [isNameModalVisible, setIsNameModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
   useEffect(() => {
@@ -82,21 +78,6 @@ const MainNavigator = () => {
     }
     setIsAddDebtModalVisible(true);
   };
-
-  // Auto show initial onboarding name modal ONLY ONCE if user hasn't onboarded yet
-  useEffect(() => {
-    if (
-      !isLoading &&
-      !hasOnboarded &&
-      (!userName || userName === 'Kullanıcı') &&
-      !isSettingsModalVisible
-    ) {
-      const timer = setTimeout(() => {
-        setIsNameModalVisible(true);
-      }, 350);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, hasOnboarded, userName, isSettingsModalVisible]);
 
   // Trigger modal depending on current active tab
   const handleOpenActiveTabModal = () => {
@@ -154,9 +135,7 @@ const MainNavigator = () => {
             setEditingTransaction(tx);
             setIsAddTxModalVisible(true);
           }}
-          onOpenNameModal={() => setIsNameModalVisible(true)}
           onOpenSettingsModal={() => setIsSettingsModalVisible(true)}
-          onOpenSplitModal={handleOpenSplitExpense}
         />
       )}
 
@@ -211,6 +190,8 @@ const MainNavigator = () => {
           onOpenSplitModal={handleOpenSplitExpense}
         />
       )}
+
+      {activeTab === 'more' && <MoreScreen onNavigate={setActiveTab} />}
 
       {/* Dynamic Bottom Navigation Bar */}
       <BottomNavBar
@@ -272,15 +253,6 @@ const MainNavigator = () => {
         onAddTransaction={handleAddTransaction}
       />
 
-      <UserNameModal
-        visible={isNameModalVisible}
-        onSave={async (name) => {
-          await updateUserName(name);
-          await markOnboarded();
-          setIsNameModalVisible(false);
-        }}
-      />
-
       <SettingsModal
         visible={isSettingsModalVisible}
         onClose={() => setIsSettingsModalVisible(false)}
@@ -304,9 +276,24 @@ const AppContent = () => {
 
 const AppBody = () => {
   const [introComplete, setIntroComplete] = useState(false);
-  return introComplete
-    ? <AppContent />
-    : <SplashIntro onComplete={() => setIntroComplete(true)} />;
+  const { isLoading, hasOnboarded, userName, updateUserName, markOnboarded } = useData();
+  const { colors, isDark } = useTheme();
+  if (!introComplete) return <SplashIntro onComplete={() => setIntroComplete(true)} />;
+  if (isLoading && !hasOnboarded) {
+    return <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
+      <ActivityIndicator color={colors.primary} />
+    </View>;
+  }
+  if (!hasOnboarded || !isValidNickname(userName)) {
+    return <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <UserNameModal visible onSave={async (name) => {
+        await updateUserName(name);
+        await markOnboarded();
+      }} />
+    </SafeAreaView>;
+  }
+  return <AppContent />;
 };
 
 export default function App() {

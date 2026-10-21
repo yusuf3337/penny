@@ -45,7 +45,7 @@ import { useLocale } from './LocaleContext';
 import { useCurrency } from './CurrencyContext';
 import { notifySubscriptionRecorded, requestNotificationPermissions, syncSubscriptionReminders } from '../services/notificationService';
 
-export type TabType = 'timeline' | 'goals' | 'subscriptions' | 'budget' | 'reports' | 'debts';
+export type TabType = 'timeline' | 'goals' | 'subscriptions' | 'budget' | 'reports' | 'debts' | 'more';
 
 interface DataContextType {
   userName: string;
@@ -198,8 +198,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Advance nextDueDate strictly into the future
             let advancedNextDue = advanceSubscriptionDueDate(sub.nextDueDate, sub.paymentDay || 1, sub.cycle || 'monthly');
-            while (new Date(advancedNextDue) <= now) {
+            // Imported backups can contain dates many years in the past. Avoid
+            // blocking the JS thread while stepping through every missed cycle.
+            let skippedCycles = 0;
+            while (new Date(advancedNextDue) <= now && skippedCycles < 240) {
               advancedNextDue = advanceSubscriptionDueDate(advancedNextDue, sub.paymentDay || 1, sub.cycle || 'monthly');
+              skippedCycles += 1;
+            }
+            if (new Date(advancedNextDue) <= now) {
+              advancedNextDue = advanceSubscriptionDueDate(
+                new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+                sub.paymentDay || 1,
+                sub.cycle || 'monthly'
+              );
             }
 
             if (!isAlreadyChargedToday) {
@@ -263,8 +274,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const markOnboarded = async () => {
-    setHasOnboarded(true);
     await markOnboardedService();
+    setHasOnboarded(true);
   };
 
   const handleResetAllData = async () => {

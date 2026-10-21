@@ -171,7 +171,7 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
               key={ic}
               className={`w-11 h-11 rounded-[14px] items-center justify-center border-[1.5px] ${
                 isSelected
-                  ? 'bg-teal-50 border-[#0D9488]'
+                  ? 'bg-teal-50 border-brand'
                   : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
               }`}
               onPress={() => setSelectedIcon(ic)}
