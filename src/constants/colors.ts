@@ -39,7 +39,19 @@ export const DARK_COLORS: typeof LIGHT_COLORS = {
 
 export type AppColors = typeof LIGHT_COLORS;
 let activeColors: AppColors = LIGHT_COLORS;
-export const setActiveColors = (dark: boolean) => { activeColors = dark ? DARK_COLORS : LIGHT_COLORS; };
+export type AccentPreference = 'teal' | 'blue' | 'violet' | 'coral';
+export const ACCENT_PALETTES: Record<AccentPreference, { light: string; dark: string; lightSoft: string; darkSoft: string; lightHover: string; darkHover: string }> = {
+  teal: { light: '#137C70', dark: '#66C9AE', lightSoft: '#E3F2EC', darkSoft: '#203E35', lightHover: '#0D635A', darkHover: '#8BD9C2' },
+  blue: { light: '#2563A6', dark: '#80BAF0', lightSoft: '#E7F0FA', darkSoft: '#1C344B', lightHover: '#1B4C83', darkHover: '#A5D1FA' },
+  violet: { light: '#6D4BA8', dark: '#C2A2F0', lightSoft: '#F0EAF8', darkSoft: '#35294A', lightHover: '#573985', darkHover: '#D4BAF5' },
+  coral: { light: '#B45048', dark: '#F1A29B', lightSoft: '#FAEAE7', darkSoft: '#482E2C', lightHover: '#903D37', darkHover: '#F7BDB6' },
+};
+export const getAccentColors = (dark: boolean, accent: AccentPreference): AppColors => {
+  const base = dark ? DARK_COLORS : LIGHT_COLORS;
+  const palette = ACCENT_PALETTES[accent];
+  return { ...base, primary: dark ? palette.dark : palette.light, primaryHover: dark ? palette.darkHover : palette.lightHover, primaryLight: dark ? palette.darkSoft : palette.lightSoft };
+};
+export const setActiveColors = (dark: boolean, accent: AccentPreference = 'blue') => { activeColors = getAccentColors(dark, accent); };
 export const COLORS: AppColors = new Proxy(LIGHT_COLORS, {
   get(_target, key: keyof AppColors) { return activeColors[key]; },
 });

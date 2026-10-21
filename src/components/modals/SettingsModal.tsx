@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Linking, View, TouchableOpacity } from 'react-native';
 import { Text, TextInput } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { ACCENT_PALETTES, AccentPreference, COLORS } from '../../constants/colors';
 import { useData } from '../../context/DataContext';
 import {
   exportAllDataJSON,
@@ -17,7 +17,8 @@ import { useAppDialog } from '../../context/AppDialogContext';
 import { ThemePreference, useTheme } from '../../context/ThemeContext';
 import { LANGUAGE_OPTIONS, LanguagePreference, AppLanguage, getLanguageName, useLocale } from '../../context/LocaleContext';
 import { CURRENCY_OPTIONS, CurrencyPreference, useCurrency } from '../../context/CurrencyContext';
-import { getReminderStatus, scheduleReminderTest } from '../../services/notificationService';
+import { getReminderStatus } from '../../services/notificationService';
+import { isValidNickname, sanitizeNickname } from '../../utils/nickname';
 
 const reminderCopy: Record<AppLanguage, { title: string; allowed: string; quiet: string; blocked: string; count: (n: number) => string; test: string; settings: string; testReady: string; testFailed: string }> = {
   tr: { title: 'Abonelik bildirimleri', allowed: 'Bildirim izni açık', quiet: 'Bildirimler sessiz veya kilit ekranında kapalı', blocked: 'Bildirim izni kapalı', count: n => `${n} hatırlatma planlandı`, test: '15 saniyelik test bildirimi', settings: 'Telefon ayarlarını aç', testReady: 'Telefonu kilitleyin; test bildirimi 15 saniye sonra gelmeli.', testFailed: 'Bildirim izni verilemedi. Telefon ayarlarını kontrol edin.' },
@@ -43,6 +44,18 @@ const currencyCopy: Record<AppLanguage, { title: string; system: string; note: s
   it: { title: 'Valuta', system: 'Sistema', note: 'Cambiare valuta non converte gli importi esistenti.' },
 };
 
+const accentCopy: Record<AppLanguage, { title: string; teal: string; blue: string; violet: string; coral: string }> = {
+  tr: { title: 'Vurgu rengi', teal: 'Turkuaz', blue: 'Mavi', violet: 'Mor', coral: 'Mercan' },
+  en: { title: 'Accent color', teal: 'Teal', blue: 'Blue', violet: 'Violet', coral: 'Coral' },
+  de: { title: 'Akzentfarbe', teal: 'Türkis', blue: 'Blau', violet: 'Violett', coral: 'Koralle' },
+  fr: { title: 'Couleur d’accent', teal: 'Turquoise', blue: 'Bleu', violet: 'Violet', coral: 'Corail' },
+  ko: { title: '강조 색상', teal: '청록', blue: '파랑', violet: '보라', coral: '코랄' },
+  zh: { title: '强调色', teal: '青绿', blue: '蓝色', violet: '紫色', coral: '珊瑚' },
+  ja: { title: 'アクセントカラー', teal: 'ティール', blue: 'ブルー', violet: 'バイオレット', coral: 'コーラル' },
+  ru: { title: 'Акцентный цвет', teal: 'Бирюзовый', blue: 'Синий', violet: 'Фиолетовый', coral: 'Коралловый' },
+  it: { title: 'Colore principale', teal: 'Turchese', blue: 'Blu', violet: 'Viola', coral: 'Corallo' },
+};
+
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
@@ -50,7 +63,7 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
   const { alert } = useAppDialog();
-  const { preference, setPreference, colors } = useTheme();
+  const { preference, setPreference, accent, setAccent, isDark, colors } = useTheme();
   const { language, preference: languagePreference, setPreference: setLanguagePreference, t } = useLocale();
   const { currency, preference: currencyPreference, setPreference: setCurrencyPreference } = useCurrency();
   const { userName, updateUserName, reloadAllData, handleResetAllData } = useData();
@@ -66,8 +79,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   const importPending = useRef<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [reminderStatus, setReminderStatus] = useState<Awaited<ReturnType<typeof getReminderStatus>> | null>(null);
-  const [testingReminder, setTestingReminder] = useState(false);
-  const [reminderMessage, setReminderMessage] = useState('');
+  const [expandedSetting, setExpandedSetting] = useState<'appearance' | 'accent' | 'language' | 'currency' | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -78,23 +90,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
     }
   }, [visible, userName]);
 
-  const handleReminderTest = async () => {
-    if (testingReminder) return;
-    setTestingReminder(true);
-    try {
-      const scheduled = await scheduleReminderTest();
-      setReminderMessage(scheduled ? reminderCopy[language].testReady : reminderCopy[language].testFailed);
-      setReminderStatus(await getReminderStatus());
-    } catch (error) {
-      console.warn('Could not schedule test notification:', error);
-      setReminderMessage(reminderCopy[language].testFailed);
-    } finally {
-      setTestingReminder(false);
-    }
-  };
-
   const handleSaveName = async () => {
-    if (!nameInput.trim()) return;
+    if (!isValidNickname(nameInput.trim())) return;
     await updateUserName(nameInput.trim());
     setStatusMsg('Kullanıcı ismi güncellendi!');
     setTimeout(() => setStatusMsg(''), 3000);
@@ -231,7 +228,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
 
       {/* Penny Pro Status Banner Card */}
       <TouchableOpacity
-        className="flex-row items-center justify-between p-3.5 rounded-2xl mb-4 border border-[#CAD8D2] dark:border-[#3C574E] bg-[#E3F2EC] dark:bg-[#203E35]"
+        className="flex-row items-center justify-between p-3.5 rounded-2xl mb-4 border border-[#CAD8D2] dark:border-[#3C574E] bg-brand-soft dark:bg-brand-soft"
         activeOpacity={0.85}
         onPress={() => {
           onClose();
@@ -242,7 +239,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
       >
         <View className="flex-row items-center gap-3 flex-1 mr-2">
           <View className="w-10 h-10 rounded-[14px] items-center justify-center bg-white dark:bg-[#182521]">
-            <Ionicons name={isPro ? 'checkmark-circle-outline' : 'lock-closed-outline'} size={20} color="#137C70" />
+            <Ionicons name={isPro ? 'checkmark-circle-outline' : 'lock-closed-outline'} size={20} color={colors.primary} />
           </View>
           <View className="flex-1">
             <View className="flex-row items-center gap-2 mb-0.5">
@@ -250,7 +247,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
                 {isPro ? 'Penny Pro Aktif' : 'Penny Pro özellikleri'}
               </Text>
               <View className="px-1.5 py-0.5 rounded-md bg-white dark:bg-[#182521]">
-                <Text className="text-[10px] font-bold text-[#137C70] dark:text-[#66C9AE]">
+                <Text className="text-[10px] font-bold text-brand dark:text-brand">
                   {isPro ? 'AKTİF' : 'İNCELE'}
                 </Text>
               </View>
@@ -262,7 +259,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             </Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={18} color="#137C70" />
+        <Ionicons name="chevron-forward" size={18} color={colors.primary} />
       </TouchableOpacity>
 
       {/* Profil İsmi Güncelleme */}
@@ -271,20 +268,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         <TextInput
           className="flex-1 bg-zinc-100 dark:bg-[#22332D] rounded-2xl px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-[#EAF2EE]"
           value={nameInput}
-          onChangeText={setNameInput}
+          onChangeText={(text) => setNameInput(sanitizeNickname(text))}
+          autoCapitalize="words"
+          autoCorrect={false}
+          maxLength={40}
           placeholder="İsminiz..."
           placeholderTextColor="#A1A1AA"
         />
         <TouchableOpacity
-          className="bg-[#0D9488] px-4 py-3 rounded-2xl active:bg-teal-700"
+          className="bg-brand px-4 py-3 rounded-2xl active:bg-teal-700"
           onPress={handleSaveName}
+          disabled={!isValidNickname(nameInput.trim())}
         >
           <Text className="text-white text-xs font-bold">Kaydet</Text>
         </TouchableOpacity>
       </View>
 
-      <Text className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">Görünüm</Text>
-      <View className="flex-row gap-2 mb-5">
+      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'appearance' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#22332D] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'appearance' ? null : 'appearance')}>
+        <Text className="text-sm font-semibold text-zinc-900 dark:text-[#EAF2EE]">{t('Görünüm')} · {preference === 'system' ? t('Sistem') : preference === 'light' ? t('Açık') : t('Koyu')}</Text>
+        <Ionicons name={expandedSetting === 'appearance' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
+      </TouchableOpacity>
+      {expandedSetting === 'appearance' && <View className="flex-row gap-2 mb-4">
         {([
           ['system', 'Sistem', 'phone-portrait-outline'],
           ['light', 'Açık', 'sunny-outline'],
@@ -294,20 +298,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             key={value}
             accessibilityRole="radio"
             accessibilityState={{ selected: preference === value }}
-            className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 border ${preference === value ? 'bg-[#E3F2EC] dark:bg-[#203E35] border-[#137C70]' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
-            onPress={() => void setPreference(value as ThemePreference)}
+            className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 border ${preference === value ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            onPress={() => { void setPreference(value as ThemePreference); setExpandedSetting(null); }}
           >
             <Ionicons name={icon} size={15} color={preference === value ? colors.primary : colors.mutedText} />
             <Text style={{ color: preference === value ? colors.primary : colors.mutedText, fontSize: 12, fontWeight: '700' }}>{label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </View>}
 
-      <Text className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">Uygulama Dili</Text>
-      <Text className="text-xs font-semibold text-[#137C70] dark:text-[#66C9AE] mb-2" localize={false}>
-        {`${t('Seçili dil')}: ${getLanguageName(language, language)}`}
-      </Text>
-      <View className="flex-row flex-wrap gap-2 mb-5">
+      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'accent' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#22332D] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'accent' ? null : 'accent')}>
+        <Text localize={false} style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>{accentCopy[language].title} · {accentCopy[language][accent]}</Text>
+        <Ionicons name={expandedSetting === 'accent' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
+      </TouchableOpacity>
+      {expandedSetting === 'accent' && <View className="flex-row flex-wrap gap-2 mb-4">
+        {(Object.keys(ACCENT_PALETTES) as AccentPreference[]).map((option) => <TouchableOpacity key={option} accessibilityRole="radio" accessibilityState={{ selected: accent === option }} onPress={() => { void setAccent(option); setExpandedSetting(null); }} style={{ backgroundColor: colors.card, borderColor: accent === option ? colors.primary : colors.cardBorder, borderWidth: 1, borderRadius: 12, minWidth: '47%', padding: 11, flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+          <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: isDark ? ACCENT_PALETTES[option].dark : ACCENT_PALETTES[option].light }} />
+          <Text localize={false} style={{ color: colors.foreground, fontSize: 13, fontWeight: accent === option ? '700' : '500' }}>{accentCopy[language][option]}</Text>
+        </TouchableOpacity>)}
+      </View>}
+
+      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'language' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#22332D] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'language' ? null : 'language')}>
+        <Text localize={false} style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>{`${t('Uygulama Dili')} · ${getLanguageName(language, language)}`}</Text>
+        <Ionicons name={expandedSetting === 'language' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
+      </TouchableOpacity>
+      {expandedSetting === 'language' && <View className="flex-row flex-wrap gap-2 mb-4">
         {([{ code: 'system', name: 'Sistem dili' }, ...LANGUAGE_OPTIONS] as { code: LanguagePreference; name: string }[]).map((option) => {
           const selected = languagePreference === option.code;
           return (
@@ -315,8 +330,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
               key={option.code}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
-              onPress={() => void setLanguagePreference(option.code)}
-              className={`w-[31%] min-h-11 px-2 rounded-xl border items-center justify-center ${selected ? 'bg-[#E3F2EC] dark:bg-[#203E35] border-[#137C70]' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+              onPress={() => { void setLanguagePreference(option.code); setExpandedSetting(null); }}
+              className={`w-[31%] min-h-11 px-2 rounded-xl border items-center justify-center ${selected ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
             >
               <Text localize={false} style={{ color: selected ? colors.primary : colors.secondaryForeground, fontSize: 12, fontWeight: selected ? '700' : '500', textAlign: 'center' }}>
                 {option.code === 'system' ? t('Sistem dili') : getLanguageName(option.code, language)}
@@ -324,7 +339,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             </TouchableOpacity>
           );
         })}
-      </View>
+      </View>}
 
       <Text localize={false} className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">
         {reminderCopy[language].title}
@@ -338,32 +353,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             {reminderCopy[language].count(reminderStatus.scheduled)}
           </Text>
         ) : null}
-        {reminderMessage ? (
-          <Text localize={false} className="text-xs text-[#137C70] dark:text-[#66C9AE] mt-2">{reminderMessage}</Text>
-        ) : null}
         <View className="flex-row flex-wrap gap-2 mt-3">
-          <TouchableOpacity
-            disabled={testingReminder}
-            className="rounded-xl bg-[#137C70] px-3 py-2.5"
-            onPress={() => void handleReminderTest()}
-          >
-            <Text localize={false} className="text-xs font-bold text-white">{reminderCopy[language].test}</Text>
-          </TouchableOpacity>
           {reminderStatus?.status !== 'allowed' ? (
             <TouchableOpacity
-              className="rounded-xl border border-[#137C70] px-3 py-2.5"
+              className="rounded-xl border border-brand px-3 py-2.5"
               onPress={() => void Linking.openSettings()}
             >
-              <Text localize={false} className="text-xs font-bold text-[#137C70] dark:text-[#66C9AE]">{reminderCopy[language].settings}</Text>
+              <Text localize={false} className="text-xs font-bold text-brand dark:text-brand">{reminderCopy[language].settings}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
       </View>
 
-      <Text localize={false} className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">
-        {currencyCopy[language].title} · {currency}
-      </Text>
-      <View className="flex-row flex-wrap gap-2 mb-2">
+      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'currency' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#22332D] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'currency' ? null : 'currency')}>
+        <Text localize={false} style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>{currencyCopy[language].title} · {currency}</Text>
+        <Ionicons name={expandedSetting === 'currency' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
+      </TouchableOpacity>
+      {expandedSetting === 'currency' && <View className="flex-row flex-wrap gap-2 mb-2">
         {(['system', ...CURRENCY_OPTIONS.map((item) => item.code)] as CurrencyPreference[]).map((option) => {
           const selected = currencyPreference === option;
           return (
@@ -371,8 +377,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
               key={option}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
-              onPress={() => void setCurrencyPreference(option)}
-              className={`min-w-[22%] min-h-11 px-3 rounded-xl border items-center justify-center ${selected ? 'bg-[#E3F2EC] dark:bg-[#203E35] border-[#137C70]' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+              onPress={() => { void setCurrencyPreference(option); setExpandedSetting(null); }}
+              className={`min-w-[22%] min-h-11 px-3 rounded-xl border items-center justify-center ${selected ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
             >
               <Text localize={false} style={{ color: selected ? colors.primary : colors.secondaryForeground, fontSize: 12, fontWeight: selected ? '700' : '500' }}>
                 {option === 'system' ? currencyCopy[language].system : option}
@@ -380,7 +386,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             </TouchableOpacity>
           );
         })}
-      </View>
+      </View>}
       <Text localize={false} className="text-xs text-zinc-500 dark:text-[#A9BDB2] mb-5">{currencyCopy[language].note}</Text>
 
       {/* Dosya Bazlı Yedekleme & İndirme */}
@@ -389,7 +395,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
       </Text>
 
       <TouchableOpacity
-        className="flex-row items-center gap-3 bg-[#0D9488] p-3.5 rounded-2xl mb-2.5 active:bg-teal-700"
+        className="flex-row items-center gap-3 bg-brand p-3.5 rounded-2xl mb-2.5 active:bg-teal-700"
         onPress={handleShareJSONFile}
       >
         <Ionicons name="document-text" size={20} color="#FFF" />
@@ -406,7 +412,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         onPress={handlePickAndImportFile}
         disabled={importing}
       >
-        <Ionicons name="folder-open" size={20} color="#0D9488" />
+        <Ionicons name="folder-open" size={20} color={colors.primary} />
         <View className="flex-1">
           <Text className="text-sm font-bold text-zinc-900 dark:text-[#EAF2EE]">Cihazdan Yedek Dosyası Seç & Yükle</Text>
           <Text className="text-[11px] text-zinc-500 dark:text-[#A9BDB2] mt-0.5">
@@ -462,7 +468,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             placeholderTextColor="#A1A1AA"
           />
           <TouchableOpacity
-            className="bg-[#0D9488] py-2.5 rounded-xl items-center mt-2 active:bg-teal-700"
+            className="bg-brand py-2.5 rounded-xl items-center mt-2 active:bg-teal-700"
             onPress={handleApplyTextImport}
             disabled={importing}
           >
@@ -483,7 +489,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
               alert('Test Modu', !isPro ? 'Pro erişimi test için açıldı.' : 'Pro test erişimi kapatıldı.');
             }}
           >
-            <Ionicons name="flask-outline" size={18} color="#137C70" />
+            <Ionicons name="flask-outline" size={18} color={colors.primary} />
             <View className="flex-1">
               <Text className="text-sm font-bold text-zinc-900 dark:text-[#EAF2EE]">{isPro ? 'Pro testini kapat' : 'Pro erişimini test et'}</Text>
             </View>

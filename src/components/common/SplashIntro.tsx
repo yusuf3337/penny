@@ -1,66 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { Text } from './LocalizedPrimitives';
 import { useData } from '../../context/DataContext';
+import { useTheme } from '../../context/ThemeContext';
 
-const SPLASH_BACKGROUND = '#240F00';
-const SPLASH_VIDEO = require('../../../assets/penny-splash.mp4');
-const SPLASH_POSTER = require('../../../assets/penny-splash-poster.png');
-
-export function SplashIntro({ onComplete }: { onComplete?: () => void }) {
+/** A short, quiet bridge between the native launch screen and the loaded app. */
+export function SplashIntro({ onComplete }: { onComplete: () => void }) {
   const { isLoading } = useData();
-  const [videoFinished, setVideoFinished] = useState(false);
-  const player = useVideoPlayer(SPLASH_VIDEO, (videoPlayer) => {
-    videoPlayer.loop = false;
-    videoPlayer.muted = true;
-    videoPlayer.play();
-  });
+  const { isDark, colors } = useTheme();
+  const [ready, setReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    const endSubscription = player.addListener('playToEnd', () => setVideoFinished(true));
-    const errorSubscription = player.addListener('statusChange', ({ status }) => {
-      if (status === 'error') setVideoFinished(true);
-    });
-    // A decoder failure must never leave the app covered by the intro.
-    const fallback = setTimeout(() => setVideoFinished(true), 7000);
-
-    return () => {
-      endSubscription.remove();
-      errorSubscription.remove();
-      clearTimeout(fallback);
-    };
-  }, [player]);
+    const minimum = setTimeout(() => setReady(true), 450);
+    const maximum = setTimeout(() => setTimedOut(true), 4000);
+    return () => { clearTimeout(minimum); clearTimeout(maximum); };
+  }, []);
 
   useEffect(() => {
-    if (videoFinished && !isLoading) onComplete?.();
-  }, [videoFinished, isLoading, onComplete]);
+    if (ready && (!isLoading || timedOut)) onComplete();
+  }, [ready, isLoading, timedOut, onComplete]);
 
-  return (
-    <View style={styles.overlay} pointerEvents="auto">
-      <StatusBar hidden />
-      {videoFinished ? (
-        <Image source={SPLASH_POSTER} style={styles.media} resizeMode="contain" />
-      ) : (
-        <VideoView
-          player={player}
-          style={styles.media}
-          contentFit="contain"
-          nativeControls={false}
-          allowsPictureInPicture={false}
-        />
-      )}
+  return <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <StatusBar style={isDark ? 'light' : 'dark'} />
+    <View style={styles.brand}>
+      <View style={[styles.mark, { backgroundColor: colors.primary }]} />
+      <Text localize={false} style={[styles.wordmark, { color: colors.foreground }]}>{'penny'}</Text>
     </View>
-  );
+    <ActivityIndicator style={styles.activity} size="small" color={colors.primary} />
+  </View>;
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: SPLASH_BACKGROUND,
-  },
-  media: {
-    width: '100%',
-    height: '100%',
-  },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  mark: { width: 14, height: 14, borderRadius: 5, transform: [{ rotate: '-20deg' }] },
+  wordmark: { fontSize: 38, fontWeight: '800', letterSpacing: -1.8 },
+  activity: { position: 'absolute', bottom: 72 },
 });

@@ -136,8 +136,8 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
         <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8]">Kategori Seçin</Text>
         <TouchableOpacity onPress={openCategoryCreation} className="flex-row items-center gap-1" activeOpacity={0.7}>
           <Ionicons name={isPro ? 'add' : 'lock-closed-outline'} size={15} color="#0D9488" />
-          <Text className="text-xs font-bold text-[#0D9488] dark:text-[#66C9AE]">Yeni Kategori</Text>
-          {!isPro && <Text className="text-[10px] font-bold text-[#0D9488] dark:text-[#66C9AE]">PRO</Text>}
+          <Text className="text-xs font-bold text-brand dark:text-brand">Yeni Kategori</Text>
+          {!isPro && <Text className="text-[10px] font-bold text-brand dark:text-brand">PRO</Text>}
         </TouchableOpacity>
       </View>
       {showCategoryInput && (
@@ -159,7 +159,7 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
             <TouchableOpacity className="flex-1 items-center justify-center rounded-xl bg-zinc-200 dark:bg-[#2C4039] py-2.5" onPress={() => { setShowCategoryInput(false); setCategoryError(''); }}>
               <Text className="text-sm font-semibold text-zinc-700 dark:text-[#CCDCD2]">Vazgeç</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="flex-1 items-center justify-center rounded-xl bg-[#0D9488] py-2.5" onPress={createCategory} disabled={isSaving}>
+            <TouchableOpacity className="flex-1 items-center justify-center rounded-xl bg-brand py-2.5" onPress={createCategory} disabled={isSaving}>
               <Text className="text-sm font-semibold text-white">Kategoriyi Oluştur</Text>
             </TouchableOpacity>
           </View>
@@ -173,7 +173,7 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
               key={cat.name}
               className={`flex-row items-center gap-1.5 py-2 px-3 rounded-[14px] border-[1.5px] ${
                 isSelected
-                  ? 'border-[#0D9488] bg-teal-50/70 shadow-sm shadow-teal-500/10'
+                  ? 'border-brand bg-teal-50/70 shadow-sm shadow-teal-500/10'
                   : 'border-transparent bg-zinc-100 dark:bg-[#22332D]'
               }`}
               onPress={() => { setSelectedCategory(cat.name); setCategoryError(''); }}
@@ -192,7 +192,7 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
               </View>
               <Text
                 className={`text-[13px] ${
-                  isSelected ? 'font-bold text-[#0D9488] dark:text-[#66C9AE]' : 'font-semibold text-zinc-700 dark:text-[#C2D4C8]'
+                  isSelected ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-700 dark:text-[#C2D4C8]'
                 }`}
               >
                 {cat.name}

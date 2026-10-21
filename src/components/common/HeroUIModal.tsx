@@ -8,6 +8,7 @@ interface HeroUIModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDismiss?: () => void;
+  dismissible?: boolean;
   title: string;
   subtitle?: string;
   badge?: {
@@ -24,6 +25,7 @@ export const HeroUIModal: React.FC<HeroUIModalProps> = ({
   isOpen,
   onClose,
   onDismiss,
+  dismissible = true,
   title,
   subtitle,
   badge,
@@ -77,6 +79,7 @@ export const HeroUIModal: React.FC<HeroUIModalProps> = ({
   };
 
   const handleDismiss = () => {
+    if (!dismissible) return;
     handleCloseAnimation();
     setTimeout(onClose, 200);
   };
@@ -141,14 +144,14 @@ export const HeroUIModal: React.FC<HeroUIModalProps> = ({
             </View>
 
             {/* Circular HeroUI Close Button */}
-            <TouchableOpacity
+            {dismissible && <TouchableOpacity
               className="w-9 h-9 rounded-xl bg-[#EEF2EF] dark:bg-[#22332D] items-center justify-center active:bg-[#E1E9E5]"
               onPress={handleDismiss}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons name="close" size={18} color="#667A73" />
-            </TouchableOpacity>
+            </TouchableOpacity>}
           </View>
 
           {/* HeroUI Divider */}

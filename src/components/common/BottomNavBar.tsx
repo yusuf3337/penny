@@ -9,15 +9,15 @@ import { TabType } from '../../context/DataContext';
 import { AppLanguage, useLocale } from '../../context/LocaleContext';
 
 const NAV_LABELS: Record<AppLanguage, Record<TabType | 'add', string>> = {
-  tr: { timeline: 'Akış', goals: 'Hedef', subscriptions: 'Abone', budget: 'Bütçe', reports: 'Rapor', debts: 'Borç', add: 'Ekle' },
-  en: { timeline: 'Feed', goals: 'Goals', subscriptions: 'Plans', budget: 'Budget', reports: 'Reports', debts: 'Debts', add: 'Add' },
-  de: { timeline: 'Verlauf', goals: 'Ziele', subscriptions: 'Abos', budget: 'Budget', reports: 'Berichte', debts: 'Schulden', add: 'Neu' },
-  fr: { timeline: 'Flux', goals: 'Objectifs', subscriptions: 'Abos', budget: 'Budget', reports: 'Rapports', debts: 'Dettes', add: 'Ajout' },
-  ko: { timeline: '내역', goals: '목표', subscriptions: '구독', budget: '예산', reports: '보고서', debts: '빚', add: '추가' },
-  zh: { timeline: '记录', goals: '目标', subscriptions: '订阅', budget: '预算', reports: '报告', debts: '债务', add: '添加' },
-  ja: { timeline: '履歴', goals: '目標', subscriptions: '定期購入', budget: '予算', reports: 'レポート', debts: '借入', add: '追加' },
-  ru: { timeline: 'Лента', goals: 'Цели', subscriptions: 'Подписки', budget: 'Бюджет', reports: 'Отчёты', debts: 'Долги', add: 'Новое' },
-  it: { timeline: 'Flusso', goals: 'Obiettivi', subscriptions: 'Abbon.', budget: 'Budget', reports: 'Report', debts: 'Debiti', add: 'Nuovo' },
+  tr: { timeline: 'Akış', goals: 'Hedef', subscriptions: 'Abone', budget: 'Bütçe', reports: 'Rapor', debts: 'Borç', more: 'Diğer', add: 'Ekle' },
+  en: { timeline: 'Feed', goals: 'Goals', subscriptions: 'Plans', budget: 'Budget', reports: 'Reports', debts: 'Debts', more: 'More', add: 'Add' },
+  de: { timeline: 'Verlauf', goals: 'Ziele', subscriptions: 'Abos', budget: 'Budget', reports: 'Berichte', debts: 'Schulden', more: 'Mehr', add: 'Neu' },
+  fr: { timeline: 'Flux', goals: 'Objectifs', subscriptions: 'Abos', budget: 'Budget', reports: 'Rapports', debts: 'Dettes', more: 'Plus', add: 'Ajout' },
+  ko: { timeline: '내역', goals: '목표', subscriptions: '구독', budget: '예산', reports: '보고서', debts: '빚', more: '더보기', add: '추가' },
+  zh: { timeline: '记录', goals: '目标', subscriptions: '订阅', budget: '预算', reports: '报告', debts: '债务', more: '更多', add: '添加' },
+  ja: { timeline: '履歴', goals: '目標', subscriptions: '定期購入', budget: '予算', reports: 'レポート', debts: '借入', more: 'その他', add: '追加' },
+  ru: { timeline: 'Лента', goals: 'Цели', subscriptions: 'Подписки', budget: 'Бюджет', reports: 'Отчёты', debts: 'Долги', more: 'Ещё', add: 'Новое' },
+  it: { timeline: 'Flusso', goals: 'Obiettivi', subscriptions: 'Abbon.', budget: 'Budget', reports: 'Report', debts: 'Debiti', more: 'Altro', add: 'Nuovo' },
 };
 
 interface BottomNavBarProps {
@@ -39,10 +39,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   const tabs: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap; activeIcon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'timeline', label: 'Zaman Tüneli', icon: 'time-outline', activeIcon: 'time' },
     { id: 'goals', label: 'Hedefler', icon: 'flag-outline', activeIcon: 'flag' },
-    { id: 'subscriptions', label: 'Abonelikler', icon: 'repeat-outline', activeIcon: 'repeat' },
     { id: 'budget', label: 'Bütçe', icon: 'pie-chart-outline', activeIcon: 'pie-chart' },
-    { id: 'reports', label: 'Rapor', icon: 'bar-chart-outline', activeIcon: 'bar-chart' },
-    { id: 'debts', label: 'Borç & Alacak', icon: 'people-outline', activeIcon: 'people' },
+    { id: 'more', label: 'Diğer', icon: 'grid-outline', activeIcon: 'grid' },
   ];
 
   const handleTabPress = (tabId: TabType) => {
@@ -58,7 +56,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       <View className="flex-row items-center justify-around px-2 pt-2.5">
         {/* Navigation Tabs (Circular Icon Buttons) */}
         {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id || (tab.id === 'more' && ['subscriptions', 'reports', 'debts'].includes(activeTab));
           return (
             <TouchableOpacity
               key={tab.id}
@@ -71,7 +69,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
               <View
                 className={`w-10 h-9 rounded-xl items-center justify-center ${
                   isActive
-                    ? 'bg-[#E3F2EC] dark:bg-[#203E35]'
+                    ? 'bg-brand-soft dark:bg-brand-soft'
                     : 'bg-transparent'
                 }`}
               >
@@ -88,7 +86,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                 minimumFontScale={0.7}
                 style={{ width: '100%', textAlign: 'center' }}
                 className={`text-[10px] mt-1 tracking-tight ${
-                  isActive ? 'font-semibold text-[#137C70] dark:text-[#66C9AE]' : 'font-medium text-[#778A83] dark:text-[#A9BDB2]'
+                  isActive ? 'font-semibold text-brand dark:text-brand' : 'font-medium text-[#778A83] dark:text-[#A9BDB2]'
                 }`}
               >
                 {NAV_LABELS[language][tab.id]}
@@ -108,10 +106,10 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           activeOpacity={0.8}
           accessibilityLabel={t('Ekle')}
         >
-          <View className="w-10 h-9 rounded-xl bg-[#137C70] items-center justify-center active:bg-[#0D635A]">
+          <View className="w-10 h-9 rounded-xl bg-brand items-center justify-center active:bg-brand">
             <Ionicons name="add" size={22} color="#FFFFFF" />
           </View>
-          <Text localize={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ width: '100%', textAlign: 'center' }} className="text-[10px] font-semibold text-[#137C70] dark:text-[#66C9AE] mt-1 tracking-tight">
+          <Text localize={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ width: '100%', textAlign: 'center' }} className="text-[10px] font-semibold text-brand dark:text-brand mt-1 tracking-tight">
             {NAV_LABELS[language].add}
           </Text>
         </TouchableOpacity>

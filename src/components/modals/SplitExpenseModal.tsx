@@ -158,10 +158,10 @@ export const SplitExpenseModal: React.FC<SplitExpenseModalProps> = ({
         {availableCategories.map((category) => (
           <TouchableOpacity
             key={category}
-            className={`px-3 py-2 rounded-xl border ${effectiveCategory === category ? 'bg-[#E3F2EC] dark:bg-[#203E35] border-[#137C70]' : 'bg-white dark:bg-[#182521] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            className={`px-3 py-2 rounded-xl border ${effectiveCategory === category ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-white dark:bg-[#182521] border-[#E1E9E5] dark:border-[#2C4039]'}`}
             onPress={() => setSelectedCategory(category)}
           >
-            <Text className={`text-xs font-semibold ${effectiveCategory === category ? 'text-[#137C70] dark:text-[#66C9AE]' : 'text-[#667A73] dark:text-[#A9BDB2]'}`}>{category}</Text>
+            <Text className={`text-xs font-semibold ${effectiveCategory === category ? 'text-brand dark:text-brand' : 'text-[#667A73] dark:text-[#A9BDB2]'}`}>{category}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -171,10 +171,10 @@ export const SplitExpenseModal: React.FC<SplitExpenseModalProps> = ({
         {(['bank', 'cash'] as const).map((account) => (
           <TouchableOpacity
             key={account}
-            className={`flex-1 px-3 py-2.5 rounded-xl border ${accountType === account ? 'bg-[#E3F2EC] dark:bg-[#203E35] border-[#137C70]' : 'bg-white dark:bg-[#182521] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            className={`flex-1 px-3 py-2.5 rounded-xl border ${accountType === account ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-white dark:bg-[#182521] border-[#E1E9E5] dark:border-[#2C4039]'}`}
             onPress={() => setAccountType(account)}
           >
-            <Text className={`text-xs text-center font-semibold ${accountType === account ? 'text-[#137C70] dark:text-[#66C9AE]' : 'text-[#667A73] dark:text-[#A9BDB2]'}`}>{account === 'bank' ? 'Banka' : 'Nakit'}</Text>
+            <Text className={`text-xs text-center font-semibold ${accountType === account ? 'text-brand dark:text-brand' : 'text-[#667A73] dark:text-[#A9BDB2]'}`}>{account === 'bank' ? 'Banka' : 'Nakit'}</Text>
           </TouchableOpacity>
         ))}
       </View>

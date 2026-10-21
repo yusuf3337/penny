@@ -78,7 +78,7 @@ export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = (
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-1 items-center">
             <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2] mb-0.5">Şu An Biriken</Text>
-            <Text className="text-sm font-extrabold text-[#0D9488] dark:text-[#66C9AE]">{formatCurrency(goal.savedAmount)}</Text>
+            <Text className="text-sm font-extrabold text-brand dark:text-brand">{formatCurrency(goal.savedAmount)}</Text>
           </View>
           <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2C4039]" />
           <View className="flex-1 items-center">
@@ -95,7 +95,7 @@ export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = (
         {/* Progress bar */}
         <View className="h-1.5 bg-zinc-200 dark:bg-[#2C4039] rounded-full overflow-hidden">
           <View
-            className="h-full bg-[#0D9488] rounded-full"
+            className="h-full bg-brand rounded-full"
             style={{ width: `${Math.max(goal.percentage || 0, 4)}%` }}
           />
         </View>

@@ -1,2 +1,9 @@
 @import "tailwindcss";
 @import "uniwind";
+
+@layer theme {
+  :root {
+    @variant light { --color-brand: #2563A6; --color-brand-soft: #E7F0FA; }
+    @variant dark { --color-brand: #80BAF0; --color-brand-soft: #1C344B; }
+  }
+}

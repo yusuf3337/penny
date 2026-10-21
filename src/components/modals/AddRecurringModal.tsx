@@ -148,7 +148,7 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
               key={item.id}
               className={`flex-1 py-2.5 items-center rounded-2xl border-[1.5px] ${
                 isSelected
-                  ? 'bg-teal-50 border-[#0D9488]'
+                  ? 'bg-teal-50 border-brand'
                   : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
               }`}
               onPress={() => setFrequency(item.id as any)}
@@ -156,7 +156,7 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
             >
               <Text
                 className={`text-[13px] ${
-                  isSelected ? 'text-[#0D9488] dark:text-[#66C9AE] font-bold' : 'text-zinc-500 dark:text-[#A9BDB2] font-semibold'
+                  isSelected ? 'text-brand dark:text-brand font-bold' : 'text-zinc-500 dark:text-[#A9BDB2] font-semibold'
                 }`}
               >
                 {item.label}
