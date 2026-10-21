@@ -4,7 +4,12 @@ import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import { useThemedStyles } from './ThemeContext';
-import { localize } from './LocaleContext';
+import { AppLanguage, getActiveLanguage, localize } from './LocaleContext';
+
+const okLabels: Record<AppLanguage, string> = {
+  tr: 'Tamam', en: 'OK', de: 'OK', fr: 'OK', ko: '확인',
+  zh: '确定', ja: 'OK', ru: 'ОК', it: 'OK',
+};
 
 type DialogAction = {
   text: string;
@@ -28,7 +33,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const styles = useThemedStyles(lightStyles);
   const [dialog, setDialog] = useState<Dialog | null>(null);
 
-  const alert: DialogContextValue['alert'] = (title, message, actions = [{ text: 'Tamam' }]) => {
+  const alert: DialogContextValue['alert'] = (title, message, actions = [{ text: okLabels[getActiveLanguage()] }]) => {
     setDialog({ title, message, actions });
   };
 

@@ -16,6 +16,7 @@ import { BudgetScreen } from './src/screens/BudgetScreen';
 import { ReportsScreen } from './src/screens/ReportsScreen';
 import { DebtsScreen } from './src/screens/DebtsScreen';
 import { BottomNavBar } from './src/components/common/BottomNavBar';
+import { SplashIntro } from './src/components/common/SplashIntro';
 import { AddTransactionModal } from './src/components/modals/AddTransactionModal';
 import { AddGoalModal } from './src/components/modals/AddGoalModal';
 import { AddSubscriptionModal } from './src/components/modals/AddSubscriptionModal';
@@ -301,6 +302,13 @@ const AppContent = () => {
   );
 };
 
+const AppBody = () => {
+  const [introComplete, setIntroComplete] = useState(false);
+  return introComplete
+    ? <AppContent />
+    : <SplashIntro onComplete={() => setIntroComplete(true)} />;
+};
+
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -312,7 +320,7 @@ export default function App() {
               <PremiumProvider>
                 <AppDialogProvider>
                   <DataProvider>
-                    <AppContent />
+                    <AppBody />
                   </DataProvider>
                 </AppDialogProvider>
               </PremiumProvider>

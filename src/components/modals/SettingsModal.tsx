@@ -57,11 +57,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   const { isPro, isBillingConfigured, openPaywall, toggleDevPro, resetPremiumStatus } = usePremium();
   const [nameInput, setNameInput] = useState(userName);
   const [statusMsg, setStatusMsg] = useState('');
+  const [importError, setImportError] = useState('');
   const [showTextFallback, setShowTextFallback] = useState(false);
   const [jsonText, setJsonText] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
   const resetPending = useRef(false);
+  const importPending = useRef<string | null>(null);
+  const [importing, setImporting] = useState(false);
   const [reminderStatus, setReminderStatus] = useState<Awaited<ReturnType<typeof getReminderStatus>> | null>(null);
   const [testingReminder, setTestingReminder] = useState(false);
   const [reminderMessage, setReminderMessage] = useState('');
@@ -69,6 +72,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   useEffect(() => {
     if (visible) {
       setNameInput(userName);
+      setImportError('');
       if (!resetting) setShowResetConfirm(false);
       void getReminderStatus().then(setReminderStatus).catch((error) => console.warn('Could not read notification status:', error));
     }
@@ -129,13 +133,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
 
   // Pick JSON File from Device & Import
   const handlePickAndImportFile = async () => {
-    const res = await pickAndImportBackupFileJSON();
-    if (res.success) {
-      await reloadAllData();
-      alert('Başarılı', res.message || 'Yedek verileriniz cihazınızdan başarıyla yüklendi!');
-      onClose();
-    } else if (res.message !== 'İptal edildi') {
-      alert('Hata', res.message || 'Yedek yükleme başarısız oldu.');
+    if (importing) return;
+    setImportError('');
+    setImporting(true);
+    try {
+      const res = await pickAndImportBackupFileJSON();
+      if (res.success) {
+        importPending.current = res.message || 'Yedek verileriniz cihazınızdan başarıyla yüklendi!';
+        onClose();
+      } else if (res.message !== 'İptal edildi') {
+        setImportError(res.message || 'Yedek yükleme başarısız oldu.');
+      }
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -148,23 +158,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
 
   // Manual Text fallback Import
   const handleApplyTextImport = async () => {
+    if (importing) return;
+    setImportError('');
     if (!jsonText.trim()) {
-      alert('Hata', 'Lütfen geçerli bir yedek JSON metni yapıştırın.');
+      setImportError('Lütfen geçerli bir yedek JSON metni yapıştırın.');
       return;
     }
 
-    const success = await importAllDataJSON(jsonText.trim());
-    if (success) {
-      await reloadAllData();
-      alert('Başarılı', 'Yedek verileriniz başarıyla yüklendi!');
-      setShowTextFallback(false);
-      onClose();
-    } else {
-      alert('Hata', 'Yedek metin formatı geçersiz!');
+    setImporting(true);
+    try {
+      const success = await importAllDataJSON(jsonText.trim());
+      if (success) {
+        importPending.current = 'Yedek verileriniz başarıyla yüklendi!';
+        setShowTextFallback(false);
+        onClose();
+      } else {
+        setImportError('Yedek metin formatı geçersiz!');
+      }
+    } finally {
+      setImporting(false);
     }
   };
 
   const handleResetAfterDismiss = () => {
+    if (importPending.current) {
+      const message = importPending.current;
+      importPending.current = null;
+      void reloadAllData().then(() => alert('Başarılı', message)).catch((error) => {
+        console.error('Could not refresh restored data:', error);
+        alert('Hata', 'Yedek yüklendi ancak ekran güncellenemedi. Uygulamayı yeniden açın.');
+      });
+      return;
+    }
     if (!resetPending.current) return;
     resetPending.current = false;
     void (async () => {
@@ -191,6 +216,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
       badge={{ text: 'SİSTEM', color: '#6366F1', bg: '#EEF2FF' }}
     >
       {/* Status Feedback Banner */}
+      {importError ? (
+        <View className="flex-row items-center gap-2 bg-red-50 dark:bg-[#3C2228] p-2.5 rounded-xl mb-3">
+          <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+          <Text className="text-xs font-semibold text-red-700 dark:text-[#FFB4B4] flex-1">{importError}</Text>
+        </View>
+      ) : null}
       {statusMsg ? (
         <View className="flex-row items-center gap-2 bg-emerald-50 dark:bg-[#183C2D] p-2.5 rounded-xl mb-3">
           <Ionicons name="checkmark-circle" size={16} color="#059669" />
@@ -373,6 +404,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
       <TouchableOpacity
         className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#22332D] p-3.5 rounded-2xl mb-2.5 active:bg-zinc-200"
         onPress={handlePickAndImportFile}
+        disabled={importing}
       >
         <Ionicons name="folder-open" size={20} color="#0D9488" />
         <View className="flex-1">
@@ -432,6 +464,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
           <TouchableOpacity
             className="bg-[#0D9488] py-2.5 rounded-xl items-center mt-2 active:bg-teal-700"
             onPress={handleApplyTextImport}
+            disabled={importing}
           >
             <Text className="text-white text-xs font-bold">Metindeki Yedeği Yükle</Text>
           </TouchableOpacity>
