@@ -43,6 +43,13 @@
       "expo-font",
       "expo-sharing",
       "expo-notifications",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Penny uses the microphone to let you add income and expenses by voice.",
+          "speechRecognitionPermission": "Penny turns your speech into a transaction draft for you to review before saving."
+        }
+      ],
       "expo-iap",
       [
         "expo-splash-screen",

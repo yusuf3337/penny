@@ -12,6 +12,10 @@ import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
 import { HeroUIButton } from '../common/HeroUIButton';
 import { usePremium } from '../../context/PremiumContext';
+import { useTheme } from '../../context/ThemeContext';
+import { Surface } from 'heroui-native/surface';
+import { useVoiceTransaction } from '../../hooks/useVoiceTransaction';
+import { parseVoiceTransaction } from '../../utils/voiceTransaction';
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -32,6 +36,18 @@ const accountCopy: Record<AppLanguage, { title: string; required: string }> = {
   it: { title: 'Conto', required: 'Scegli banca o contanti.' },
 };
 
+const voiceCopy: Record<AppLanguage, { title: string; hint: string; start: string; stop: string; listening: string; review: string; permission: string; unavailable: string; noSpeech: string; failed: string }> = {
+  tr: { title: 'Sesle işlem ekle', hint: 'Örn: “Market için 250 lira nakit gider”', start: 'Konuşmaya başla', stop: 'Dinlemeyi bitir', listening: 'Dinleniyor…', review: 'Alanları kontrol edip eksikleri tamamlayın.', permission: 'Mikrofon ve konuşma tanıma izni gerekli.', unavailable: 'Sesli giriş için yeni TestFlight veya geliştirme build’i gerekir.', noSpeech: 'Ses algılanmadı. Tekrar deneyin.', failed: 'Ses anlaşılamadı. Tekrar deneyin.' },
+  en: { title: 'Add by voice', hint: 'Try “Spent 25 dollars on coffee in cash”', start: 'Start speaking', stop: 'Finish listening', listening: 'Listening…', review: 'Review the fields and complete any missing details.', permission: 'Microphone and speech recognition access is required.', unavailable: 'Voice entry needs a new TestFlight or development build.', noSpeech: 'No speech detected. Try again.', failed: 'Could not understand your speech. Try again.' },
+  de: { title: 'Per Sprache hinzufügen', hint: 'Zum Beispiel: „25 Euro Kaffee bar bezahlt“', start: 'Sprechen', stop: 'Aufnahme beenden', listening: 'Hört zu…', review: 'Felder prüfen und Fehlendes ergänzen.', permission: 'Mikrofon- und Spracherkennungszugriff erforderlich.', unavailable: 'Spracheingabe erfordert einen neuen TestFlight- oder Entwicklungs-Build.', noSpeech: 'Keine Sprache erkannt. Erneut versuchen.', failed: 'Sprache nicht verstanden. Erneut versuchen.' },
+  fr: { title: 'Ajouter par la voix', hint: 'Ex. : « 25 euros de café en espèces »', start: 'Parler', stop: 'Terminer l’écoute', listening: 'Écoute…', review: 'Vérifiez les champs et complétez les détails manquants.', permission: 'Accès au microphone et à la reconnaissance vocale requis.', unavailable: 'Un nouveau build TestFlight ou de développement est nécessaire.', noSpeech: 'Aucune parole détectée. Réessayez.', failed: 'Parole non comprise. Réessayez.' },
+  ko: { title: '음성으로 추가', hint: '예: “커피 2500원 현금 지출”', start: '말하기 시작', stop: '듣기 종료', listening: '듣는 중…', review: '내용을 확인하고 빠진 항목을 입력하세요.', permission: '마이크 및 음성 인식 권한이 필요합니다.', unavailable: '음성 입력에는 새 TestFlight 또는 개발 빌드가 필요합니다.', noSpeech: '음성이 감지되지 않았습니다. 다시 시도하세요.', failed: '음성을 이해하지 못했습니다. 다시 시도하세요.' },
+  zh: { title: '语音添加', hint: '例如：“现金支付 25 元咖啡”', start: '开始说话', stop: '结束聆听', listening: '正在聆听…', review: '请检查字段并补充缺少的信息。', permission: '需要麦克风和语音识别权限。', unavailable: '语音输入需要新的 TestFlight 或开发版本。', noSpeech: '未检测到语音，请重试。', failed: '无法识别语音，请重试。' },
+  ja: { title: '音声で追加', hint: '例：「コーヒーに現金で250円支出」', start: '話し始める', stop: '聞き取りを終了', listening: '聞き取り中…', review: '入力内容を確認し、不足分を補ってください。', permission: 'マイクと音声認識の許可が必要です。', unavailable: '音声入力には新しいTestFlightまたは開発ビルドが必要です。', noSpeech: '音声が検出されませんでした。再試行してください。', failed: '音声を認識できませんでした。再試行してください。' },
+  ru: { title: 'Добавить голосом', hint: 'Например: «Кофе 250 рублей наличными»', start: 'Начать говорить', stop: 'Завершить запись', listening: 'Слушаю…', review: 'Проверьте поля и заполните недостающие данные.', permission: 'Нужен доступ к микрофону и распознаванию речи.', unavailable: 'Для голосового ввода нужна новая сборка TestFlight или разработки.', noSpeech: 'Речь не обнаружена. Повторите попытку.', failed: 'Не удалось распознать речь. Повторите попытку.' },
+  it: { title: 'Aggiungi con la voce', hint: 'Per esempio: “25 euro per un caffè in contanti”', start: 'Inizia a parlare', stop: 'Termina ascolto', listening: 'In ascolto…', review: 'Controlla i campi e completa i dettagli mancanti.', permission: 'Servono i permessi per microfono e riconoscimento vocale.', unavailable: 'Serve una nuova build TestFlight o di sviluppo.', noSpeech: 'Nessuna voce rilevata. Riprova.', failed: 'Voce non compresa. Riprova.' },
+};
+
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   visible,
   initialTransaction,
@@ -40,7 +56,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 }) => {
   const { categories: contextCategories, budgets, handleAddCategory } = useData();
   const { isPro, openPaywall } = usePremium();
+  const { colors } = useTheme();
   const { language, t } = useLocale();
+  const voice = useVoiceTransaction(visible);
   const categoriesList = contextCategories && contextCategories.length > 0
     ? contextCategories
     : DEFAULT_CATEGORIES;
@@ -98,6 +116,25 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       });
     }
   }, [visible, initialTransaction]);
+
+  useEffect(() => {
+    if (!voice.finalTranscript) return;
+    const draft = parseVoiceTransaction(
+      voice.finalTranscript,
+      language,
+      categoriesList.map((category) => ({ ...category, localizedName: t(category.name) })),
+    );
+    setType(draft.type);
+    if (draft.amount) setAmountInput(formatNumberInput(String(draft.amount)));
+    if (draft.title) setTitle(draft.title);
+    if (draft.category) setSelectedCategory(draft.category);
+    if (draft.accountType) {
+      const account = accounts.find((item) => item.type === draft.accountType);
+      if (account) { setSelectedAccountId(account.id); setAccountError(false); }
+    }
+    setError('');
+    setSelectionError('');
+  }, [voice.finalTranscript, accounts]);
 
   const createCategory = async () => {
     if (!isPro) return;
@@ -250,6 +287,30 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         </HeroUIButton>
       }
     >
+      {!initialTransaction && <Surface variant="secondary" className="mb-5 rounded-2xl p-4">
+        <View className="mb-3 flex-row items-center gap-3">
+          <View className="h-10 w-10 items-center justify-center rounded-[14px] bg-brand-soft">
+            <Ionicons name="mic-outline" size={20} color={colors.primary} />
+          </View>
+          <View className="flex-1">
+            <Text localize={false} className="text-[14px] font-bold text-[#182B29] dark:text-[#EAF2EE]">{voiceCopy[language].title}</Text>
+            <Text localize={false} className="mt-0.5 text-[12px] text-zinc-500 dark:text-[#A9BDB2]">{voiceCopy[language].hint}</Text>
+          </View>
+        </View>
+        <HeroUIButton
+          variant={voice.status === 'listening' ? 'danger' : 'flat'}
+          size="sm"
+          icon={voice.status === 'listening' ? 'stop-circle-outline' : 'mic-outline'}
+          disabled={voice.status === 'starting' || voice.status === 'processing'}
+          onPress={() => voice.status === 'listening' ? voice.stop() : void voice.start(getFormattingLocale())}
+        >
+          {voice.status === 'listening' ? voiceCopy[language].stop : voice.status === 'starting' || voice.status === 'processing' ? voiceCopy[language].listening : voiceCopy[language].start}
+        </HeroUIButton>
+        {!!voice.transcript && <Text localize={false} className="mt-3 text-[13px] font-medium text-zinc-700 dark:text-[#D4E2D9]">“{voice.transcript}”</Text>}
+        {!!voice.finalTranscript && <Text localize={false} className="mt-1 text-[11px] text-zinc-500 dark:text-[#A9BDB2]">{voiceCopy[language].review}</Text>}
+        {!!voice.error && <Text localize={false} className="mt-2 text-[12px] font-semibold text-rose-600 dark:text-rose-400">{voiceCopy[language][voice.error]}</Text>}
+      </Surface>}
+
       {/* HeroUI Segmented Tabs for Transaction Type */}
       <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-[18px] p-1 mb-4 gap-1.5">
         <TouchableOpacity
@@ -342,7 +403,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 accessibilityLabel={acc.type === 'cash' ? t('Nakit') : t('Banka')}
                 className={`flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border-[1.5px] py-3 ${
                   isSelected
-                    ? 'bg-teal-50 dark:bg-[#193C35] border-brand'
+                    ? 'bg-brand-soft border-brand'
                     : accountError
                       ? 'bg-zinc-100 dark:bg-[#22332D] border-rose-400'
                       : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
@@ -350,8 +411,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 onPress={() => { setSelectedAccountId(acc.id); setAccountError(false); }}
                 activeOpacity={0.75}
               >
-                <Ionicons name={acc.type === 'cash' ? 'wallet-outline' : 'card-outline'} size={18} color={isSelected ? '#0D9488' : '#71717A'} />
-                <Text localize={false} className={`text-sm font-bold ${isSelected ? 'text-teal-800 dark:text-[#A8E4CF]' : 'text-zinc-600 dark:text-[#A9BDB2]'}`}>
+                <Ionicons name={acc.type === 'cash' ? 'wallet-outline' : 'card-outline'} size={18} color={isSelected ? colors.primary : colors.mutedText} />
+                <Text localize={false} className={`text-sm font-bold ${isSelected ? 'text-brand' : 'text-zinc-600 dark:text-[#A9BDB2]'}`}>
                   {acc.type === 'cash' ? t('Nakit') : t('Banka')}
                 </Text>
               </TouchableOpacity>
@@ -377,7 +438,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           activeOpacity={0.7}
           className="flex-row items-center gap-1"
         >
-          <Ionicons name={isPro ? 'add' : 'lock-closed-outline'} size={15} color="#0D9488" />
+          <Ionicons name={isPro ? 'add' : 'lock-closed-outline'} size={15} color={colors.primary} />
           <Text className="text-xs font-bold text-brand dark:text-brand">Yeni Kategori</Text>
           {!isPro && <Text className="text-[10px] font-bold text-brand dark:text-brand">PRO</Text>}
         </TouchableOpacity>
@@ -458,7 +519,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
       {/* Date Selector */}
       {showDetails && <>
-      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">İşlem Tarihi</Text>
       <View className="flex-row items-center justify-between mb-4 gap-2.5">
         <View className="flex-row gap-1.5">
           <TouchableOpacity
