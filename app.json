@@ -16,6 +16,7 @@
       "bundleIdentifier": "com.yusufcepni.penny",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Penny may need Photos access if iOS provides a backup file you selected through the photo library. Penny reads only that file and does not scan your other photos.",
         "CFBundleLocalizations": [
           "tr",
           "en",
