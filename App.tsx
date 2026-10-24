@@ -1,11 +1,12 @@
 import './global.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
-import { HeroUINativeProvider } from 'heroui-native';
+import { HeroUINativeProvider } from 'heroui-native/provider';
+import Animated, { Easing, FadeInLeft, FadeInRight, FadeOut } from 'react-native-reanimated';
 import { DataProvider, useData } from './src/context/DataContext';
 import { PremiumProvider, usePremium } from './src/context/PremiumContext';
 import { AppDialogProvider } from './src/context/AppDialogContext';
@@ -35,6 +36,12 @@ import { isValidNickname } from './src/utils/nickname';
 
 import { SplitExpenseModal } from './src/components/modals/SplitExpenseModal';
 
+const enterFromRight = FadeInRight.duration(260).easing(Easing.out(Easing.cubic));
+const enterFromLeft = FadeInLeft.duration(260).easing(Easing.out(Easing.cubic));
+const fadePreviousScreen = FadeOut.duration(170).easing(Easing.out(Easing.quad));
+const tabOrder = ['timeline', 'goals', 'budget', 'more'] as const;
+const navTab = (tab: string) => ['subscriptions', 'reports', 'debts'].includes(tab) ? 'more' : tab;
+
 const MainNavigator = () => {
   useLocale(); // Re-render date and currency labels when the language changes.
   useCurrency(); // Re-render amounts when the selected currency changes.
@@ -51,6 +58,12 @@ const MainNavigator = () => {
   } = useData();
 
   const { isPro, openPaywall } = usePremium();
+  const previousTab = useRef(activeTab);
+  const currentIndex = tabOrder.indexOf(navTab(activeTab) as typeof tabOrder[number]);
+  const previousIndex = tabOrder.indexOf(navTab(previousTab.current) as typeof tabOrder[number]);
+  const enterAnimation = currentIndex >= previousIndex ? enterFromRight : enterFromLeft;
+
+  useEffect(() => { previousTab.current = activeTab; }, [activeTab]);
 
   // Modals state per active tab
   const [isAddTxModalVisible, setIsAddTxModalVisible] = useState(false);
@@ -123,6 +136,13 @@ const MainNavigator = () => {
 
   return (
     <View style={styles.appWrap}>
+      <View style={styles.screenViewport} collapsable={false}>
+      <Animated.View
+        key={activeTab}
+        style={styles.screenPane}
+        entering={previousTab.current === activeTab ? undefined : enterAnimation}
+        exiting={fadePreviousScreen}
+      >
       {activeTab === 'timeline' && (
         <HomeScreen
           onOpenAddModal={() => {
@@ -192,6 +212,8 @@ const MainNavigator = () => {
       )}
 
       {activeTab === 'more' && <MoreScreen onNavigate={setActiveTab} />}
+      </Animated.View>
+      </View>
 
       {/* Dynamic Bottom Navigation Bar */}
       <BottomNavBar
@@ -327,5 +349,12 @@ const styles = StyleSheet.create({
   },
   appWrap: {
     flex: 1,
+  },
+  screenViewport: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  screenPane: {
+    ...StyleSheet.absoluteFill,
   },
 });

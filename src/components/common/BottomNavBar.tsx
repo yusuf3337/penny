@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../context/ThemeContext';
 import { TabType } from '../../context/DataContext';
 import { AppLanguage, useLocale } from '../../context/LocaleContext';
+import { Tabs } from 'heroui-native/tabs';
 
 const NAV_LABELS: Record<AppLanguage, Record<TabType | 'add', string>> = {
   tr: { timeline: 'Akış', goals: 'Hedef', subscriptions: 'Abone', budget: 'Bütçe', reports: 'Rapor', debts: 'Borç', more: 'Diğer', add: 'Ekle' },
@@ -43,57 +44,53 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     { id: 'more', label: 'Diğer', icon: 'grid-outline', activeIcon: 'grid' },
   ];
 
-  const handleTabPress = (tabId: TabType) => {
+  const handleTabPress = (tabId: string) => {
+    if (tabId === activeTab) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    onTabChange(tabId);
+    onTabChange(tabId as TabType);
   };
+  const selectedTab = ['subscriptions', 'reports', 'debts'].includes(activeTab) ? 'more' : activeTab;
 
   return (
     <View
       className="absolute bottom-0 left-0 right-0 bg-[#FBFCFA] dark:bg-[#0F1816] border-t border-[#E1E9E5] dark:border-[#2C4039]"
       style={{ paddingBottom: bottomInset + 4 }}
     >
-      <View className="flex-row items-center justify-around px-2 pt-2.5">
-        {/* Navigation Tabs (Circular Icon Buttons) */}
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id || (tab.id === 'more' && ['subscriptions', 'reports', 'debts'].includes(activeTab));
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              className="items-center justify-center px-0.5"
-              style={{ flex: 1, minWidth: 0 }}
-              onPress={() => handleTabPress(tab.id)}
-              activeOpacity={0.7}
-              accessibilityLabel={t(tab.label)}
-            >
-              <View
-                className={`w-10 h-9 rounded-xl items-center justify-center ${
-                  isActive
-                    ? 'bg-brand-soft dark:bg-brand-soft'
-                    : 'bg-transparent'
-                }`}
+      <View className="flex-row items-center px-2 pt-2.5">
+        <Tabs value={selectedTab} onValueChange={handleTabPress} variant="primary" className="min-w-0 flex-1 gap-0">
+          <Tabs.List background={null} className="w-full gap-0 bg-transparent p-0">
+            <Tabs.Indicator
+              className="rounded-2xl bg-brand-soft shadow-none dark:bg-[#254036]"
+              animation={{
+                width: { type: 'spring', config: { stiffness: 260, damping: 28 } },
+                height: { type: 'spring', config: { stiffness: 260, damping: 28 } },
+                translateX: { type: 'spring', config: { stiffness: 260, damping: 28 } },
+              }}
+            />
+            {tabs.map((tab) => (
+              <Tabs.Trigger
+                key={tab.id}
+                value={tab.id}
+                className="h-[58px] min-w-0 flex-1 flex-col gap-0 rounded-2xl px-0.5 py-1"
+                accessibilityLabel={t(tab.label)}
               >
-                <Ionicons
-                  name={isActive ? tab.activeIcon : tab.icon}
-                  size={19}
-                  color={isActive ? colors.primary : colors.mutedText}
-                />
-              </View>
-              <Text
-                localize={false}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-                style={{ width: '100%', textAlign: 'center' }}
-                className={`text-[10px] mt-1 tracking-tight ${
-                  isActive ? 'font-semibold text-brand dark:text-brand' : 'font-medium text-[#778A83] dark:text-[#A9BDB2]'
-                }`}
-              >
-                {NAV_LABELS[language][tab.id]}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                {({ isSelected }) => <>
+                  <View className="h-9 items-center justify-center">
+                    <Ionicons name={isSelected ? tab.activeIcon : tab.icon} size={19} color={isSelected ? colors.primary : colors.mutedText} />
+                  </View>
+                  <Tabs.Label
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                    className={`w-full text-center text-[10px] leading-4 tracking-tight ${isSelected ? 'font-semibold text-brand' : 'font-medium text-[#778A83] dark:text-[#A9BDB2]'}`}
+                  >
+                    {NAV_LABELS[language][tab.id]}
+                  </Tabs.Label>
+                </>}
+              </Tabs.Trigger>
+            ))}
+          </Tabs.List>
+        </Tabs>
 
         {/* Separator Line */}
         <View className="w-[1px] h-7 bg-[#E1E9E5] dark:bg-[#2C4039] mx-0.5" />
@@ -101,7 +98,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
         {/* Far-Right Action Button: "İşlem Ekle" (Circular Action Button) */}
         <TouchableOpacity
           className="items-center justify-center px-0.5"
-          style={{ flex: 1, minWidth: 0 }}
+          style={{ flex: 0.25, minWidth: 64 }}
           onPress={onAddPress}
           activeOpacity={0.8}
           accessibilityLabel={t('Ekle')}

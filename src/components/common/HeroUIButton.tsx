@@ -1,18 +1,11 @@
 import React from 'react';
-import { TouchableOpacity, ActivityIndicator, ViewStyle, TextStyle, View } from 'react-native';
-import { Text } from './LocalizedPrimitives';
+import { ActivityIndicator, TextStyle, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Button } from 'heroui-native/button';
+import { useLocale } from '../../context/LocaleContext';
 import { useTheme } from '../../context/ThemeContext';
 
-export type ButtonVariant =
-  | 'primary'
-  | 'secondary'
-  | 'success'
-  | 'danger'
-  | 'flat'
-  | 'bordered'
-  | 'ghost';
-
+export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'flat' | 'bordered' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface HeroUIButtonProps {
@@ -30,141 +23,39 @@ interface HeroUIButtonProps {
   textStyle?: TextStyle;
 }
 
+const nativeVariant: Record<ButtonVariant, React.ComponentProps<typeof Button>['variant']> = {
+  primary: 'primary', secondary: 'secondary', success: 'primary', danger: 'danger',
+  flat: 'tertiary', bordered: 'outline', ghost: 'ghost',
+};
+
 export const HeroUIButton: React.FC<HeroUIButtonProps> = ({
-  onPress,
-  children,
-  variant = 'primary',
-  size = 'md',
-  icon,
-  iconPosition = 'left',
-  isLoading = false,
-  disabled = false,
-  fullWidth = true,
-  className = '',
-  style,
-  textStyle,
+  onPress, children, variant = 'primary', size = 'md', icon, iconPosition = 'left',
+  isLoading = false, disabled = false, fullWidth = true, className = '', style, textStyle,
 }) => {
   const { colors } = useTheme();
-  // Variant Tailwind Classes
-  const getVariantClasses = () => {
-    switch (variant) {
-      case 'primary':
-        return {
-          container: 'bg-brand active:bg-brand',
-          text: 'text-white',
-          iconColor: '#FFFFFF',
-          spinnerColor: '#FFFFFF',
-        };
-      case 'secondary':
-        return {
-          container: 'bg-[#EEF2EF] dark:bg-[#22332D] active:bg-[#E1E9E5]',
-          text: 'text-zinc-900 dark:text-[#EAF2EE]',
-          iconColor: colors.foreground,
-          spinnerColor: colors.foreground,
-        };
-      case 'success':
-        return {
-          container: 'bg-emerald-600 active:bg-emerald-700 shadow-sm shadow-emerald-500/20',
-          text: 'text-white',
-          iconColor: '#FFFFFF',
-          spinnerColor: '#FFFFFF',
-        };
-      case 'danger':
-        return {
-          container: 'bg-rose-600 active:bg-rose-700 shadow-sm shadow-rose-500/20',
-          text: 'text-white',
-          iconColor: '#FFFFFF',
-          spinnerColor: '#FFFFFF',
-        };
-      case 'flat':
-        return {
-          container: 'bg-brand-soft dark:bg-brand-soft active:bg-[#D1E9DE]',
-          text: 'text-brand dark:text-brand',
-          iconColor: colors.primary,
-          spinnerColor: colors.primary,
-        };
-      case 'bordered':
-        return {
-          container: 'bg-transparent border border-zinc-200 dark:border-[#2C4039] active:bg-zinc-50',
-          text: 'text-zinc-800 dark:text-[#D8E7DC]',
-          iconColor: colors.foreground,
-          spinnerColor: colors.foreground,
-        };
-      case 'ghost':
-        return {
-          container: 'bg-transparent active:bg-zinc-100',
-          text: 'text-brand dark:text-brand',
-          iconColor: colors.primary,
-          spinnerColor: colors.primary,
-        };
-      default:
-        return {
-          container: 'bg-brand active:bg-brand',
-          text: 'text-white',
-          iconColor: '#FFFFFF',
-          spinnerColor: '#FFFFFF',
-        };
-    }
-  };
+  const { t } = useLocale();
+  const label = typeof children === 'string' ? t(children) : children;
+  const iconColor = variant === 'primary' || variant === 'success' || variant === 'danger'
+    ? '#FFFFFF' : variant === 'flat' || variant === 'ghost' ? colors.primary : colors.foreground;
+  const tone = variant === 'success' ? 'bg-emerald-600'
+    : variant === 'primary' ? 'bg-brand'
+    : variant === 'flat' ? 'bg-brand-soft'
+    : variant === 'bordered' ? 'border border-[#DDE5E0] dark:border-[#344A40]'
+    : '';
 
-  // Size Tailwind Classes
-  const getSizeClasses = () => {
-    switch (size) {
-      case 'sm':
-        return {
-          container: 'h-9 px-3.5 rounded-xl gap-1.5',
-          text: 'text-xs',
-          iconSize: 15,
-        };
-      case 'lg':
-        return {
-          container: 'h-13 px-6 rounded-2xl gap-2.5',
-          text: 'text-base',
-          iconSize: 20,
-        };
-      case 'md':
-      default:
-        return {
-          container: 'h-11 px-4 rounded-[14px] gap-2',
-          text: 'text-sm',
-          iconSize: 18,
-        };
-    }
-  };
-
-  const v = getVariantClasses();
-  const s = getSizeClasses();
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled || isLoading}
-      activeOpacity={0.8}
-      className={`flex-row items-center justify-center ${s.container} ${v.container} ${
-        fullWidth ? 'w-full' : 'self-start'
-      } ${disabled ? 'opacity-40' : ''} ${className}`}
-      style={style}
-    >
-      {isLoading ? (
-        <ActivityIndicator size="small" color={v.spinnerColor} />
-      ) : (
-        <>
-          {icon && iconPosition === 'left' && (
-            <Ionicons name={icon} size={s.iconSize} color={v.iconColor} />
-          )}
-
-          <Text
-            className={`font-semibold tracking-tight text-center ${v.text} ${s.text}`}
-            style={textStyle}
-          >
-            {children}
-          </Text>
-
-          {icon && iconPosition === 'right' && (
-            <Ionicons name={icon} size={s.iconSize} color={v.iconColor} />
-          )}
-        </>
-      )}
-    </TouchableOpacity>
-  );
+  return <Button
+    variant={nativeVariant[variant]}
+    size={size}
+    onPress={onPress}
+    isDisabled={disabled || isLoading}
+    className={`${fullWidth ? 'w-full' : 'self-start'} rounded-2xl ${tone} ${className}`}
+    style={style}
+    accessibilityLabel={typeof label === 'string' ? label : undefined}
+  >
+    {isLoading ? <ActivityIndicator size="small" color={iconColor} /> : <>
+      {icon && iconPosition === 'left' && <Ionicons name={icon} size={size === 'lg' ? 20 : size === 'sm' ? 15 : 18} color={iconColor} />}
+      <Button.Label className="font-semibold tracking-tight" style={textStyle}>{label}</Button.Label>
+      {icon && iconPosition === 'right' && <Ionicons name={icon} size={size === 'lg' ? 20 : size === 'sm' ? 15 : 18} color={iconColor} />}
+    </>}
+  </Button>;
 };

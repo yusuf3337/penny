@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
+import { Surface } from 'heroui-native/surface';
 import { AppTransaction } from '../types';
 import { useData } from '../context/DataContext';
 import { useAppDialog } from '../context/AppDialogContext';
-import { localizeFormat } from '../context/LocaleContext';
-import { ACCENT_PALETTES, AccentPreference, COLORS, LIGHT_COLORS } from '../constants/colors';
+import { localizeFormat, useLocale } from '../context/LocaleContext';
+import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import {
   formatCurrency,
   formatShortDate,
@@ -16,14 +17,6 @@ import {
   changeMonth,
   isSameMonthAndYear,
 } from '../utils/formatters';
-
-const BALANCE_CARD_WIDTH = 248;
-const HERO_PALETTES: Record<AccentPreference, { background: string; border: string; balance: string; balanceBorder: string }> = {
-  teal: { background: '#0F2C23', border: '#1E4D3E', balance: '#174235', balanceBorder: '#265C4B' },
-  blue: { background: '#14283E', border: '#284563', balance: '#203B58', balanceBorder: '#345775' },
-  violet: { background: '#281F3D', border: '#46365E', balance: '#382B53', balanceBorder: '#574471' },
-  coral: { background: '#3A2426', border: '#633B3C', balance: '#4B3032', balanceBorder: '#71494A' },
-};
 
 interface HomeScreenProps {
   onOpenAddModal: () => void;
@@ -37,9 +30,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenSettingsModal,
 }) => {
   const styles = useThemedStyles(lightStyles);
-  const { isDark, colors, accent } = useTheme();
-  const heroPalette = HERO_PALETTES[accent];
-  const heroAccent = ACCENT_PALETTES[accent].dark;
+  const { isDark, colors } = useTheme();
+  const { t } = useLocale();
   const { alert } = useAppDialog();
   const {
     userName,
@@ -222,123 +214,54 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
       </View>
 
-      {/* Hero Timeline Card (Zaman Tüneli / Yıllık Özet) */}
-      <View style={[styles.heroCard, { backgroundColor: heroPalette.background, borderColor: heroPalette.border, shadowColor: heroPalette.background }]}>
-        <View style={styles.heroHeader}>
-          <View style={[styles.pillBadge, { backgroundColor: `${heroAccent}26` }]}>
-            <Ionicons name="time" size={12} color={heroAccent} />
-            <Text style={[styles.pillBadgeText, { color: heroAccent }]}>Zaman Tüneli</Text>
+      {/* One balance overview instead of three swipeable cards. */}
+      <Surface variant="default" className="mb-5 rounded-[24px] border border-[#E1E9E5] bg-white p-5 dark:border-[#344A40] dark:bg-[#1B2923]">
+        <Text className="text-[13px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">Toplam Bakiye</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="mt-1 text-[34px] font-bold tracking-tight text-[#182B29] dark:text-[#EAF2EE]">{balanceStr}</Text>
+
+        <View className="mt-5 flex-row gap-2">
+          <Surface variant="secondary" className="min-w-0 flex-1 rounded-2xl p-3">
+            <View className="mb-1 flex-row items-center gap-1.5">
+              <Ionicons name="card-outline" size={15} color={colors.primary} />
+              <Text localize={false} className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">{t('Banka')}</Text>
+            </View>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="text-[16px] font-bold text-[#182B29] dark:text-[#EAF2EE]">{bankStr}</Text>
+          </Surface>
+          <Surface variant="secondary" className="min-w-0 flex-1 rounded-2xl p-3">
+            <View className="mb-1 flex-row items-center gap-1.5">
+              <Ionicons name="wallet-outline" size={15} color={colors.primary} />
+              <Text localize={false} className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">{t('Nakit')}</Text>
+            </View>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="text-[16px] font-bold text-[#182B29] dark:text-[#EAF2EE]">{cashStr}</Text>
+          </Surface>
+        </View>
+
+        <View className="my-4 h-px bg-[#E1E9E5] dark:bg-[#344A40]" />
+        <View className="flex-row gap-3">
+          <View className="min-w-0 flex-1">
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">Gelir</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="mt-1 text-[15px] font-bold text-emerald-700 dark:text-emerald-300">{isBalanceHidden ? '••••' : formatCurrency(heroIncome)}</Text>
           </View>
-
-          <View style={styles.toggleRow}>
-            <TouchableOpacity
-              style={[
-                styles.toggleBtn,
-                activeFilter === 'yearly' && [styles.toggleBtnActive, { backgroundColor: heroPalette.border }],
-              ]}
-              onPress={() => setActiveFilter('yearly')}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  activeFilter === 'yearly' && styles.toggleTextActive,
-                ]}
-              >
-                Yıllık özet
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.toggleBtn,
-                activeFilter === 'monthly' && [styles.toggleBtnActive, { backgroundColor: heroPalette.border }],
-              ]}
-              onPress={() => setActiveFilter('monthly')}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  activeFilter === 'monthly' && styles.toggleTextActive,
-                ]}
-              >
-                Ay ay akış
-              </Text>
-            </TouchableOpacity>
+          <View className="min-w-0 flex-1">
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">Gider</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="mt-1 text-[15px] font-bold text-rose-700 dark:text-rose-300">{isBalanceHidden ? '••••' : formatCurrency(heroExpense)}</Text>
           </View>
         </View>
 
-        {/* Swipeable balance cards */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.balanceCardsContent}
-          style={styles.balanceCardsScroll}
-          snapToInterval={BALANCE_CARD_WIDTH + 12}
-          decelerationRate="fast"
-        >
-          <View style={[styles.balanceCard, styles.totalBalanceCard, { backgroundColor: heroPalette.balance, borderColor: heroPalette.balanceBorder }]}>
-            <View style={styles.balanceCardTopRow}>
-              <View style={styles.balanceIconWrap}>
-                <Ionicons name="wallet" size={18} color="#34D399" />
-              </View>
-              <Text style={styles.balanceCardHint}>Genel durum</Text>
-            </View>
-            <Text style={[styles.balanceCardLabel, { color: heroAccent }]}>Toplam Bakiye</Text>
-            <Text style={styles.balanceCardAmount}>{balanceStr}</Text>
-          </View>
-
-          <View style={[styles.balanceCard, styles.cashBalanceCard, { backgroundColor: heroPalette.balance, borderColor: heroPalette.balanceBorder }]}>
-            <View style={styles.balanceCardTopRow}>
-              <View style={styles.balanceIconWrap}>
-                <Ionicons name="cash-outline" size={18} color="#34D399" />
-              </View>
-              <Text style={styles.balanceCardHint}>Cüzdan</Text>
-            </View>
-            <Text style={[styles.balanceCardLabel, { color: heroAccent }]}>Nakit Bakiye</Text>
-            <Text style={styles.balanceCardAmount}>{cashStr}</Text>
-          </View>
-
-          <View style={[styles.balanceCard, styles.bankBalanceCard, { backgroundColor: heroPalette.balance, borderColor: heroPalette.balanceBorder }]}>
-            <View style={styles.balanceCardTopRow}>
-              <View style={styles.balanceIconWrap}>
-                <Ionicons name="card-outline" size={18} color="#60A5FA" />
-              </View>
-              <Text style={styles.balanceCardHint}>Hesap</Text>
-            </View>
-            <Text style={[styles.balanceCardLabel, { color: heroAccent }]}>Banka Bakiyesi</Text>
-            <Text style={styles.balanceCardAmount}>{bankStr}</Text>
-          </View>
-        </ScrollView>
-
-        {/* Income & Expense Breakdown Row */}
-        <View style={styles.heroStatsRow}>
-          <View style={styles.statCol}>
-            <View style={styles.statLabelRow}>
-              <View style={[styles.dot, { backgroundColor: COLORS.emerald }]} />
-              <Text style={styles.statLabel}>
-                Gelir {activeFilter === 'monthly' ? `(${currentMonthDisplay.split(' ')[0]})` : '(Toplam)'}
-              </Text>
-            </View>
-            <Text style={styles.incomeAmount}>
-              {isBalanceHidden ? '••••' : formatCurrency(heroIncome)}
+        <View className="mt-5 flex-row rounded-[14px] bg-zinc-100 p-1 dark:bg-[#25372F]">
+          {(['monthly', 'yearly'] as const).map((filter) => <TouchableOpacity
+            key={filter}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeFilter === filter }}
+            onPress={() => setActiveFilter(filter)}
+            className={`min-w-0 flex-1 rounded-[11px] px-2 py-2 ${activeFilter === filter ? 'bg-white dark:bg-[#344A40]' : ''}`}
+          >
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} className={`text-center text-[12px] font-semibold ${activeFilter === filter ? 'text-[#182B29] dark:text-[#EAF2EE]' : 'text-zinc-500 dark:text-[#A9BDB2]'}`}>
+              {filter === 'monthly' ? 'Ay ay akış' : 'Yıllık özet'}
             </Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.statCol}>
-            <View style={styles.statLabelRow}>
-              <View style={[styles.dot, { backgroundColor: COLORS.rose }]} />
-              <Text style={styles.statLabel}>
-                Gider {activeFilter === 'monthly' ? `(${currentMonthDisplay.split(' ')[0]})` : '(Toplam)'}
-              </Text>
-            </View>
-            <Text style={styles.expenseAmount}>
-              {isBalanceHidden ? '••••' : formatCurrency(heroExpense)}
-            </Text>
-          </View>
+          </TouchableOpacity>)}
         </View>
-      </View>
+      </Surface>
 
       {/* Timeline Stream Section (Ay ay akış / Yıllık özet) */}
       <View style={styles.sectionHeader}>
@@ -748,7 +671,7 @@ const lightStyles = StyleSheet.create({
     gap: 12,
   },
   balanceCard: {
-    width: BALANCE_CARD_WIDTH,
+    width: 248,
     minHeight: 136,
     borderRadius: 20,
     padding: 16,
