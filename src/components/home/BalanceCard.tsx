@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
@@ -22,7 +23,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
 }) => {
   const styles = useThemedStyles(lightStyles);
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.topRow}>
         <Text style={styles.label}>TOPLAM BAKİYE</Text>
         <TouchableOpacity activeOpacity={0.7} onPress={onToggleHide} style={styles.eyeBtn}>
@@ -52,7 +53,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
         </View>
         <Text style={styles.compareText}>geçen aya göre</Text>
       </View>
-    </View>
+    </Card>
   );
 };
 

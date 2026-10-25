@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
@@ -44,7 +45,7 @@ export const PendingCollectionsCard: React.FC<PendingCollectionsCardProps> = ({
   };
 
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.header}>
         <View>
           <Text style={styles.subLabel}>BEKLENEN TAHSİLATLAR & HAKEDİŞLER</Text>
@@ -83,7 +84,7 @@ export const PendingCollectionsCard: React.FC<PendingCollectionsCardProps> = ({
         collections.map((item) => {
           const rem = Math.max(item.expectedAmount - item.actualAmount, 0);
           return (
-            <View key={item.id} style={styles.itemCard}>
+            <Card key={item.id} style={styles.itemCard}>
               <View style={styles.itemHeader}>
                 <View style={styles.itemTitleWrap}>
                   <Ionicons name="briefcase-outline" size={18} color={COLORS.primary} />
@@ -115,7 +116,7 @@ export const PendingCollectionsCard: React.FC<PendingCollectionsCardProps> = ({
                       onPress={() => handleCollectPress(item)}
                     >
                       <Ionicons name="checkmark-circle-outline" size={15} color={COLORS.primaryForeground} />
-                      <Text style={styles.collectBtnText}>Tahsil Et ({formatCurrency(rem)})</Text>
+                      <Text style={[styles.collectBtnText, { color: COLORS.primaryForeground }]}>Tahsil Et ({formatCurrency(rem)})</Text>
                     </TouchableOpacity>
                   ) : null}
 
@@ -128,11 +129,11 @@ export const PendingCollectionsCard: React.FC<PendingCollectionsCardProps> = ({
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </Card>
           );
         })
       )}
-    </View>
+    </Card>
   );
 };
 

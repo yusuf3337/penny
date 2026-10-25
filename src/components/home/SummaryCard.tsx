@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
@@ -18,7 +19,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 }) => {
   const styles = useThemedStyles(lightStyles);
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <Text style={styles.label}>Toplam Varlık</Text>
       <Text style={styles.balance}>{formatCurrency(totalBalance)}</Text>
       
@@ -37,7 +38,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           <Text style={styles.expenseText}>-{formatCurrency(totalExpense)}</Text>
         </View>
       </View>
-    </View>
+    </Card>
   );
 };
 

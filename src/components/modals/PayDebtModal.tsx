@@ -80,8 +80,8 @@ export const PayDebtModal: React.FC<PayDebtModalProps> = ({
       }
     >
       {/* Balance Summary Card */}
-      <View className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#22332D] p-3.5 rounded-[18px] mb-4">
-        <View className="w-10.5 h-10.5 rounded-[14px] bg-white dark:bg-[#182521] items-center justify-center shadow-xs">
+      <View className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#1E2A48] p-3.5 rounded-[18px] mb-4">
+        <View className="w-10.5 h-10.5 rounded-[14px] bg-white dark:bg-[#17213A] items-center justify-center shadow-xs">
           <Ionicons
             name={isGiven ? 'wallet-outline' : 'card-outline'}
             size={22}
@@ -89,10 +89,10 @@ export const PayDebtModal: React.FC<PayDebtModalProps> = ({
           />
         </View>
         <View className="flex-1">
-          <Text className="text-[15px] font-extrabold text-zinc-900 dark:text-[#EAF2EE]">{debt.personName}</Text>
-          <Text className="text-xs text-zinc-500 dark:text-[#A9BDB2] mt-0.5">
+          <Text className="text-[15px] font-extrabold text-zinc-900 dark:text-[#F5F7FF]">{debt.personName}</Text>
+          <Text className="text-xs text-zinc-500 dark:text-[#BAC8E6] mt-0.5">
             Kalan {isGiven ? 'Alacak' : 'Borç'}:{' '}
-            <Text className="font-extrabold text-zinc-900 dark:text-[#EAF2EE]">
+            <Text className="font-extrabold text-zinc-900 dark:text-[#F5F7FF]">
               {formatCurrency(debt.remainingAmount)}
             </Text>
           </Text>

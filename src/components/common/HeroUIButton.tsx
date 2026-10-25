@@ -35,12 +35,13 @@ export const HeroUIButton: React.FC<HeroUIButtonProps> = ({
   const { colors } = useTheme();
   const { t } = useLocale();
   const label = typeof children === 'string' ? t(children) : children;
-  const iconColor = variant === 'primary' || variant === 'success' || variant === 'danger'
-    ? '#FFFFFF' : variant === 'flat' || variant === 'ghost' ? colors.primary : colors.foreground;
+  const iconColor = variant === 'primary' ? colors.primaryForeground
+    : variant === 'success' || variant === 'danger' ? '#FFFFFF'
+    : variant === 'flat' || variant === 'ghost' ? colors.primary : colors.foreground;
   const tone = variant === 'success' ? 'bg-emerald-600'
     : variant === 'primary' ? 'bg-brand'
     : variant === 'flat' ? 'bg-brand-soft'
-    : variant === 'bordered' ? 'border border-[#DDE5E0] dark:border-[#344A40]'
+    : variant === 'bordered' ? 'border border-[#DAE3F4] dark:border-[#3E5280]'
     : '';
 
   return <Button
@@ -54,7 +55,7 @@ export const HeroUIButton: React.FC<HeroUIButtonProps> = ({
   >
     {isLoading ? <ActivityIndicator size="small" color={iconColor} /> : <>
       {icon && iconPosition === 'left' && <Ionicons name={icon} size={size === 'lg' ? 20 : size === 'sm' ? 15 : 18} color={iconColor} />}
-      <Button.Label className="font-semibold tracking-tight" style={textStyle}>{label}</Button.Label>
+      <Button.Label className="font-semibold tracking-tight" style={[variant === 'primary' && { color: colors.primaryForeground }, textStyle]}>{label}</Button.Label>
       {icon && iconPosition === 'right' && <Ionicons name={icon} size={size === 'lg' ? 20 : size === 'sm' ? 15 : 18} color={iconColor} />}
     </>}
   </Button>;

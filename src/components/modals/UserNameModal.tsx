@@ -72,10 +72,10 @@ export const UserNameModal: React.FC<UserNameModalProps> = ({ visible, onSave })
       }
     >
       <View className="items-center mb-5 mt-2">
-        <View className="w-15 h-15 rounded-full bg-teal-500/10 items-center justify-center mb-3">
-          <Ionicons name="person-outline" size={28} color="#0D9488" />
+        <View className="w-15 h-15 rounded-full bg-brand-soft items-center justify-center mb-3">
+          <Ionicons name="person-outline" size={28} color={COLORS.primary} />
         </View>
-        <Text className="text-sm text-zinc-500 dark:text-[#A9BDB2] font-medium text-center">
+        <Text className="text-sm text-zinc-500 dark:text-[#BAC8E6] font-medium text-center">
           Sana nasıl hitap etmemizi istersin?
         </Text>
       </View>

@@ -53,14 +53,14 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
   return (
     <View
-      className="absolute bottom-0 left-0 right-0 bg-[#FBFCFA] dark:bg-[#0F1816] border-t border-[#E1E9E5] dark:border-[#2C4039]"
+      className="absolute bottom-0 left-0 right-0 bg-[#F6F8FF] dark:bg-[#0B1020] border-t border-[#DAE3F4] dark:border-[#2B3A5D]"
       style={{ paddingBottom: bottomInset + 4 }}
     >
       <View className="flex-row items-center px-2 pt-2.5">
         <Tabs value={selectedTab} onValueChange={handleTabPress} variant="primary" className="min-w-0 flex-1 gap-0">
           <Tabs.List background={null} className="w-full gap-0 bg-transparent p-0">
             <Tabs.Indicator
-              className="rounded-2xl bg-brand-soft shadow-none dark:bg-[#254036]"
+              className="rounded-2xl bg-brand-soft shadow-none dark:bg-brand-soft"
               animation={{
                 width: { type: 'spring', config: { stiffness: 260, damping: 28 } },
                 height: { type: 'spring', config: { stiffness: 260, damping: 28 } },
@@ -82,7 +82,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.7}
-                    className={`w-full text-center text-[10px] leading-4 tracking-tight ${isSelected ? 'font-semibold text-brand' : 'font-medium text-[#778A83] dark:text-[#A9BDB2]'}`}
+                    className={`w-full text-center text-[10px] leading-4 tracking-tight ${isSelected ? 'font-semibold text-brand' : 'font-medium text-[#667895] dark:text-[#BAC8E6]'}`}
                   >
                     {NAV_LABELS[language][tab.id]}
                   </Tabs.Label>
@@ -93,7 +93,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
         </Tabs>
 
         {/* Separator Line */}
-        <View className="w-[1px] h-7 bg-[#E1E9E5] dark:bg-[#2C4039] mx-0.5" />
+        <View className="w-[1px] h-7 bg-[#DAE3F4] dark:bg-[#2B3A5D] mx-0.5" />
 
         {/* Far-Right Action Button: "İşlem Ekle" (Circular Action Button) */}
         <TouchableOpacity
@@ -104,7 +104,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           accessibilityLabel={t('Ekle')}
         >
           <View className="w-10 h-9 rounded-xl bg-brand items-center justify-center active:bg-brand">
-            <Ionicons name="add" size={22} color="#FFFFFF" />
+            <Ionicons name="add" size={22} color={colors.primaryForeground} />
           </View>
           <Text localize={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ width: '100%', textAlign: 'center' }} className="text-[10px] font-semibold text-brand dark:text-brand mt-1 tracking-tight">
             {NAV_LABELS[language].add}

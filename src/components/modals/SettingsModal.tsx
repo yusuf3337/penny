@@ -13,6 +13,7 @@ import {
 } from '../../services/storageService';
 import { usePremium } from '../../context/PremiumContext';
 import { HeroUIModal } from '../common/HeroUIModal';
+import { Alert } from 'heroui-native/alert';
 import { useAppDialog } from '../../context/AppDialogContext';
 import { ThemePreference, useTheme } from '../../context/ThemeContext';
 import { LANGUAGE_OPTIONS, LanguagePreference, AppLanguage, getLanguageName, useLocale } from '../../context/LocaleContext';
@@ -214,21 +215,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
     >
       {/* Status Feedback Banner */}
       {importError ? (
-        <View className="flex-row items-center gap-2 bg-red-50 dark:bg-[#3C2228] p-2.5 rounded-xl mb-3">
-          <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
-          <Text className="text-xs font-semibold text-red-700 dark:text-[#FFB4B4] flex-1">{importError}</Text>
-        </View>
+        <Alert status="danger" className="mb-3 rounded-2xl">
+          <Alert.Indicator />
+          <Alert.Content><Alert.Description>{importError}</Alert.Description></Alert.Content>
+        </Alert>
       ) : null}
       {statusMsg ? (
-        <View className="flex-row items-center gap-2 bg-emerald-50 dark:bg-[#183C2D] p-2.5 rounded-xl mb-3">
-          <Ionicons name="checkmark-circle" size={16} color="#059669" />
-          <Text className="text-xs font-semibold text-emerald-700 dark:text-[#70E0B0]">{statusMsg}</Text>
-        </View>
+        <Alert status="success" className="mb-3 rounded-2xl">
+          <Alert.Indicator />
+          <Alert.Content><Alert.Description>{statusMsg}</Alert.Description></Alert.Content>
+        </Alert>
       ) : null}
 
       {/* Penny Pro Status Banner Card */}
       <TouchableOpacity
-        className="flex-row items-center justify-between p-3.5 rounded-2xl mb-4 border border-[#CAD8D2] dark:border-[#3C574E] bg-brand-soft dark:bg-brand-soft"
+        className="flex-row items-center justify-between p-3.5 rounded-2xl mb-4 border border-[#BFCDE8] dark:border-[#3E5280] bg-brand-soft dark:bg-brand-soft"
         activeOpacity={0.85}
         onPress={() => {
           onClose();
@@ -238,21 +239,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         }}
       >
         <View className="flex-row items-center gap-3 flex-1 mr-2">
-          <View className="w-10 h-10 rounded-[14px] items-center justify-center bg-white dark:bg-[#182521]">
+          <View className="w-10 h-10 rounded-[14px] items-center justify-center bg-white dark:bg-[#17213A]">
             <Ionicons name={isPro ? 'checkmark-circle-outline' : 'lock-closed-outline'} size={20} color={colors.primary} />
           </View>
           <View className="flex-1">
             <View className="flex-row items-center gap-2 mb-0.5">
-              <Text className="text-sm font-bold text-zinc-900 dark:text-[#EAF2EE]">
+              <Text className="text-sm font-bold text-zinc-900 dark:text-[#F5F7FF]">
                 {isPro ? 'Penny Pro Aktif' : 'Penny Pro özellikleri'}
               </Text>
-              <View className="px-1.5 py-0.5 rounded-md bg-white dark:bg-[#182521]">
+              <View className="px-1.5 py-0.5 rounded-md bg-white dark:bg-[#17213A]">
                 <Text className="text-[10px] font-bold text-brand dark:text-brand">
                   {isPro ? 'AKTİF' : 'İNCELE'}
                 </Text>
               </View>
             </View>
-            <Text className="text-[11px] text-zinc-500 dark:text-[#A9BDB2] leading-snug">
+            <Text className="text-[11px] text-zinc-500 dark:text-[#BAC8E6] leading-snug">
               {isPro
                 ? 'Sınırsız bütçe & hedef, harcama bölüştürme ve tüm raporlar açık.'
                 : 'Sınırsız bütçe, hedef, ortak harcama ve ayrıntılı raporlar.'}
@@ -263,10 +264,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
       </TouchableOpacity>
 
       {/* Profil İsmi Güncelleme */}
-      <Text className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">Profil İsmi</Text>
+      <Text className="text-xs font-bold text-zinc-400 dark:text-[#93A5C8] uppercase tracking-wider mb-2">Profil İsmi</Text>
       <View className="flex-row items-center gap-2 mb-4">
         <TextInput
-          className="flex-1 bg-zinc-100 dark:bg-[#22332D] rounded-2xl px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-[#EAF2EE]"
+          className="flex-1 bg-zinc-100 dark:bg-[#1E2A48] rounded-2xl px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-[#F5F7FF]"
           value={nameInput}
           onChangeText={(text) => setNameInput(sanitizeNickname(text))}
           autoCapitalize="words"
@@ -276,16 +277,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
           placeholderTextColor="#A1A1AA"
         />
         <TouchableOpacity
-          className="bg-brand px-4 py-3 rounded-2xl active:bg-teal-700"
+          className="bg-brand px-4 py-3 rounded-2xl"
           onPress={handleSaveName}
           disabled={!isValidNickname(nameInput.trim())}
         >
-          <Text className="text-white text-xs font-bold">Kaydet</Text>
+          <Text className="text-brand-foreground text-xs font-bold">Kaydet</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'appearance' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#22332D] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'appearance' ? null : 'appearance')}>
-        <Text className="text-sm font-semibold text-zinc-900 dark:text-[#EAF2EE]">{t('Görünüm')} · {preference === 'system' ? t('Sistem') : preference === 'light' ? t('Açık') : t('Koyu')}</Text>
+      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'appearance' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#1E2A48] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'appearance' ? null : 'appearance')}>
+        <Text className="text-sm font-semibold text-zinc-900 dark:text-[#F5F7FF]">{t('Görünüm')} · {preference === 'system' ? t('Sistem') : preference === 'light' ? t('Açık') : t('Koyu')}</Text>
         <Ionicons name={expandedSetting === 'appearance' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
       </TouchableOpacity>
       {expandedSetting === 'appearance' && <View className="flex-row gap-2 mb-4">
@@ -298,7 +299,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             key={value}
             accessibilityRole="radio"
             accessibilityState={{ selected: preference === value }}
-            className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 border ${preference === value ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 border ${preference === value ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#1E2A48] border-[#DAE3F4] dark:border-[#2B3A5D]'}`}
             onPress={() => { void setPreference(value as ThemePreference); setExpandedSetting(null); }}
           >
             <Ionicons name={icon} size={15} color={preference === value ? colors.primary : colors.mutedText} />
@@ -307,7 +308,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         ))}
       </View>}
 
-      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'accent' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#22332D] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'accent' ? null : 'accent')}>
+      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'accent' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#1E2A48] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'accent' ? null : 'accent')}>
         <Text localize={false} style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>{accentCopy[language].title} · {accentCopy[language][accent]}</Text>
         <Ionicons name={expandedSetting === 'accent' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
       </TouchableOpacity>
@@ -318,7 +319,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         </TouchableOpacity>)}
       </View>}
 
-      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'language' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#22332D] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'language' ? null : 'language')}>
+      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'language' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#1E2A48] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'language' ? null : 'language')}>
         <Text localize={false} style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>{`${t('Uygulama Dili')} · ${getLanguageName(language, language)}`}</Text>
         <Ionicons name={expandedSetting === 'language' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
       </TouchableOpacity>
@@ -331,7 +332,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               onPress={() => { void setLanguagePreference(option.code); setExpandedSetting(null); }}
-              className={`w-[31%] min-h-11 px-2 rounded-xl border items-center justify-center ${selected ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+              className={`w-[31%] min-h-11 px-2 rounded-xl border items-center justify-center ${selected ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#1E2A48] border-[#DAE3F4] dark:border-[#2B3A5D]'}`}
             >
               <Text localize={false} style={{ color: selected ? colors.primary : colors.secondaryForeground, fontSize: 12, fontWeight: selected ? '700' : '500', textAlign: 'center' }}>
                 {option.code === 'system' ? t('Sistem dili') : getLanguageName(option.code, language)}
@@ -341,15 +342,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         })}
       </View>}
 
-      <Text localize={false} className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">
+      <Text localize={false} className="text-xs font-bold text-zinc-400 dark:text-[#93A5C8] uppercase tracking-wider mb-2">
         {reminderCopy[language].title}
       </Text>
-      <View className="bg-zinc-100 dark:bg-[#22332D] rounded-2xl p-3.5 mb-5">
-        <Text localize={false} className="text-sm font-semibold text-zinc-800 dark:text-[#EAF2EE]">
+      <View className="bg-zinc-100 dark:bg-[#1E2A48] rounded-2xl p-3.5 mb-5">
+        <Text localize={false} className="text-sm font-semibold text-zinc-800 dark:text-[#F5F7FF]">
           {reminderStatus ? reminderCopy[language][reminderStatus.status] : '…'}
         </Text>
         {reminderStatus ? (
-          <Text localize={false} className="text-xs text-zinc-500 dark:text-[#A9BDB2] mt-1">
+          <Text localize={false} className="text-xs text-zinc-500 dark:text-[#BAC8E6] mt-1">
             {reminderCopy[language].count(reminderStatus.scheduled)}
           </Text>
         ) : null}
@@ -365,7 +366,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         </View>
       </View>
 
-      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'currency' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#22332D] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'currency' ? null : 'currency')}>
+      <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'currency' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#1E2A48] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'currency' ? null : 'currency')}>
         <Text localize={false} style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>{currencyCopy[language].title} · {currency}</Text>
         <Ionicons name={expandedSetting === 'currency' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
       </TouchableOpacity>
@@ -378,7 +379,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               onPress={() => { void setCurrencyPreference(option); setExpandedSetting(null); }}
-              className={`min-w-[22%] min-h-11 px-3 rounded-xl border items-center justify-center ${selected ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#22332D] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+              className={`min-w-[22%] min-h-11 px-3 rounded-xl border items-center justify-center ${selected ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-zinc-100 dark:bg-[#1E2A48] border-[#DAE3F4] dark:border-[#2B3A5D]'}`}
             >
               <Text localize={false} style={{ color: selected ? colors.primary : colors.secondaryForeground, fontSize: 12, fontWeight: selected ? '700' : '500' }}>
                 {option === 'system' ? currencyCopy[language].system : option}
@@ -387,55 +388,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
           );
         })}
       </View>}
-      <Text localize={false} className="text-xs text-zinc-500 dark:text-[#A9BDB2] mb-5">{currencyCopy[language].note}</Text>
+      <Text localize={false} className="text-xs text-zinc-500 dark:text-[#BAC8E6] mb-5">{currencyCopy[language].note}</Text>
 
       {/* Dosya Bazlı Yedekleme & İndirme */}
-      <Text className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2">
+      <Text className="text-xs font-bold text-zinc-400 dark:text-[#93A5C8] uppercase tracking-wider mb-2">
         Dosya İle Yedekleme (Dosya Paylaş & Yükle)
       </Text>
 
       <TouchableOpacity
-        className="flex-row items-center gap-3 bg-brand p-3.5 rounded-2xl mb-2.5 active:bg-teal-700"
+        className="flex-row items-center gap-3 bg-brand p-3.5 rounded-2xl mb-2.5"
         onPress={handleShareJSONFile}
       >
-        <Ionicons name="document-text" size={20} color="#FFF" />
+        <Ionicons name="document-text" size={20} color={colors.primaryForeground} />
         <View className="flex-1">
-          <Text className="text-sm font-bold text-white">JSON Yedek Dosyası Kaydet / Paylaş</Text>
-          <Text className="text-[11px] text-teal-100 mt-0.5">
+          <Text className="text-sm font-bold text-brand-foreground">JSON Yedek Dosyası Kaydet / Paylaş</Text>
+          <Text className="text-[11px] text-brand-foreground/80 mt-0.5">
             Tüm verilerinizi .json dosyası olarak Dosyalar/Drive'a kaydedin
           </Text>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity
-        className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#22332D] p-3.5 rounded-2xl mb-2.5 active:bg-zinc-200"
+        className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#1E2A48] p-3.5 rounded-2xl mb-2.5 active:bg-zinc-200"
         onPress={handlePickAndImportFile}
         disabled={importing}
       >
         <Ionicons name="folder-open" size={20} color={colors.primary} />
         <View className="flex-1">
-          <Text className="text-sm font-bold text-zinc-900 dark:text-[#EAF2EE]">Cihazdan Yedek Dosyası Seç & Yükle</Text>
-          <Text className="text-[11px] text-zinc-500 dark:text-[#A9BDB2] mt-0.5">
+          <Text className="text-sm font-bold text-zinc-900 dark:text-[#F5F7FF]">Cihazdan Yedek Dosyası Seç & Yükle</Text>
+          <Text className="text-[11px] text-zinc-500 dark:text-[#BAC8E6] mt-0.5">
             Dosyalar'ınızdan .json yedeğinizi seçin, tüm verilerinizi anında geri yükleyin
           </Text>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity
-        className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#22332D] p-3.5 rounded-2xl mb-2.5 active:bg-zinc-200"
+        className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#1E2A48] p-3.5 rounded-2xl mb-2.5 active:bg-zinc-200"
         onPress={handleShareCSVFile}
       >
         <Ionicons name="stats-chart" size={18} color="#059669" />
         <View className="flex-1">
           <View className="flex-row items-center gap-1.5">
-            <Text className="text-sm font-bold text-zinc-900 dark:text-[#EAF2EE]">Excel (CSV) Dosyası İndir</Text>
+            <Text className="text-sm font-bold text-zinc-900 dark:text-[#F5F7FF]">Excel (CSV) Dosyası İndir</Text>
             {!isPro && (
               <View className="bg-amber-100 dark:bg-[#43341D] px-1.5 py-0.5 rounded">
                 <Text className="text-[9px] font-extrabold text-amber-800 dark:text-[#FCD34D]">PRO</Text>
               </View>
             )}
           </View>
-          <Text className="text-[11px] text-zinc-500 dark:text-[#A9BDB2] mt-0.5">
+          <Text className="text-[11px] text-zinc-500 dark:text-[#BAC8E6] mt-0.5">
             {isPro
               ? "İşlemleri Excel'de açılabilir .csv rapor dosyası olarak kaydedin"
               : 'Penny Pro ile tüm işlemlerinizi Excel raporu olarak indirin'}
@@ -452,13 +453,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         }}
       >
         <Ionicons name="code-working-outline" size={16} color="#71717A" />
-        <Text className="text-xs font-semibold text-zinc-500 dark:text-[#A9BDB2]">
+        <Text className="text-xs font-semibold text-zinc-500 dark:text-[#BAC8E6]">
           {showTextFallback ? 'Metin Kutusunu Gizle' : 'Metin Olarak Göster / Yapıştır'}
         </Text>
       </TouchableOpacity>
 
       {showTextFallback ? (
-        <View className="bg-zinc-100 dark:bg-[#22332D] rounded-2xl p-3 mb-4">
+        <View className="bg-zinc-100 dark:bg-[#1E2A48] rounded-2xl p-3 mb-4">
           <TextInput
             className="text-xs text-zinc-800 dark:text-[#D8E7DC] h-28 leading-snug"
             multiline
@@ -468,22 +469,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             placeholderTextColor="#A1A1AA"
           />
           <TouchableOpacity
-            className="bg-brand py-2.5 rounded-xl items-center mt-2 active:bg-teal-700"
+            className="bg-brand py-2.5 rounded-xl items-center mt-2"
             onPress={handleApplyTextImport}
             disabled={importing}
           >
-            <Text className="text-white text-xs font-bold">Metindeki Yedeği Yükle</Text>
+            <Text className="text-brand-foreground text-xs font-bold">Metindeki Yedeği Yükle</Text>
           </TouchableOpacity>
         </View>
       ) : null}
 
       {__DEV__ && !isBillingConfigured && (
         <>
-          <Text className="text-xs font-bold text-zinc-400 dark:text-[#82978B] uppercase tracking-wider mb-2 mt-2">
+          <Text className="text-xs font-bold text-zinc-400 dark:text-[#93A5C8] uppercase tracking-wider mb-2 mt-2">
             Geliştirici Testi
           </Text>
           <TouchableOpacity
-            className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#22332D] p-3.5 rounded-2xl mb-4 active:bg-zinc-200"
+            className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#1E2A48] p-3.5 rounded-2xl mb-4 active:bg-zinc-200"
             onPress={async () => {
               await toggleDevPro();
               alert('Test Modu', !isPro ? 'Pro erişimi test için açıldı.' : 'Pro test erişimi kapatıldı.');
@@ -491,7 +492,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
           >
             <Ionicons name="flask-outline" size={18} color={colors.primary} />
             <View className="flex-1">
-              <Text className="text-sm font-bold text-zinc-900 dark:text-[#EAF2EE]">{isPro ? 'Pro testini kapat' : 'Pro erişimini test et'}</Text>
+              <Text className="text-sm font-bold text-zinc-900 dark:text-[#F5F7FF]">{isPro ? 'Pro testini kapat' : 'Pro erişimini test et'}</Text>
             </View>
           </TouchableOpacity>
         </>
@@ -506,8 +507,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
             İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.
           </Text>
           <View className="flex-row gap-2">
-            <TouchableOpacity className="flex-1 items-center rounded-xl bg-white dark:bg-[#22332D] py-3" onPress={() => setShowResetConfirm(false)}>
-              <Text className="text-xs font-bold text-zinc-700 dark:text-[#CCDCD2]">Vazgeç</Text>
+            <TouchableOpacity className="flex-1 items-center rounded-xl bg-white dark:bg-[#1E2A48] py-3" onPress={() => setShowResetConfirm(false)}>
+              <Text className="text-xs font-bold text-zinc-700 dark:text-[#D5E0F8]">Vazgeç</Text>
             </TouchableOpacity>
             <TouchableOpacity
               className="flex-1 items-center rounded-xl bg-rose-600 py-3"

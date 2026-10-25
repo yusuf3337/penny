@@ -2,7 +2,8 @@ import { SubscriptionItem, Debt } from '../types';
 import { getActiveLanguage, localize } from '../context/LocaleContext';
 import { formatCurrency } from '../utils/formatters';
 import { advanceSubscriptionDueDate } from '../utils/formatters';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationsModule from 'expo-notifications';
+import { requireOptionalNativeModule } from 'expo';
 import { Platform } from 'react-native';
 
 const CHANNEL_ID = 'subscription-reminders';
@@ -27,20 +28,41 @@ const paymentCopy: Record<string, {
   it: { title: 'Promemoria abbonamento', tomorrow: (n, a) => `Domani scade il pagamento di ${n}: ${a}.`, today: (n, a) => `Oggi scade il pagamento di ${n}: ${a}.`, recorded: (n, a) => `Registrato un pagamento di ${a} per ${n}.` },
 };
 
-if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
-  });
-}
+type NotificationsApi = typeof NotificationsModule;
+let notificationsPromise: Promise<NotificationsApi | null> | null = null;
+
+const getNotifications = (): Promise<NotificationsApi | null> => {
+  if (Platform.OS === 'web') return Promise.resolve(null);
+  if (!notificationsPromise) {
+    notificationsPromise = (async () => {
+      // Some Expo Go binaries do not contain this native module. Importing the
+      // package before checking it crashes the entire app during startup.
+      if (!requireOptionalNativeModule('ExpoPushTokenManager')) return null;
+      try {
+        const api = await import('expo-notifications');
+        api.setNotificationHandler({
+          handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
+        });
+        return api;
+      } catch (error) {
+        console.warn('Notifications are unavailable in this app build:', error);
+        return null;
+      }
+    })();
+  }
+  return notificationsPromise;
+};
 
 const isAllowed = async (): Promise<boolean> => {
-  if (Platform.OS === 'web') return false;
+  const Notifications = await getNotifications();
+  if (!Notifications) return false;
   const permissions = await Notifications.getPermissionsAsync();
   return permissions.granted || permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 };
 
 export const getReminderStatus = async (): Promise<{ status: 'allowed' | 'quiet' | 'blocked'; scheduled: number }> => {
-  if (Platform.OS === 'web') return { status: 'blocked', scheduled: 0 };
+  const Notifications = await getNotifications();
+  if (!Notifications) return { status: 'blocked', scheduled: 0 };
   const [permissions, pending] = await Promise.all([
     Notifications.getPermissionsAsync(),
     Notifications.getAllScheduledNotificationsAsync(),
@@ -57,6 +79,8 @@ export const getReminderStatus = async (): Promise<{ status: 'allowed' | 'quiet'
 };
 
 const setupChannel = async () => {
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: 'Subscription reminders',
@@ -68,7 +92,8 @@ const setupChannel = async () => {
 let syncQueue: Promise<void> = Promise.resolve();
 export const syncSubscriptionReminders = (subscriptions: SubscriptionItem[]): Promise<void> => {
   syncQueue = syncQueue.catch(() => {}).then(async () => {
-    if (Platform.OS === 'web') return;
+    const Notifications = await getNotifications();
+    if (!Notifications) return;
     await Notifications.cancelScheduledNotificationAsync(TEST_ID).catch(() => {});
     const existing = await Notifications.getAllScheduledNotificationsAsync();
     if (!await isAllowed()) return;
@@ -112,6 +137,8 @@ export const syncSubscriptionReminders = (subscriptions: SubscriptionItem[]): Pr
 
 export const notifySubscriptionRecorded = async (sub: SubscriptionItem): Promise<void> => {
   try {
+    const Notifications = await getNotifications();
+    if (!Notifications) return;
     if (!await isAllowed()) return;
     await setupChannel();
     const copy = paymentCopy[getActiveLanguage()] ?? paymentCopy.en;
@@ -168,7 +195,8 @@ const reminderCopy: Record<string, { subscription: (name: string, amount: string
  */
 export const requestNotificationPermissions = async (): Promise<boolean> => {
   try {
-    if (Platform.OS === 'web') return false;
+    const Notifications = await getNotifications();
+    if (!Notifications) return false;
     if (await isAllowed()) return true;
     const current = await Notifications.getPermissionsAsync();
     if (current.status === 'denied') return false;

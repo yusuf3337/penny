@@ -293,8 +293,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <Ionicons name="mic-outline" size={20} color={colors.primary} />
           </View>
           <View className="flex-1">
-            <Text localize={false} className="text-[14px] font-bold text-[#182B29] dark:text-[#EAF2EE]">{voiceCopy[language].title}</Text>
-            <Text localize={false} className="mt-0.5 text-[12px] text-zinc-500 dark:text-[#A9BDB2]">{voiceCopy[language].hint}</Text>
+            <Text localize={false} className="text-[14px] font-bold text-[#14203A] dark:text-[#F5F7FF]">{voiceCopy[language].title}</Text>
+            <Text localize={false} className="mt-0.5 text-[12px] text-zinc-500 dark:text-[#BAC8E6]">{voiceCopy[language].hint}</Text>
           </View>
         </View>
         <HeroUIButton
@@ -307,15 +307,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           {voice.status === 'listening' ? voiceCopy[language].stop : voice.status === 'starting' || voice.status === 'processing' ? voiceCopy[language].listening : voiceCopy[language].start}
         </HeroUIButton>
         {!!voice.transcript && <Text localize={false} className="mt-3 text-[13px] font-medium text-zinc-700 dark:text-[#D4E2D9]">“{voice.transcript}”</Text>}
-        {!!voice.finalTranscript && <Text localize={false} className="mt-1 text-[11px] text-zinc-500 dark:text-[#A9BDB2]">{voiceCopy[language].review}</Text>}
+        {!!voice.finalTranscript && <Text localize={false} className="mt-1 text-[11px] text-zinc-500 dark:text-[#BAC8E6]">{voiceCopy[language].review}</Text>}
         {!!voice.error && <Text localize={false} className="mt-2 text-[12px] font-semibold text-rose-600 dark:text-rose-400">{voiceCopy[language][voice.error]}</Text>}
       </Surface>}
 
       {/* HeroUI Segmented Tabs for Transaction Type */}
-      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-[18px] p-1 mb-4 gap-1.5">
+      <View className="flex-row bg-zinc-100 dark:bg-[#1E2A48] rounded-[18px] p-1 mb-4 gap-1.5">
         <TouchableOpacity
           className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-[14px] ${
-            type === 'expense' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            type === 'expense' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => { setType('expense'); setSelectedCategory(''); setSelectionError(''); }}
           activeOpacity={0.8}
@@ -327,7 +327,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           />
           <Text
             className={`text-sm font-bold ${
-              type === 'expense' ? 'text-rose-500' : 'text-zinc-500 dark:text-[#A9BDB2]'
+              type === 'expense' ? 'text-rose-500' : 'text-zinc-500 dark:text-[#BAC8E6]'
             }`}
           >
             Gider
@@ -336,7 +336,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         <TouchableOpacity
           className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-[14px] ${
-            type === 'income' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            type === 'income' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => { setType('income'); setSelectedCategory(''); setSelectionError(''); }}
           activeOpacity={0.8}
@@ -348,7 +348,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           />
           <Text
             className={`text-sm font-bold ${
-              type === 'income' ? 'text-emerald-500' : 'text-zinc-500 dark:text-[#A9BDB2]'
+              type === 'income' ? 'text-emerald-500' : 'text-zinc-500 dark:text-[#BAC8E6]'
             }`}
           >
             Gelir
@@ -389,7 +389,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       )}
 
       <View className="mb-4">
-        <Text localize={false} className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">
+        <Text localize={false} className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8] mb-2">
           {accountCopy[language].title}
         </Text>
         <View className="flex-row gap-2">
@@ -405,14 +405,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   isSelected
                     ? 'bg-brand-soft border-brand'
                     : accountError
-                      ? 'bg-zinc-100 dark:bg-[#22332D] border-rose-400'
-                      : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                      ? 'bg-zinc-100 dark:bg-[#1E2A48] border-rose-400'
+                      : 'bg-zinc-100 dark:bg-[#1E2A48] border-transparent'
                 }`}
                 onPress={() => { setSelectedAccountId(acc.id); setAccountError(false); }}
                 activeOpacity={0.75}
               >
                 <Ionicons name={acc.type === 'cash' ? 'wallet-outline' : 'card-outline'} size={18} color={isSelected ? colors.primary : colors.mutedText} />
-                <Text localize={false} className={`text-sm font-bold ${isSelected ? 'text-brand' : 'text-zinc-600 dark:text-[#A9BDB2]'}`}>
+                <Text localize={false} className={`text-sm font-bold ${isSelected ? 'text-brand' : 'text-zinc-600 dark:text-[#BAC8E6]'}`}>
                   {acc.type === 'cash' ? t('Nakit') : t('Banka')}
                 </Text>
               </TouchableOpacity>
@@ -424,7 +424,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
       {/* Category selection stays visible so envelope spending is attributed correctly. */}
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8]">Kategori</Text>
+        <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8]">Kategori</Text>
         <TouchableOpacity
           onPress={() => {
             if (!isPro) {
@@ -445,7 +445,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       </View>
 
       {showCategoryInput && (
-        <View className="mb-3 rounded-2xl bg-zinc-50 dark:bg-[#22332D] p-3">
+        <View className="mb-3 rounded-2xl bg-zinc-50 dark:bg-[#1E2A48] p-3">
           <HeroUIInput
             label="Kategori Adı"
             placeholder="Örn: Sağlık, Spor, Hobiler..."
@@ -461,17 +461,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           />
           <View className="flex-row gap-2">
             <TouchableOpacity
-              className="flex-1 items-center justify-center rounded-xl bg-zinc-200 dark:bg-[#2C4039] py-2.5"
+              className="flex-1 items-center justify-center rounded-xl bg-zinc-200 dark:bg-[#2B3A5D] py-2.5"
               onPress={() => { setShowCategoryInput(false); setCategoryError(''); }}
             >
-              <Text className="text-sm font-semibold text-zinc-700 dark:text-[#CCDCD2]">Vazgeç</Text>
+              <Text className="text-sm font-semibold text-zinc-700 dark:text-[#D5E0F8]">Vazgeç</Text>
             </TouchableOpacity>
             <TouchableOpacity
               className="flex-1 items-center justify-center rounded-xl bg-brand py-2.5"
               onPress={createCategory}
               disabled={creatingCategory}
             >
-              <Text className="text-sm font-semibold text-white">Kategoriyi Oluştur</Text>
+              <Text className="text-sm font-semibold text-brand-foreground">Kategoriyi Oluştur</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -489,7 +489,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   ? type === 'income'
                     ? 'bg-emerald-50 dark:bg-[#183C2D] border-emerald-500'
                     : 'bg-rose-50 dark:bg-[#44252E] border-rose-500'
-                  : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                  : 'bg-zinc-100 dark:bg-[#1E2A48] border-transparent'
               }`}
               onPress={() => { setSelectedCategory(cat.name); setSelectionError(''); }}
               activeOpacity={0.75}
@@ -499,7 +499,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 size={15}
                 color={isSelected ? (type === 'income' ? '#047857' : '#BE123C') : '#71717A'}
               />
-              <Text className={`text-[13px] ${isSelected ? (type === 'income' ? 'text-emerald-700 dark:text-[#70E0B0] font-bold' : 'text-rose-700 dark:text-[#FDA4AF] font-bold') : 'text-zinc-500 dark:text-[#A9BDB2] font-semibold'}`}>
+              <Text className={`text-[13px] ${isSelected ? (type === 'income' ? 'text-emerald-700 dark:text-[#70E0B0] font-bold' : 'text-rose-700 dark:text-[#FDA4AF] font-bold') : 'text-zinc-500 dark:text-[#BAC8E6] font-semibold'}`}>
                 {cat.name}
               </Text>
               {hasBudget && <Text className="text-[11px] font-bold text-brand dark:text-brand">Zarf</Text>}
@@ -510,10 +510,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       {!!selectionError && <Text className="text-xs text-rose-500 font-semibold mb-3">{selectionError}</Text>}
 
       <TouchableOpacity
-        className="flex-row items-center justify-between rounded-xl bg-zinc-100 dark:bg-[#22332D] px-3 py-2.5 mb-3"
+        className="flex-row items-center justify-between rounded-xl bg-zinc-100 dark:bg-[#1E2A48] px-3 py-2.5 mb-3"
         onPress={() => setShowDetails((current) => !current)}
       >
-        <Text className="text-[13px] font-semibold text-zinc-600 dark:text-[#A9BDB2]">İşlem Tarihi</Text>
+        <Text className="text-[13px] font-semibold text-zinc-600 dark:text-[#BAC8E6]">İşlem Tarihi</Text>
         <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color="#71717A" />
       </TouchableOpacity>
 
@@ -524,15 +524,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <TouchableOpacity
             className={`py-2 px-3 rounded-xl border ${
               isToday(txDate)
-                ? 'bg-teal-50 border-brand'
-                : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                ? 'bg-brand-soft dark:bg-brand-soft border-brand'
+                : 'bg-zinc-100 dark:bg-[#1E2A48] border-transparent'
             }`}
             onPress={setToday}
             activeOpacity={0.75}
           >
             <Text
               className={`text-xs ${
-                isToday(txDate) ? 'font-bold text-teal-800' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+                isToday(txDate) ? 'font-bold text-brand' : 'font-semibold text-zinc-500 dark:text-[#BAC8E6]'
               }`}
             >
               Bugün
@@ -541,15 +541,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <TouchableOpacity
             className={`py-2 px-3 rounded-xl border ${
               isYesterday(txDate)
-                ? 'bg-teal-50 border-brand'
-                : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                ? 'bg-brand-soft dark:bg-brand-soft border-brand'
+                : 'bg-zinc-100 dark:bg-[#1E2A48] border-transparent'
             }`}
             onPress={setYesterday}
             activeOpacity={0.75}
           >
             <Text
               className={`text-xs ${
-                isYesterday(txDate) ? 'font-bold text-teal-800' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+                isYesterday(txDate) ? 'font-bold text-brand' : 'font-semibold text-zinc-500 dark:text-[#BAC8E6]'
               }`}
             >
               Dün
@@ -557,14 +557,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row items-center bg-zinc-100 dark:bg-[#22332D] rounded-xl px-1 py-0.5">
+        <View className="flex-row items-center bg-zinc-100 dark:bg-[#1E2A48] rounded-xl px-1 py-0.5">
           <TouchableOpacity
             className="w-7 h-7 rounded-full items-center justify-center"
             onPress={() => stepDay(-1)}
           >
             <Ionicons name="chevron-back" size={16} color="#18181B" />
           </TouchableOpacity>
-          <Text className="text-xs font-bold text-zinc-900 dark:text-[#EAF2EE] px-2">
+          <Text className="text-xs font-bold text-zinc-900 dark:text-[#F5F7FF] px-2">
             {txDate.toLocaleDateString(getFormattingLocale(), { day: 'numeric', month: 'short' })}
           </Text>
           <TouchableOpacity

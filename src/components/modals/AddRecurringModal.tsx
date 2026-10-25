@@ -73,17 +73,17 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
       }
     >
       {/* Type Selector Tabs */}
-      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-2xl p-1 mb-4">
+      <View className="flex-row bg-zinc-100 dark:bg-[#1E2A48] rounded-2xl p-1 mb-4">
         <TouchableOpacity
           className={`flex-1 py-2.5 items-center rounded-[13px] ${
-            type === 'expense' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            type === 'expense' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => setType('expense')}
           activeOpacity={0.8}
         >
           <Text
             className={`text-[13px] ${
-              type === 'expense' ? 'text-rose-700 dark:text-[#FDA4AF] font-bold' : 'text-zinc-500 dark:text-[#A9BDB2] font-semibold'
+              type === 'expense' ? 'text-rose-700 dark:text-[#FDA4AF] font-bold' : 'text-zinc-500 dark:text-[#BAC8E6] font-semibold'
             }`}
           >
             Düzenli Gider
@@ -92,14 +92,14 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
 
         <TouchableOpacity
           className={`flex-1 py-2.5 items-center rounded-[13px] ${
-            type === 'income' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            type === 'income' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => setType('income')}
           activeOpacity={0.8}
         >
           <Text
             className={`text-[13px] ${
-              type === 'income' ? 'text-emerald-700 dark:text-[#70E0B0] font-bold' : 'text-zinc-500 dark:text-[#A9BDB2] font-semibold'
+              type === 'income' ? 'text-emerald-700 dark:text-[#70E0B0] font-bold' : 'text-zinc-500 dark:text-[#BAC8E6] font-semibold'
             }`}
           >
             Düzenli Gelir
@@ -135,7 +135,7 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
       />
 
       {/* Frequency Selector Chips */}
-      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Tekrarlanma Periyodu</Text>
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8] mb-2">Tekrarlanma Periyodu</Text>
       <View className="flex-row gap-2 mb-4">
         {[
           { id: 'daily', label: 'Her Gün' },
@@ -148,15 +148,15 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
               key={item.id}
               className={`flex-1 py-2.5 items-center rounded-2xl border-[1.5px] ${
                 isSelected
-                  ? 'bg-teal-50 border-brand'
-                  : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                  ? 'bg-brand-soft dark:bg-brand-soft border-brand'
+                  : 'bg-zinc-100 dark:bg-[#1E2A48] border-transparent'
               }`}
               onPress={() => setFrequency(item.id as any)}
               activeOpacity={0.75}
             >
               <Text
                 className={`text-[13px] ${
-                  isSelected ? 'text-brand dark:text-brand font-bold' : 'text-zinc-500 dark:text-[#A9BDB2] font-semibold'
+                  isSelected ? 'text-brand dark:text-brand font-bold' : 'text-zinc-500 dark:text-[#BAC8E6] font-semibold'
                 }`}
               >
                 {item.label}

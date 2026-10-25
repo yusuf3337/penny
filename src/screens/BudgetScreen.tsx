@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
@@ -14,13 +15,17 @@ import {
 } from '../utils/formatters';
 
 import { usePremium } from '../context/PremiumContext';
+import { CategoryBudget } from '../types';
+import { useLocale } from '../context/LocaleContext';
 
 interface BudgetScreenProps {
   onOpenAddModal: () => void;
+  onEditBudget: (budget: CategoryBudget) => void;
 }
 
-export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) => {
+export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEditBudget }) => {
   const styles = useThemedStyles(lightStyles);
+  const { t } = useLocale();
   const { budgets, transactions, totalBudgetedSpending } = useData();
   const { isPro, openPaywall } = usePremium();
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
@@ -121,7 +126,7 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
       </View>
 
       {/* Top Bütçelenen Harcama Summary Card */}
-      <View style={styles.summaryCard}>
+      <Card style={[styles.summaryCard, { borderTopColor: COLORS.primary, borderTopWidth: 4 }]}>
         <Text style={styles.monthLabel}>{currentMonthName} · Bütçe Durumu</Text>
 
         <View style={styles.summaryRow}>
@@ -143,14 +148,14 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
             style={[
               styles.progressBar,
               {
-                width: `${Math.max(overallPercentage, 4)}%`,
+                width: `${overallPercentage}%`,
                 backgroundColor:
                   overallPercentage > 90 ? COLORS.rose : COLORS.emerald,
               },
             ]}
           />
         </View>
-      </View>
+      </Card>
 
       {/* Category Budgets / Sanal Zarf Yöntemi */}
       <View style={styles.sectionHeader}>
@@ -159,14 +164,14 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
 
       {/* Category Budget Items */}
       {budgets.length === 0 ? (
-        <View style={styles.emptyCard}>
+        <Card style={styles.emptyCard}>
           <Ionicons name="mail-outline" size={36} color={COLORS.subtleText} />
           <Text style={styles.emptyText}>Henüz sanal zarf bütçesi eklenmedi.</Text>
           <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
-            <Ionicons name="add" size={16} color="#FFF" />
-            <Text style={styles.emptyAddBtnText}>İlk Zarf Bütçeni Oluştur</Text>
+            <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
+            <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]}>İlk Zarf Bütçeni Oluştur</Text>
           </TouchableOpacity>
-        </View>
+        </Card>
       ) : (
         budgets.map((b) => {
           const usedAmt = getCategoryUsed(b.categoryName);
@@ -178,34 +183,44 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
           const isOverLimit = usedAmt > b.allocatedAmount;
           const remaining = Math.max(b.allocatedAmount - usedAmt, 0);
 
+          const accent = b.color || COLORS.primary;
           return (
-            <View key={b.id} style={styles.budgetCard}>
+            <Card key={b.id} style={[styles.budgetCard, { borderLeftWidth: 4, borderLeftColor: accent }]}>
               <View style={styles.cardTopRow}>
                 <View style={styles.catWrap}>
                   <View
                     style={[
                       styles.iconCircle,
-                      { backgroundColor: b.color ? `${b.color}15` : COLORS.primaryLight },
+                      { backgroundColor: `${accent}22` },
                     ]}
                   >
                     <Ionicons
                       name={(b.iconName as any) || 'mail-outline'}
                       size={18}
-                      color={b.color || COLORS.primary}
+                      color={accent}
                     />
                   </View>
-                  <View>
+                  <View style={styles.catTextWrap}>
                     <Text style={styles.catName}>{b.categoryName} Zarfı</Text>
                     <Text style={styles.badgeText}>
                       Kalan: <Text style={{ fontWeight: '700', color: isOverLimit ? COLORS.rose : COLORS.emeraldText }}>{formatCurrency(remaining)}</Text>
                     </Text>
                   </View>
                 </View>
+                <TouchableOpacity
+                  style={[styles.editButton, { backgroundColor: `${accent}22` }]}
+                  onPress={() => onEditBudget(b)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t('Zarfı Düzenle')}: ${b.categoryName}`}
+                  activeOpacity={0.72}
+                >
+                  <Ionicons name="create-outline" size={18} color={accent} />
+                </TouchableOpacity>
+              </View>
 
-                <Text style={styles.amountsText}>
-                  {formatCurrency(usedAmt)}{' '}
-                  <Text style={styles.allocatedText}>/ {formatCurrency(b.allocatedAmount)}</Text>
-                </Text>
+              <View style={styles.amountRow}>
+                <Text style={styles.amountsText}>{formatCurrency(usedAmt)}</Text>
+                <Text style={styles.allocatedText}>/ {formatCurrency(b.allocatedAmount)}</Text>
               </View>
 
               {/* Progress Bar */}
@@ -214,7 +229,7 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
                   style={[
                     styles.catProgressBar,
                     {
-                      width: `${Math.max(catPct, 4)}%`,
+                      width: `${catPct}%`,
                       backgroundColor: isOverLimit
                         ? COLORS.rose
                         : catPct > 80
@@ -224,7 +239,7 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal }) =>
                   ]}
                 />
               </View>
-            </View>
+            </Card>
           );
         })
       )}
@@ -409,6 +424,23 @@ const lightStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+  },
+  catTextWrap: { flex: 1 },
+  editButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 10,
   },
   iconCircle: {
     width: 36,
@@ -517,7 +549,7 @@ const lightStyles = StyleSheet.create({
     gap: 8,
     backgroundColor: LIGHT_COLORS.primaryLight,
     borderWidth: 1,
-    borderColor: '#CAD8D2',
+    borderColor: '#BFCDE8',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,

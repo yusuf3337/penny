@@ -74,26 +74,26 @@ export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = (
       }
     >
       {/* Current Progress HeroUI Card */}
-      <View className="bg-zinc-100 dark:bg-[#22332D] rounded-[20px] p-4 mb-4">
+      <View className="bg-zinc-100 dark:bg-[#1E2A48] rounded-[20px] p-4 mb-4">
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-1 items-center">
-            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2] mb-0.5">Şu An Biriken</Text>
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6] mb-0.5">Şu An Biriken</Text>
             <Text className="text-sm font-extrabold text-brand dark:text-brand">{formatCurrency(goal.savedAmount)}</Text>
           </View>
-          <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2C4039]" />
+          <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2B3A5D]" />
           <View className="flex-1 items-center">
-            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2] mb-0.5">Hedef Tutar</Text>
-            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#EAF2EE]">{formatCurrency(goal.targetAmount)}</Text>
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6] mb-0.5">Hedef Tutar</Text>
+            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#F5F7FF]">{formatCurrency(goal.targetAmount)}</Text>
           </View>
-          <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2C4039]" />
+          <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2B3A5D]" />
           <View className="flex-1 items-center">
-            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2] mb-0.5">Kalan</Text>
-            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#EAF2EE]">{formatCurrency(goal.remainingAmount)}</Text>
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6] mb-0.5">Kalan</Text>
+            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#F5F7FF]">{formatCurrency(goal.remainingAmount)}</Text>
           </View>
         </View>
 
         {/* Progress bar */}
-        <View className="h-1.5 bg-zinc-200 dark:bg-[#2C4039] rounded-full overflow-hidden">
+        <View className="h-1.5 bg-zinc-200 dark:bg-[#2B3A5D] rounded-full overflow-hidden">
           <View
             className="h-full bg-brand rounded-full"
             style={{ width: `${Math.max(goal.percentage || 0, 4)}%` }}

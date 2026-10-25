@@ -139,7 +139,7 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
       }
     >
       {/* Popüler Marka Kısayolları */}
-      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Hazır Servis Seçin</Text>
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8] mb-2">Hazır Servis Seçin</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -153,8 +153,8 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
               key={p.name}
               className={`flex-row items-center gap-1.5 px-3 py-2 rounded-2xl border-[1.5px] mr-2 ${
                 isSelected
-                  ? 'bg-zinc-100 dark:bg-[#22332D]'
-                  : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                  ? 'bg-zinc-100 dark:bg-[#1E2A48]'
+                  : 'bg-zinc-100 dark:bg-[#1E2A48] border-transparent'
               }`}
               style={isSelected ? { borderColor: p.color, backgroundColor: `${p.color}15` } : {}}
               onPress={() => applyPreset(p)}
@@ -163,7 +163,7 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
               <Ionicons name={p.icon as any} size={16} color={p.color} />
               <Text
                 className={`text-xs ${
-                  isSelected ? 'font-bold' : 'font-semibold text-zinc-900 dark:text-[#EAF2EE]'
+                  isSelected ? 'font-bold' : 'font-semibold text-zinc-900 dark:text-[#F5F7FF]'
                 }`}
                 style={isSelected ? { color: p.color } : {}}
               >
@@ -187,18 +187,18 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
       />
 
       {/* HeroUI Segmented Tabs for Cycle */}
-      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Ödeme Periyodu</Text>
-      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-2xl p-1 mb-4">
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8] mb-2">Ödeme Periyodu</Text>
+      <View className="flex-row bg-zinc-100 dark:bg-[#1E2A48] rounded-2xl p-1 mb-4">
         <TouchableOpacity
           className={`flex-1 py-2.5 items-center rounded-[13px] ${
-            cycle === 'monthly' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            cycle === 'monthly' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => setCycle('monthly')}
           activeOpacity={0.8}
         >
           <Text
             className={`text-[13px] ${
-              cycle === 'monthly' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              cycle === 'monthly' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#BAC8E6]'
             }`}
           >
             Aylık Ödeme
@@ -207,14 +207,14 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
 
         <TouchableOpacity
           className={`flex-1 py-2.5 items-center rounded-[13px] ${
-            cycle === 'yearly' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            cycle === 'yearly' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => setCycle('yearly')}
           activeOpacity={0.8}
         >
           <Text
             className={`text-[13px] ${
-              cycle === 'yearly' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              cycle === 'yearly' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#BAC8E6]'
             }`}
           >
             Yıllık Ödeme
@@ -236,18 +236,18 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
       />
 
       {/* HeroUI Segmented Tabs for Account */}
-      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Ödeme Hesabı</Text>
-      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-2xl p-1 mb-4">
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8] mb-2">Ödeme Hesabı</Text>
+      <View className="flex-row bg-zinc-100 dark:bg-[#1E2A48] rounded-2xl p-1 mb-4">
         <TouchableOpacity
           className={`flex-1 py-2.5 items-center rounded-[13px] ${
-            accountType === 'bank' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            accountType === 'bank' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => setAccountType('bank')}
           activeOpacity={0.8}
         >
           <Text
             className={`text-[13px] ${
-              accountType === 'bank' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              accountType === 'bank' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#BAC8E6]'
             }`}
           >
             Banka Hesabı
@@ -256,14 +256,14 @@ export const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({
 
         <TouchableOpacity
           className={`flex-1 py-2.5 items-center rounded-[13px] ${
-            accountType === 'cash' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            accountType === 'cash' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => setAccountType('cash')}
           activeOpacity={0.8}
         >
           <Text
             className={`text-[13px] ${
-              accountType === 'cash' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#A9BDB2]'
+              accountType === 'cash' ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-500 dark:text-[#BAC8E6]'
             }`}
           >
             Nakit Cüzdan

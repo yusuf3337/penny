@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
@@ -80,7 +81,7 @@ export const TransactionsScreen = () => {
           const accountIconName = isCash ? 'wallet-outline' : 'card-outline';
 
           return (
-            <View style={styles.itemCard}>
+            <Card style={styles.itemCard}>
               <View style={styles.itemMain}>
                 <View style={styles.titleRow}>
                   <Text style={styles.itemTitle}>{item.title}</Text>
@@ -111,7 +112,7 @@ export const TransactionsScreen = () => {
                   <Ionicons name="trash-outline" size={16} color={COLORS.expense} />
                 </TouchableOpacity>
               </View>
-            </View>
+            </Card>
           );
         }}
       />
@@ -139,8 +140,8 @@ const lightStyles = StyleSheet.create({
     borderColor: LIGHT_COLORS.cardBorder,
   },
   filterChipActive: {
-    backgroundColor: '#174235',
-    borderColor: '#174235',
+    backgroundColor: LIGHT_COLORS.primary,
+    borderColor: LIGHT_COLORS.primary,
   },
   filterText: {
     fontSize: 12,

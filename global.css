@@ -4,7 +4,7 @@
 
 @layer theme {
   :root {
-    @variant light { --color-brand: #2563A6; --color-brand-soft: #E7F0FA; }
-    @variant dark { --color-brand: #80BAF0; --color-brand-soft: #1C344B; }
+    @variant light { --color-brand: #285EDD; --color-brand-soft: #E6EDFF; --color-brand-foreground: #FFFFFF; }
+    @variant dark { --color-brand: #8DB4FF; --color-brand-soft: #263D73; --color-brand-foreground: #0B1530; }
   }
 }

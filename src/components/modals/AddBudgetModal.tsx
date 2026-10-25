@@ -1,5 +1,5 @@
 import { getCurrencySymbol } from '../../context/CurrencyContext';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,14 +10,17 @@ import { usePremium } from '../../context/PremiumContext';
 import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
 import { HeroUIButton } from '../common/HeroUIButton';
+import { CategoryBudget } from '../../types';
+import { COLORS } from '../../constants/colors';
 
 interface AddBudgetModalProps {
   visible: boolean;
+  initialBudget?: CategoryBudget | null;
   onClose: () => void;
-  onSave: (categoryName: string, allocatedAmount: number, iconName?: string, color?: string) => Promise<void> | void;
+  onSave: (categoryName: string, allocatedAmount: number, iconName?: string, color?: string, budgetId?: string) => Promise<void> | void;
 }
 
-export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose, onSave }) => {
+export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, initialBudget, onClose, onSave }) => {
   const { categories: contextCategories, budgets, handleAddCategory } = useData();
   const { isPro, openPaywall } = usePremium();
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -28,6 +31,16 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
   const [showCategoryInput, setShowCategoryInput] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const pendingPaywall = useRef<'custom_category' | 'budget_limit' | null>(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    setSelectedCategory(initialBudget?.categoryName ?? '');
+    setAmountInput(initialBudget ? formatNumberInput(String(initialBudget.allocatedAmount)) : '');
+    setError('');
+    setCategoryError('');
+    setNewCategoryName('');
+    setShowCategoryInput(false);
+  }, [visible, initialBudget?.id]);
 
   const expenseCategories = contextCategories && contextCategories.length > 0
     ? contextCategories.filter((c) => c.type === 'expense')
@@ -85,7 +98,11 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
       return;
     }
 
-    if (!isPro && budgets.length >= 3 && !budgets.some((budget) => budget.categoryName.trim().toLocaleLowerCase('tr-TR') === selectedCategory.trim().toLocaleLowerCase('tr-TR'))) {
+    if (budgets.some((budget) => budget.id !== initialBudget?.id && budget.categoryName.trim().toLocaleLowerCase('tr-TR') === selectedCategory.trim().toLocaleLowerCase('tr-TR'))) {
+      setCategoryError('Bu kategori için zaten bir zarf var.');
+      return;
+    }
+    if (!initialBudget && !isPro && budgets.length >= 3) {
       pendingPaywall.current = 'budget_limit';
       onClose();
       return;
@@ -93,7 +110,7 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
 
     setIsSaving(true);
     try {
-      await onSave(selectedCategory, allocated, catObj.icon, catObj.color);
+      await onSave(selectedCategory, allocated, catObj.icon, catObj.color, initialBudget?.id);
       setAmountInput('');
       setSelectedCategory('');
       setError('');
@@ -115,7 +132,7 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
         pendingPaywall.current = null;
         if (reason) openPaywall(reason);
       }}
-      title="Bütçe Limiti Belirle"
+      title={initialBudget ? 'Zarfı Düzenle' : 'Bütçe Limiti Belirle'}
       subtitle="Kategoriye harcama sınırı koyun, bütçenizi aşmayın."
       badge={{ text: 'ZARF BÜTÇESİ', color: '#0D9488', bg: '#CCFBF1' }}
       footer={
@@ -127,21 +144,21 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
           disabled={isSaving}
           isLoading={isSaving}
         >
-          Bütçeyi Kaydet
+          {initialBudget ? 'Değişiklikleri Kaydet' : 'Bütçeyi Kaydet'}
         </HeroUIButton>
       }
     >
       {/* Category selection */}
       <View className="flex-row items-center justify-between mb-2.5">
-        <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8]">Kategori Seçin</Text>
+        <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8]">Kategori Seçin</Text>
         <TouchableOpacity onPress={openCategoryCreation} className="flex-row items-center gap-1" activeOpacity={0.7}>
-          <Ionicons name={isPro ? 'add' : 'lock-closed-outline'} size={15} color="#0D9488" />
+          <Ionicons name={isPro ? 'add' : 'lock-closed-outline'} size={15} color={COLORS.primary} />
           <Text className="text-xs font-bold text-brand dark:text-brand">Yeni Kategori</Text>
           {!isPro && <Text className="text-[10px] font-bold text-brand dark:text-brand">PRO</Text>}
         </TouchableOpacity>
       </View>
       {showCategoryInput && (
-        <View className="mb-3 rounded-2xl bg-zinc-50 dark:bg-[#22332D] p-3">
+        <View className="mb-3 rounded-2xl bg-zinc-50 dark:bg-[#1E2A48] p-3">
           <HeroUIInput
             label="Kategori Adı"
             placeholder="Örn: Sağlık, Spor, Hobiler..."
@@ -156,11 +173,11 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
             onSubmitEditing={createCategory}
           />
           <View className="flex-row gap-2">
-            <TouchableOpacity className="flex-1 items-center justify-center rounded-xl bg-zinc-200 dark:bg-[#2C4039] py-2.5" onPress={() => { setShowCategoryInput(false); setCategoryError(''); }}>
-              <Text className="text-sm font-semibold text-zinc-700 dark:text-[#CCDCD2]">Vazgeç</Text>
+            <TouchableOpacity className="flex-1 items-center justify-center rounded-xl bg-zinc-200 dark:bg-[#2B3A5D] py-2.5" onPress={() => { setShowCategoryInput(false); setCategoryError(''); }}>
+              <Text className="text-sm font-semibold text-zinc-700 dark:text-[#D5E0F8]">Vazgeç</Text>
             </TouchableOpacity>
             <TouchableOpacity className="flex-1 items-center justify-center rounded-xl bg-brand py-2.5" onPress={createCategory} disabled={isSaving}>
-              <Text className="text-sm font-semibold text-white">Kategoriyi Oluştur</Text>
+              <Text className="text-sm font-semibold text-brand-foreground">Kategoriyi Oluştur</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -173,26 +190,26 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
               key={cat.name}
               className={`flex-row items-center gap-1.5 py-2 px-3 rounded-[14px] border-[1.5px] ${
                 isSelected
-                  ? 'border-brand bg-teal-50/70 shadow-sm shadow-teal-500/10'
-                  : 'border-transparent bg-zinc-100 dark:bg-[#22332D]'
+                  ? 'border-brand bg-brand-soft dark:bg-brand-soft shadow-sm'
+                  : 'border-transparent bg-zinc-100 dark:bg-[#1E2A48]'
               }`}
               onPress={() => { setSelectedCategory(cat.name); setCategoryError(''); }}
               activeOpacity={0.75}
             >
               <View
                 className={`w-6 h-6 rounded-full items-center justify-center ${
-                  isSelected ? 'bg-white dark:bg-[#182521]' : 'bg-zinc-200 dark:bg-[#2C4039]/60'
+                  isSelected ? 'bg-white dark:bg-[#17213A]' : 'bg-zinc-200 dark:bg-[#2B3A5D]/60'
                 }`}
               >
                 <Ionicons
                   name={cat.icon as any}
                   size={15}
-                  color={isSelected ? '#0D9488' : '#71717A'}
+                  color={isSelected ? COLORS.primary : COLORS.mutedText}
                 />
               </View>
               <Text
                 className={`text-[13px] ${
-                  isSelected ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-700 dark:text-[#C2D4C8]'
+                  isSelected ? 'font-bold text-brand dark:text-brand' : 'font-semibold text-zinc-700 dark:text-[#D5E0F8]'
                 }`}
               >
                 {cat.name}
@@ -215,7 +232,9 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({ visible, onClose
           if (error) setError('');
         }}
         errorMessage={error}
-        description="Bu kategorideki harcamalar zarfınızdan otomatik düşer."
+        description={initialBudget
+          ? 'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.'
+          : 'Bu kategorideki harcamalar zarfınızdan otomatik düşer.'}
       />
     </HeroUIModal>
   );

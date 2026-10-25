@@ -1,8 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Modal, View, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Animated, Easing } from 'react-native';
-import { Text } from './LocalizedPrimitives';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Card } from 'heroui-native/card';
+import { CloseButton } from 'heroui-native/close-button';
 import { useTheme } from '../../context/ThemeContext';
+import { localize } from '../../context/LocaleContext';
+import { Text } from './LocalizedPrimitives';
 
 interface HeroUIModalProps {
   isOpen: boolean;
@@ -11,174 +13,57 @@ interface HeroUIModalProps {
   dismissible?: boolean;
   title: string;
   subtitle?: string;
-  badge?: {
-    text: string;
-    color?: string;
-    bg?: string;
-  };
+  badge?: { text: string; color?: string; bg?: string };
   children: React.ReactNode;
   footer?: React.ReactNode;
   scrollable?: boolean;
 }
 
 export const HeroUIModal: React.FC<HeroUIModalProps> = ({
-  isOpen,
-  onClose,
-  onDismiss,
-  dismissible = true,
-  title,
-  subtitle,
-  badge,
-  children,
-  footer,
-  scrollable = true,
+  isOpen, onClose, onDismiss, dismissible = true, title, subtitle, badge,
+  children, footer, scrollable = true,
 }) => {
   const { colors } = useTheme();
-  const [modalVisible, setModalVisible] = useState(isOpen);
-  const backdropAnim = useRef(new Animated.Value(0)).current;
-  const sheetAnim = useRef(new Animated.Value(400)).current;
-
-  useEffect(() => {
-    if (isOpen) {
-      setModalVisible(true);
-      // Soft fade-in for backdrop (NO SLIDING FROM BOTTOM)
-      Animated.timing(backdropAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-
-      // Smooth slide-up for sheet card
-      Animated.timing(sheetAnim, {
-        toValue: 0,
-        duration: 260,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    } else {
-      handleCloseAnimation();
-    }
-  }, [isOpen]);
-
-  const handleCloseAnimation = () => {
-    Animated.parallel([
-      Animated.timing(backdropAnim, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: true,
-      }),
-      Animated.timing(sheetAnim, {
-        toValue: 400,
-        duration: 220,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setModalVisible(false);
-    });
-  };
-
-  const handleDismiss = () => {
-    if (!dismissible) return;
-    handleCloseAnimation();
-    setTimeout(onClose, 200);
-  };
-
   return (
     <Modal
-      visible={modalVisible}
+      visible={isOpen}
       transparent
-      animationType="none"
-      onRequestClose={handleDismiss}
+      animationType="slide"
+      onRequestClose={() => { if (dismissible) onClose(); }}
       onDismiss={onDismiss}
       statusBarTranslucent
+      accessibilityViewIsModal
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 justify-end"
-      >
-        {/* Soft static backdrop fade - doesn't slide from bottom */}
-        <TouchableWithoutFeedback onPress={handleDismiss}>
-          <Animated.View
-            className="absolute inset-0 bg-[#102923]/60"
-            style={{ opacity: backdropAnim }}
-          />
-        </TouchableWithoutFeedback>
-
-        {/* HeroUI Bottom Sheet Card - slides smoothly */}
-        <Animated.View
-          className="bg-[#FAFBF9] dark:bg-[#182521] rounded-t-[28px] max-h-[88%] pb-6 border-t border-white dark:border-[#2C4039] shadow-2xl"
-          style={{ transform: [{ translateY: sheetAnim }] }}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end">
+        <Pressable className="absolute inset-0 bg-[#080F23]/65" onPress={() => { if (dismissible) onClose(); }} accessibilityLabel={localize('Pencereyi kapat')} />
+        <Card
+          className="max-h-[90%] rounded-t-[30px] rounded-b-none p-0 overflow-hidden"
+          style={{ backgroundColor: colors.card, borderTopWidth: 1, borderColor: colors.cardBorder }}
         >
-          {/* HeroUI Drag Handle Indicator */}
-          <View className="items-center pt-3 pb-2">
-            <View className="w-10 h-1 rounded-full bg-[#B8C9C0] dark:bg-[#4C665B]" />
-          </View>
-
-          {/* HeroUI Header */}
-          <View className="flex-row items-start justify-between px-6 pt-1 pb-3.5">
+          <View className="items-center pt-3 pb-1"><View className="h-1 w-10 rounded-full" style={{ backgroundColor: colors.cardBorderHover }} /></View>
+          <Card.Header className="flex-row items-start justify-between px-6 pt-3 pb-4">
             <View className="flex-1 mr-3">
-              <View className="flex-row items-center gap-2 flex-wrap">
-                <Text className="text-[22px] font-bold text-[#182B29] dark:text-[#EAF2EE] tracking-tight">
-                  {title}
-                </Text>
-                {badge && (
-                  <View
-                    className="px-2 py-0.5 rounded-[10px]"
-                    style={{ backgroundColor: colors.primaryLight }}
-                  >
-                    <Text
-                      className="text-[11px] font-bold"
-                      style={{ color: colors.primary }}
-                    >
-                      {badge.text}
-                    </Text>
-                  </View>
-                )}
+              <View className="flex-row items-center flex-wrap gap-2">
+                <Text className="text-[22px] font-bold tracking-tight" style={{ color: colors.foreground }}>{title}</Text>
+                {badge && <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: badge.bg || colors.primaryLight }}>
+                  <Text className="text-[10px] font-bold tracking-wide" style={{ color: badge.color || colors.primary }}>{badge.text}</Text>
+                </View>}
               </View>
-              {subtitle && (
-                <Text className="text-[13px] text-[#667A73] dark:text-[#A9BDB2] mt-1 leading-snug">
-                  {subtitle}
-                </Text>
-              )}
+              {subtitle && <Text className="text-[13px] leading-[19px] mt-1" style={{ color: colors.mutedText }}>{subtitle}</Text>}
             </View>
-
-            {/* Circular HeroUI Close Button */}
-            {dismissible && <TouchableOpacity
-              className="w-9 h-9 rounded-xl bg-[#EEF2EF] dark:bg-[#22332D] items-center justify-center active:bg-[#E1E9E5]"
-              onPress={handleDismiss}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="close" size={18} color="#667A73" />
-            </TouchableOpacity>}
-          </View>
-
-          {/* HeroUI Divider */}
-          <View className="h-[1px] bg-[#E1E9E5] dark:bg-[#2C4039]" />
-
-          {/* Body Content */}
-          {scrollable ? (
-            <ScrollView
-              className="shrink"
-              contentContainerClassName="px-6 pt-4 pb-3"
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {children}
-            </ScrollView>
-          ) : (
-            <View className="px-6 pt-4 pb-3">{children}</View>
-          )}
-
-          {/* Optional Footer */}
-          {footer && (
-            <View className="bg-white dark:bg-[#182521]">
-              <View className="h-[1px] bg-[#E1E9E5] dark:bg-[#2C4039]" />
-              <View className="px-6 pt-3.5 pb-2">{footer}</View>
-            </View>
-          )}
-        </Animated.View>
+            {dismissible && <CloseButton onPress={onClose} accessibilityLabel={localize('Pencereyi kapat')} className="rounded-xl" />}
+          </Card.Header>
+          <View className="h-px" style={{ backgroundColor: colors.cardBorder }} />
+          {scrollable ? <ScrollView
+            className="shrink"
+            contentContainerClassName="px-6 pt-4 pb-5"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >{children}</ScrollView> : <View className="px-6 pt-4 pb-5">{children}</View>}
+          {footer && <Card.Footer className="px-6 pt-4 pb-6" style={{ borderTopWidth: 1, borderTopColor: colors.cardBorder, backgroundColor: colors.card }}>
+            {footer}
+          </Card.Footer>}
+        </Card>
       </KeyboardAvoidingView>
     </Modal>
   );
