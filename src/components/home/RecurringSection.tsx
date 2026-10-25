@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
@@ -46,7 +47,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
   };
 
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.header}>
         <View>
           <Text style={styles.subLabel}>DÜZENLİ FİNANS HAREKETLERİ</Text>
@@ -90,7 +91,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
                 onPress={() => handleExecutePress(item)}
               >
                 <Ionicons name="flash-outline" size={14} color={COLORS.primaryForeground} />
-                <Text style={styles.executeBtnText}>Öde/Ekle</Text>
+                <Text style={[styles.executeBtnText, { color: COLORS.primaryForeground }]}>Öde/Ekle</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -104,7 +105,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
           </View>
         ))
       )}
-    </View>
+    </Card>
   );
 };
 

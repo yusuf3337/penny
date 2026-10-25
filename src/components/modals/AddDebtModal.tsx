@@ -64,10 +64,10 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
       }
     >
       {/* HeroUI Segmented Tabs for Debt Type */}
-      <View className="flex-row bg-zinc-100 dark:bg-[#22332D] rounded-[18px] p-1 mb-4 gap-1.5">
+      <View className="flex-row bg-zinc-100 dark:bg-[#1E2A48] rounded-[18px] p-1 mb-4 gap-1.5">
         <TouchableOpacity
           className={`flex-1 flex-row items-center gap-2 py-2.5 px-3 rounded-[14px] ${
-            type === 'given' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            type === 'given' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => setType('given')}
           activeOpacity={0.8}
@@ -80,18 +80,18 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
           <View>
             <Text
               className={`text-[13px] font-bold ${
-                type === 'given' ? 'text-emerald-700 dark:text-[#70E0B0]' : 'text-zinc-500 dark:text-[#A9BDB2]'
+                type === 'given' ? 'text-emerald-700 dark:text-[#70E0B0]' : 'text-zinc-500 dark:text-[#BAC8E6]'
               }`}
             >
               Alacaklıyım
             </Text>
-            <Text className="text-[10px] text-zinc-400 dark:text-[#82978B] mt-0.5">Bana Borçlu</Text>
+            <Text className="text-[10px] text-zinc-400 dark:text-[#93A5C8] mt-0.5">Bana Borçlu</Text>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
           className={`flex-1 flex-row items-center gap-2 py-2.5 px-3 rounded-[14px] ${
-            type === 'taken' ? 'bg-white dark:bg-[#182521] shadow-sm' : 'bg-transparent'
+            type === 'taken' ? 'bg-white dark:bg-[#17213A] shadow-sm' : 'bg-transparent'
           }`}
           onPress={() => setType('taken')}
           activeOpacity={0.8}
@@ -104,12 +104,12 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ visible, onClose, on
           <View>
             <Text
               className={`text-[13px] font-bold ${
-                type === 'taken' ? 'text-rose-700 dark:text-[#FDA4AF]' : 'text-zinc-500 dark:text-[#A9BDB2]'
+                type === 'taken' ? 'text-rose-700 dark:text-[#FDA4AF]' : 'text-zinc-500 dark:text-[#BAC8E6]'
               }`}
             >
               Borçluyum
             </Text>
-            <Text className="text-[10px] text-zinc-400 dark:text-[#82978B] mt-0.5">Ben Borçluyum</Text>
+            <Text className="text-[10px] text-zinc-400 dark:text-[#93A5C8] mt-0.5">Ben Borçluyum</Text>
           </View>
         </TouchableOpacity>
       </View>

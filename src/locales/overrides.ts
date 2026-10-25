@@ -1,6 +1,9 @@
 // Reviewed financial and navigation terms. General screen copy lives in translations.json.
 export const OVERRIDES: Record<string, Record<string, string>> = {
   en: {
+    'Zarfı Düzenle': 'Edit envelope',
+    'Bu kategori için zaten bir zarf var.': 'An envelope already exists for this category.',
+    'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'If you change the category, spending is recalculated for the new category.',
     'Seçili dil': 'Selected language',
     '{0} Aktif · {1} Tamamlanan': '{0} active · {1} completed',
     'Genel durum': 'Overview',
@@ -36,6 +39,10 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': ' receivable records will be created.',
   },
   de: {
+    'Zarfı Düzenle': 'Umschlag bearbeiten',
+    'Bu kategori için zaten bir zarf var.': 'Für diese Kategorie gibt es bereits einen Umschlag.',
+    'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'Wenn Sie die Kategorie ändern, werden die Ausgaben für die neue Kategorie neu berechnet.',
+    'Bütçeyi Kaydet': 'Budget speichern',
     'Seçili dil': 'Ausgewählte Sprache',
     '{0} Aktif · {1} Tamamlanan': '{0} aktiv · {1} abgeschlossen',
     'Hedefler': 'Ziele',
@@ -76,6 +83,10 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': ' Personen erhalten einen Forderungseintrag.',
   },
   fr: {
+    'Zarfı Düzenle': 'Modifier l’enveloppe',
+    'Bu kategori için zaten bir zarf var.': 'Une enveloppe existe déjà pour cette catégorie.',
+    'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'Si vous changez de catégorie, les dépenses sont recalculées pour la nouvelle catégorie.',
+    'Bütçeyi Kaydet': 'Enregistrer le budget',
     'Seçili dil': 'Langue sélectionnée',
     '{0} Aktif · {1} Tamamlanan': '{0} actifs · {1} terminés',
     'Genel durum': 'Vue d’ensemble',
@@ -115,6 +126,10 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': ' créances seront créées.',
   },
   ko: {
+    'Zarfı Düzenle': '예산 봉투 수정',
+    'Bu kategori için zaten bir zarf var.': '이 카테고리에는 이미 예산 봉투가 있습니다.',
+    'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': '카테고리를 변경하면 새 카테고리의 지출을 기준으로 다시 계산됩니다.',
+    'Bütçeyi Kaydet': '예산 저장',
     'Seçili dil': '선택한 언어',
     '{0} Aktif · {1} Tamamlanan': '진행 중 {0}개 · 완료 {1}개',
     'Genel durum': '전체 현황',
@@ -150,6 +165,10 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': '명의 받을 돈 기록이 생성됩니다.',
   },
   'zh-CN': {
+    'Zarfı Düzenle': '编辑预算类别',
+    'Bu kategori için zaten bir zarf var.': '此类别已有预算。',
+    'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': '更改类别后，支出将按新类别重新计算。',
+    'Bütçeyi Kaydet': '保存预算',
     'Seçili dil': '当前语言',
     '{0} Aktif · {1} Tamamlanan': '进行中 {0} · 已完成 {1}',
     'Genel durum': '总览',
@@ -193,6 +212,10 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': '人将创建应收款记录。',
   },
   ja: {
+    'Zarfı Düzenle': '予算封筒を編集',
+    'Bu kategori için zaten bir zarf var.': 'このカテゴリには既に予算封筒があります。',
+    'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'カテゴリを変更すると、新しいカテゴリの支出に基づいて再計算されます。',
+    'Bütçeyi Kaydet': '予算を保存',
     'Seçili dil': '選択中の言語',
     '{0} Aktif · {1} Tamamlanan': '進行中 {0} 件 · 完了 {1} 件',
     'Zaman Tüneli': '取引履歴',
@@ -228,6 +251,9 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': '人分の貸付金記録が作成されます。',
   },
   ru: {
+    'Zarfı Düzenle': 'Изменить конверт',
+    'Bu kategori için zaten bir zarf var.': 'Для этой категории уже есть конверт.',
+    'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'При смене категории расходы пересчитываются для новой категории.',
     'Seçili dil': 'Выбранный язык',
     '{0} Aktif · {1} Tamamlanan': 'Активных: {0} · завершено: {1}',
     'Hedefler': 'Цели',
@@ -263,6 +289,10 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': ': будут созданы записи о суммах к получению.',
   },
   it: {
+    'Zarfı Düzenle': 'Modifica busta',
+    'Bu kategori için zaten bir zarf var.': 'Esiste già una busta per questa categoria.',
+    'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'Se cambi categoria, le spese vengono ricalcolate per la nuova categoria.',
+    'Bütçeyi Kaydet': 'Salva budget',
     'Seçili dil': 'Lingua selezionata',
     '{0} Aktif · {1} Tamamlanan': '{0} attivi · {1} completati',
     'Hedefler': 'Obiettivi',

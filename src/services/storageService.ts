@@ -292,18 +292,29 @@ export const addOrUpdateBudget = async (
   categoryName: string,
   allocatedAmount: number,
   iconName?: string,
-  color?: string
+  color?: string,
+  budgetId?: string
 ): Promise<CategoryBudget[]> => {
   const current = await getStoredBudgets();
   const safeAllocated = parseAmountSafely(allocatedAmount);
+  if (!categoryName.trim() || safeAllocated <= 0) throw new Error('Geçersiz bütçe.');
   const existingIndex = current.findIndex(
-    (b) => b.categoryName.toLowerCase() === categoryName.toLowerCase()
+    (b) => budgetId ? b.id === budgetId : b.categoryName.trim().toLocaleLowerCase('tr-TR') === categoryName.trim().toLocaleLowerCase('tr-TR')
   );
 
+  if (budgetId && existingIndex === -1) throw new Error('Bütçe bulunamadı.');
+  if (budgetId && current.some((budget) => budget.id !== budgetId && budget.categoryName.trim().toLocaleLowerCase('tr-TR') === categoryName.trim().toLocaleLowerCase('tr-TR'))) {
+    throw new Error('Bu kategori için zaten bir zarf var.');
+  }
+
   if (existingIndex !== -1) {
-    current[existingIndex].allocatedAmount = safeAllocated;
-    if (iconName) current[existingIndex].iconName = iconName;
-    if (color) current[existingIndex].color = color;
+    current[existingIndex] = {
+      ...current[existingIndex],
+      categoryName: categoryName.trim(),
+      allocatedAmount: safeAllocated,
+      iconName: iconName || current[existingIndex].iconName,
+      color: color || current[existingIndex].color,
+    };
   } else {
     current.push({
       id: `b_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,

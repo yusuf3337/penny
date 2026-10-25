@@ -8,6 +8,7 @@ import { parseAmountSafely, formatNumberInput } from '../../utils/formatters';
 import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
 import { HeroUIButton } from '../common/HeroUIButton';
+import { COLORS } from '../../constants/colors';
 
 interface AddGoalModalProps {
   visible: boolean;
@@ -162,7 +163,7 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
       />
 
       {/* HeroUI Icon Selector */}
-      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#C2D4C8] mb-2">Hedef İkonu</Text>
+      <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8] mb-2">Hedef İkonu</Text>
       <View className="flex-row flex-wrap gap-2.5 mb-2.5">
         {icons.map((ic) => {
           const isSelected = selectedIcon === ic;
@@ -171,8 +172,8 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
               key={ic}
               className={`w-11 h-11 rounded-[14px] items-center justify-center border-[1.5px] ${
                 isSelected
-                  ? 'bg-teal-50 border-brand'
-                  : 'bg-zinc-100 dark:bg-[#22332D] border-transparent'
+                  ? 'bg-brand-soft dark:bg-brand-soft border-brand'
+                  : 'bg-zinc-100 dark:bg-[#1E2A48] border-transparent'
               }`}
               onPress={() => setSelectedIcon(ic)}
               activeOpacity={0.75}
@@ -180,7 +181,7 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
               <Ionicons
                 name={ic as any}
                 size={20}
-                color={isSelected ? '#0D9488' : '#71717A'}
+                color={isSelected ? COLORS.primary : COLORS.mutedText}
               />
             </TouchableOpacity>
           );

@@ -153,28 +153,28 @@ export const SplitExpenseModal: React.FC<SplitExpenseModalProps> = ({
         }}
       />
 
-      <Text className="text-[13px] font-semibold text-[#3B514C] dark:text-[#CCDCD2] mb-2">Kategori</Text>
+      <Text className="text-[13px] font-semibold text-[#405578] dark:text-[#D5E0F8] mb-2">Kategori</Text>
       <View className="flex-row flex-wrap gap-2 mb-4">
         {availableCategories.map((category) => (
           <TouchableOpacity
             key={category}
-            className={`px-3 py-2 rounded-xl border ${effectiveCategory === category ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-white dark:bg-[#182521] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            className={`px-3 py-2 rounded-xl border ${effectiveCategory === category ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-white dark:bg-[#17213A] border-[#DAE3F4] dark:border-[#2B3A5D]'}`}
             onPress={() => setSelectedCategory(category)}
           >
-            <Text className={`text-xs font-semibold ${effectiveCategory === category ? 'text-brand dark:text-brand' : 'text-[#667A73] dark:text-[#A9BDB2]'}`}>{category}</Text>
+            <Text className={`text-xs font-semibold ${effectiveCategory === category ? 'text-brand dark:text-brand' : 'text-[#536582] dark:text-[#BAC8E6]'}`}>{category}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text className="text-[13px] font-semibold text-[#3B514C] dark:text-[#CCDCD2] mb-2">Ödenen hesap</Text>
+      <Text className="text-[13px] font-semibold text-[#405578] dark:text-[#D5E0F8] mb-2">Ödenen hesap</Text>
       <View className="flex-row gap-2 mb-4">
         {(['bank', 'cash'] as const).map((account) => (
           <TouchableOpacity
             key={account}
-            className={`flex-1 px-3 py-2.5 rounded-xl border ${accountType === account ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-white dark:bg-[#182521] border-[#E1E9E5] dark:border-[#2C4039]'}`}
+            className={`flex-1 px-3 py-2.5 rounded-xl border ${accountType === account ? 'bg-brand-soft dark:bg-brand-soft border-brand' : 'bg-white dark:bg-[#17213A] border-[#DAE3F4] dark:border-[#2B3A5D]'}`}
             onPress={() => setAccountType(account)}
           >
-            <Text className={`text-xs text-center font-semibold ${accountType === account ? 'text-brand dark:text-brand' : 'text-[#667A73] dark:text-[#A9BDB2]'}`}>{account === 'bank' ? 'Banka' : 'Nakit'}</Text>
+            <Text className={`text-xs text-center font-semibold ${accountType === account ? 'text-brand dark:text-brand' : 'text-[#536582] dark:text-[#BAC8E6]'}`}>{account === 'bank' ? 'Banka' : 'Nakit'}</Text>
           </TouchableOpacity>
         ))}
       </View>

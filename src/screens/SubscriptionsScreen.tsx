@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../context/ThemeContext';
 import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
@@ -49,7 +50,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
       />
 
       {/* Summary Header Card (Matching Image 3) */}
-      <View style={styles.summaryCard}>
+      <Card style={styles.summaryCard}>
         <View style={styles.summaryRow}>
           <View style={styles.summaryCol}>
             <Text style={styles.summaryLabel}>Aylık Toplam</Text>
@@ -67,7 +68,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
             </Text>
           </View>
         </View>
-      </View>
+      </Card>
 
       {/* Yaklaşan Yenilemeler Box */}
       <View style={styles.upcomingBox}>
@@ -116,14 +117,14 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
       <Text style={styles.sectionTitle}>Aktif Abonelikler ({subscriptions.length})</Text>
 
       {subscriptions.length === 0 ? (
-        <View style={styles.emptyCard}>
+        <Card style={styles.emptyCard}>
           <Ionicons name="repeat-outline" size={36} color={COLORS.subtleText} />
           <Text style={styles.emptyText}>Henüz kaydedilmiş abonelik bulunmuyor.</Text>
           <TouchableOpacity style={styles.emptyAddBtn} onPress={() => onOpenAddModal()}>
-            <Ionicons name="add" size={16} color="#FFF" />
-            <Text style={styles.emptyAddBtnText}>İlk Aboneliğini Ekle</Text>
+            <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
+            <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]}>İlk Aboneliğini Ekle</Text>
           </TouchableOpacity>
-        </View>
+        </Card>
       ) : (
         sortedSubscriptions.map((sub) => (
           <TouchableOpacity

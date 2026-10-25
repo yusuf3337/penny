@@ -43,6 +43,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     Uniwind.updateCSSVariables(isDark ? 'dark' : 'light', {
       '--color-brand': isDark ? ACCENT_PALETTES[accent].dark : ACCENT_PALETTES[accent].light,
       '--color-brand-soft': isDark ? ACCENT_PALETTES[accent].darkSoft : ACCENT_PALETTES[accent].lightSoft,
+      '--color-brand-foreground': isDark ? DARK_COLORS.primaryForeground : LIGHT_COLORS.primaryForeground,
     });
     void SystemUI.setBackgroundColorAsync(isDark ? DARK_COLORS.background : LIGHT_COLORS.background).catch(() => {});
   }, [isDark, preference, accent]);
@@ -73,6 +74,12 @@ for (const key of Object.keys(LIGHT_COLORS) as (keyof AppColors)[]) {
   if (LIGHT_COLORS[key] !== '#FFFFFF') namedColors.set(LIGHT_COLORS[key].toLowerCase(), DARK_COLORS[key]);
 }
 const extraColors: Record<string, string> = {
+  '#f5f7f5': DARK_COLORS.background, '#eef2ef': DARK_COLORS.secondary,
+  '#e1e9e5': DARK_COLORS.cardBorder, '#cad8d2': DARK_COLORS.cardBorderHover,
+  '#182b29': DARK_COLORS.foreground, '#3b514c': DARK_COLORS.secondaryForeground,
+  '#667a73': DARK_COLORS.mutedText, '#94a59e': DARK_COLORS.subtleText,
+  '#137c70': DARK_COLORS.primary, '#e3f2ec': DARK_COLORS.primaryLight,
+  '#10b981': DARK_COLORS.emerald, '#047857': DARK_COLORS.emeraldText,
   '#fafbf9': DARK_COLORS.background, '#fbfcfa': DARK_COLORS.background,
   '#f8fafc': DARK_COLORS.background, '#fafafa': DARK_COLORS.background,
   '#f9fafb': DARK_COLORS.background, '#f4f4f5': DARK_COLORS.secondary,
@@ -103,11 +110,17 @@ export const useThemedStyles = <T extends Record<string, any>>(lightStyles: T): 
         if (typeof value !== 'string' || !/color/i.test(property)) return [property, value];
         const palette = ACCENT_PALETTES[accent];
         const replacements: Record<string, string> = {
+          '#285edd': isDark ? palette.dark : palette.light,
+          '#8db4ff': palette.dark,
           '#137c70': isDark ? palette.dark : palette.light,
           '#0d9488': isDark ? palette.dark : palette.light,
           '#66c9ae': palette.dark,
+          '#e6edff': isDark ? palette.darkSoft : palette.lightSoft,
           '#e3f2ec': isDark ? palette.darkSoft : palette.lightSoft,
+          '#263d73': palette.darkSoft,
           '#203e35': palette.darkSoft,
+          '#1d49b6': isDark ? palette.darkHover : palette.lightHover,
+          '#adcaff': palette.darkHover,
           '#0d635a': isDark ? palette.darkHover : palette.lightHover,
         };
         return [property, replacements[value.toLowerCase()] ?? value];

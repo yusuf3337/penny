@@ -10,6 +10,8 @@ import type { ProductSubscription } from 'expo-iap';
 import { useThemedStyles } from '../../context/ThemeContext';
 import { APPLE_STANDARD_EULA_URL, PRIVACY_POLICY } from '../../constants/legal';
 import { localize, useLocale } from '../../context/LocaleContext';
+import { Alert } from 'heroui-native/alert';
+import { Card } from 'heroui-native/card';
 
 const PERIOD_SUFFIX: Record<string, { year: string; month: string }> = {
   tr: { year: ' / yıl', month: ' / ay' },
@@ -159,7 +161,7 @@ export const ProUpgradeModal: React.FC = () => {
 
   return (
     <Modal visible={isPaywallVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={closePaywall}>
-      <View style={styles.screen}>
+      <Card className="flex-1 rounded-none p-0 shadow-none" style={styles.screen}>
         <View style={styles.topBar}>
           <Text style={styles.brand}>PENNY / PRO</Text>
           <TouchableOpacity onPress={closePaywall} style={styles.closeButton} accessibilityLabel={localize('Pro ekranını kapat')}>
@@ -167,25 +169,25 @@ export const ProUpgradeModal: React.FC = () => {
           </TouchableOpacity>
         </View>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 20) + 24 }]}>
-          <View style={styles.hero}>
-            <View style={styles.heroMark}><Ionicons name="wallet-outline" size={24} color="#D9F0E5" /></View>
+          <Card style={styles.hero}>
+            <Card style={styles.heroMark}><Ionicons name="wallet-outline" size={24} color="#D8E5FF" /></Card>
             <Text style={styles.heroTitle}>{isPro ? 'Pro erişiminiz açık' : 'Paranızı daha net görün'}</Text>
             <Text style={styles.heroBody}>
               {isPro
                 ? 'Tüm planlama ve analiz araçlarını kullanabilirsiniz.'
                 : 'Bütçelerinizi, hedeflerinizi ve harcamalarınızı tek yerde ayrıntılı yönetin.'}
             </Text>
-          </View>
+          </Card>
 
           {!isPro && REASON_TEXT[paywallReason] && (
-            <View style={styles.reasonCard}>
-              <Ionicons name="information-circle-outline" size={19} color={COLORS.primary} />
-              <Text style={styles.reasonText}>{REASON_TEXT[paywallReason]}</Text>
-            </View>
+            <Alert status="accent" className="mt-3.5 rounded-2xl">
+              <Alert.Indicator />
+              <Alert.Content><Alert.Description>{REASON_TEXT[paywallReason]}</Alert.Description></Alert.Content>
+            </Alert>
           )}
 
           <Text style={styles.sectionTitle}>Pro ile yapabilecekleriniz</Text>
-          <View style={styles.featureList}>
+          <Card style={styles.featureList}>
             {FEATURES.map((feature, index) => (
               <View key={feature.title} style={[styles.featureRow, index !== FEATURES.length - 1 && styles.featureBorder]}>
                 <View style={styles.featureIcon}><Ionicons name={feature.icon} size={19} color={COLORS.primary} /></View>
@@ -195,7 +197,7 @@ export const ProUpgradeModal: React.FC = () => {
                 </View>
               </View>
             ))}
-          </View>
+          </Card>
 
           {isBillingConfigured && !isPro && products.length > 0 && (
             <View style={styles.plansSection}>
@@ -222,17 +224,17 @@ export const ProUpgradeModal: React.FC = () => {
                 );
               })}
               <TouchableOpacity style={styles.devButton} onPress={() => selectedProduct && void handlePurchase(selectedProduct)} disabled={isProcessing}>
-                {isProcessing ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.devButtonText}>App Store ile abone ol</Text>}
+                {isProcessing ? <ActivityIndicator color={COLORS.primaryForeground} /> : <Text style={[styles.devButtonText, { color: COLORS.primaryForeground }]}>App Store ile abone ol</Text>}
               </TouchableOpacity>
               <Text style={styles.storeNote}>Seçtiğiniz plan belirtilen tutarla otomatik yenilenir. İptali App Store aboneliklerinden yapabilirsiniz.</Text>
             </View>
           )}
 
           {billingError && products.length > 0 && !isPro && (
-            <View style={styles.availabilityCard}>
-              <Ionicons name="alert-circle-outline" size={20} color={COLORS.roseText} />
-              <Text style={[styles.availabilityBody, { flex: 1 }]}>{billingError}</Text>
-            </View>
+            <Alert status="danger" className="mt-4 rounded-2xl">
+              <Alert.Indicator />
+              <Alert.Content><Alert.Description>{billingError}</Alert.Description></Alert.Content>
+            </Alert>
           )}
 
           {isBillingConfigured && !isPro && (
@@ -243,18 +245,18 @@ export const ProUpgradeModal: React.FC = () => {
 
           {isBillingConfigured && isPro && (
             <TouchableOpacity style={[styles.devButton, styles.manageButton]} onPress={() => void handleManage()}>
-              <Text style={styles.devButtonText}>Aboneliği mağazada yönet</Text>
+              <Text style={[styles.devButtonText, { color: COLORS.primaryForeground }]}>Aboneliği mağazada yönet</Text>
             </TouchableOpacity>
           )}
 
           {!isPro && (!isBillingConfigured || (isBillingConfigured && products.length === 0)) && (
-            <View style={styles.availabilityCard}>
-              <Ionicons name="storefront-outline" size={22} color={COLORS.mutedText} />
-              <View style={styles.availabilityText}>
-                <Text style={styles.availabilityTitle}>{isLoading ? 'Planlar yükleniyor' : 'Satın alma şu anda kullanılamıyor'}</Text>
-                <Text style={styles.availabilityBody}>{billingError || 'App Store ürünleri hazır olduğunda gerçek planlar burada görünecek. Expo Go satın alımı desteklemez.'}</Text>
-              </View>
-            </View>
+            <Alert status="warning" className="mt-4 rounded-2xl">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>{isLoading ? 'Planlar yükleniyor' : 'Satın alma şu anda kullanılamıyor'}</Alert.Title>
+                <Alert.Description>{billingError || 'App Store ürünleri hazır olduğunda gerçek planlar burada görünecek. Expo Go satın alımı desteklemez.'}</Alert.Description>
+              </Alert.Content>
+            </Alert>
           )}
 
           {__DEV__ && !isBillingConfigured && (
@@ -262,7 +264,7 @@ export const ProUpgradeModal: React.FC = () => {
               <Text style={styles.devLabel}>GELİŞTİRME SÜRÜMÜ</Text>
               <Text style={styles.devBody}>Bu düğme ödeme yapmaz. Pro araçlarını cihazda denemenizi sağlar.</Text>
               <TouchableOpacity style={styles.devButton} onPress={handleTestAccess} disabled={isProcessing}>
-                {isProcessing ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.devButtonText}>{isPro ? 'Test erişimini kapat' : 'Pro özelliklerini test et'}</Text>}
+                {isProcessing ? <ActivityIndicator color={COLORS.primaryForeground} /> : <Text style={[styles.devButtonText, { color: COLORS.primaryForeground }]}>{isPro ? 'Test erişimini kapat' : 'Pro özelliklerini test et'}</Text>}
               </TouchableOpacity>
             </View>
           )}
@@ -280,7 +282,7 @@ export const ProUpgradeModal: React.FC = () => {
             {PRIVACY_POLICY.map((paragraph) => <Text key={paragraph} style={styles.privacyParagraph}>{paragraph}</Text>)}
           </ScrollView>
         </Modal>
-      </View>
+      </Card>
     </Modal>
   );
 };
@@ -291,10 +293,10 @@ const lightStyles = StyleSheet.create({
   brand: { color: LIGHT_COLORS.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1.5 },
   closeButton: { width: 38, height: 38, borderRadius: 13, backgroundColor: LIGHT_COLORS.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: LIGHT_COLORS.cardBorder },
   content: { paddingHorizontal: 20 },
-  hero: { backgroundColor: '#183B35', borderRadius: 24, padding: 24, minHeight: 185, justifyContent: 'center' },
-  heroMark: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#285148', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  hero: { backgroundColor: '#1E3A8A', borderRadius: 24, padding: 24, minHeight: 185, justifyContent: 'center' },
+  heroMark: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#3E5AB5', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   heroTitle: { color: '#FFFFFF', fontSize: 26, fontWeight: '700', letterSpacing: -0.6 },
-  heroBody: { color: '#C7DED2', fontSize: 13, lineHeight: 20, marginTop: 7 },
+  heroBody: { color: '#D4E0FF', fontSize: 13, lineHeight: 20, marginTop: 7 },
   reasonCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, backgroundColor: LIGHT_COLORS.primaryLight, marginTop: 14 },
   reasonText: { flex: 1, color: LIGHT_COLORS.primaryHover, fontSize: 12, lineHeight: 18, fontWeight: '600' },
   sectionTitle: { color: LIGHT_COLORS.foreground, fontSize: 18, fontWeight: '700', marginTop: 26, marginBottom: 13 },
@@ -305,7 +307,7 @@ const lightStyles = StyleSheet.create({
   featureText: { flex: 1 },
   featureTitle: { color: LIGHT_COLORS.foreground, fontSize: 14, fontWeight: '700' },
   featureBody: { color: LIGHT_COLORS.mutedText, fontSize: 12, lineHeight: 17, marginTop: 3 },
-  availabilityCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#EEF2EF', padding: 16, borderRadius: 16, marginTop: 17 },
+  availabilityCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#EAF0FC', padding: 16, borderRadius: 16, marginTop: 17 },
   availabilityText: { flex: 1 },
   availabilityTitle: { color: LIGHT_COLORS.foreground, fontSize: 13, fontWeight: '700' },
   availabilityBody: { color: LIGHT_COLORS.mutedText, fontSize: 12, lineHeight: 18, marginTop: 4 },

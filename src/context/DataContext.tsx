@@ -78,7 +78,7 @@ interface DataContextType {
   handleDeleteSubscription: (id: string) => Promise<void>;
 
   budgets: CategoryBudget[];
-  handleSaveBudget: (categoryName: string, allocatedAmount: number, iconName?: string, color?: string) => Promise<void>;
+  handleSaveBudget: (categoryName: string, allocatedAmount: number, iconName?: string, color?: string, budgetId?: string) => Promise<void>;
 
   debts: Debt[];
   handleAddDebt: (personName: string, type: 'given' | 'taken', amount: number, desc?: string, options?: { source?: 'split_expense'; accountType?: 'bank' | 'cash' }) => Promise<void>;
@@ -351,14 +351,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     categoryName: string,
     allocatedAmount: number,
     iconName?: string,
-    color?: string
+    color?: string,
+    budgetId?: string
   ) => {
     const normalizedCategory = categoryName.trim().toLocaleLowerCase('tr-TR');
     const alreadyExists = budgets.some((budget) => budget.categoryName.trim().toLocaleLowerCase('tr-TR') === normalizedCategory);
-    if (!alreadyExists && !checkBudgetAllowed(budgets.length)) {
+    if (!budgetId && !alreadyExists && !checkBudgetAllowed(budgets.length)) {
       throw new Error('Ücretsiz plandaki bütçe sınırına ulaşıldı.');
     }
-    const updated = await addBudgetService(categoryName, allocatedAmount, iconName, color);
+    const updated = await addBudgetService(categoryName, allocatedAmount, iconName, color, budgetId);
     setBudgets(updated);
   };
 

@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
@@ -83,7 +84,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
       </View>
 
       {/* Top Biriken Summary Card (Matching Image 2) */}
-      <View style={styles.summaryCard}>
+      <Card style={styles.summaryCard}>
         <View style={styles.summaryTopRow}>
           <View>
             <Text style={styles.summaryLabel}>Biriken</Text>
@@ -107,7 +108,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
             ]}
           />
         </View>
-      </View>
+      </Card>
 
       {/* Filter Tabs */}
       <View style={styles.filterRow}>
@@ -130,17 +131,17 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
 
       {/* Goals List */}
       {filteredGoals.length === 0 ? (
-        <View style={styles.emptyCard}>
+        <Card style={styles.emptyCard}>
           <Ionicons name="flag-outline" size={36} color={COLORS.subtleText} />
           <Text style={styles.emptyText}>Henüz kaydedilmiş hedef bulunmuyor.</Text>
           <TouchableOpacity
             style={styles.emptyAddBtn}
             onPress={() => onOpenGoalModal()}
           >
-            <Ionicons name="add" size={16} color="#FFF" />
-            <Text style={styles.emptyAddBtnText}>İlk Hedefini Ekle</Text>
+            <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
+            <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]}>İlk Hedefini Ekle</Text>
           </TouchableOpacity>
-        </View>
+        </Card>
       ) : (
         filteredGoals.map((goal) => {
           const pct = goal.percentage;
@@ -232,7 +233,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
                   onPress={() => setSelectedGoalForUpdate(goal)}
                 >
                   <Ionicons name="add-circle" size={14} color={COLORS.primaryForeground} />
-                  <Text style={styles.addProgressBtnText}>Birikim Ekle</Text>
+                  <Text style={[styles.addProgressBtnText, { color: COLORS.primaryForeground }]}>Birikim Ekle</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -356,8 +357,8 @@ const lightStyles = StyleSheet.create({
     borderColor: LIGHT_COLORS.cardBorder,
   },
   filterChipActive: {
-    backgroundColor: '#174235',
-    borderColor: '#174235',
+    backgroundColor: LIGHT_COLORS.primary,
+    borderColor: LIGHT_COLORS.primary,
   },
   filterText: {
     fontSize: 12,
@@ -539,7 +540,7 @@ const lightStyles = StyleSheet.create({
     gap: 8,
     backgroundColor: LIGHT_COLORS.primaryLight,
     borderWidth: 1,
-    borderColor: '#CAD8D2',
+    borderColor: '#BFCDE8',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,

@@ -30,7 +30,7 @@ import { ProUpgradeModal } from './src/components/modals/ProUpgradeModal';
 import { COLORS } from './src/constants/colors';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LocaleProvider, useLocale } from './src/context/LocaleContext';
-import { AppTransaction } from './src/types';
+import { AppTransaction, CategoryBudget } from './src/types';
 import { CurrencyProvider, useCurrency } from './src/context/CurrencyContext';
 import { isValidNickname } from './src/utils/nickname';
 
@@ -73,6 +73,7 @@ const MainNavigator = () => {
   const [isAddSubModalVisible, setIsAddSubModalVisible] = useState(false);
   const [editingSub, setEditingSub] = useState<any>(null);
   const [isAddBudgetModalVisible, setIsAddBudgetModalVisible] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<CategoryBudget | null>(null);
   const [isAddDebtModalVisible, setIsAddDebtModalVisible] = useState(false);
   const [isSplitModalVisible, setIsSplitModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
@@ -110,6 +111,7 @@ const MainNavigator = () => {
         setIsAddSubModalVisible(true);
         break;
       case 'budget':
+        setEditingBudget(null);
         setIsAddBudgetModalVisible(true);
         break;
       case 'debts':
@@ -187,6 +189,12 @@ const MainNavigator = () => {
         <BudgetScreen
           onOpenAddModal={() => {
             triggerAddHaptic();
+            setEditingBudget(null);
+            setIsAddBudgetModalVisible(true);
+          }}
+          onEditBudget={(budget) => {
+            triggerAddHaptic();
+            setEditingBudget(budget);
             setIsAddBudgetModalVisible(true);
           }}
         />
@@ -252,6 +260,7 @@ const MainNavigator = () => {
 
       <AddBudgetModal
         visible={isAddBudgetModalVisible}
+        initialBudget={editingBudget}
         onClose={() => setIsAddBudgetModalVisible(false)}
         onSave={handleSaveBudget}
       />

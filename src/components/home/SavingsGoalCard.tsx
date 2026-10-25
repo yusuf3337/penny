@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
@@ -15,7 +16,7 @@ interface SavingsGoalCardProps {
 export const SavingsGoalCard: React.FC<SavingsGoalCardProps> = ({ goal, onEditPress }) => {
   const styles = useThemedStyles(lightStyles);
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <Text style={styles.subLabel}>TASARRUF HEDEFİ</Text>
       <Text style={styles.title}>Biriktirmeye devam et.</Text>
 
@@ -35,7 +36,7 @@ export const SavingsGoalCard: React.FC<SavingsGoalCardProps> = ({ goal, onEditPr
       <TouchableOpacity style={styles.button} activeOpacity={0.8} onPress={onEditPress}>
         <Text style={styles.buttonText}>Hedefi düzenle</Text>
       </TouchableOpacity>
-    </View>
+    </Card>
   );
 };
 

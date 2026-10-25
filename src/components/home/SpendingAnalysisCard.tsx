@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
@@ -19,7 +20,7 @@ export const SpendingAnalysisCard: React.FC<SpendingAnalysisCardProps> = ({
   const [period, setPeriod] = useState('Bu ay');
 
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.header}>
         <View>
           <Text style={styles.subLabel}>HARCAMA ANALİZİ</Text>
@@ -59,7 +60,7 @@ export const SpendingAnalysisCard: React.FC<SpendingAnalysisCardProps> = ({
         <Text style={styles.reportBtnText}>Tüm raporu görüntüle</Text>
         <Ionicons name="chevron-forward" size={14} color={COLORS.primary} />
       </TouchableOpacity>
-    </View>
+    </Card>
   );
 };
 

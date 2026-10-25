@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
@@ -247,7 +248,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {/* TAB 1: KATEGORİ (Donut Chart & Breakdown) */}
       {activeSubTab === 'kategori' && (
         <>
-          <View style={styles.chartCard}>
+          <Card style={styles.chartCard}>
             <Text style={styles.chartCardTitle}>{localizeFormat('{0} - Gider Kırılımı', [currentMonthName])}</Text>
 
             {monthExpense > 0 ? (
@@ -318,10 +319,10 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 ))
               )}
             </View>
-          </View>
+          </Card>
 
           {/* Income Breakdown Card */}
-          <View style={styles.incomeCard}>
+          <Card style={styles.incomeCard}>
             <Text style={styles.incomeCardTitle}>{localizeFormat('{0} - Gelir Kırılımı', [currentMonthName])}</Text>
             {incomeCategories.length === 0 ? (
               <View style={styles.emptyStateBox}>
@@ -342,14 +343,14 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 </View>
               ))
             )}
-          </View>
+          </Card>
         </>
       )}
 
       {/* TAB 2: GENEL (Financial Health Overview) */}
       {activeSubTab === 'genel' && (
         <View style={styles.genelWrap}>
-          <View style={styles.metricCard}>
+          <Card style={styles.metricCard}>
             <Text style={styles.metricLabel}>{currentMonthName.toUpperCase()} NET DURUM</Text>
             <Text
               style={[
@@ -362,27 +363,27 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
             <Text style={styles.metricSubText}>
               Gelir: {formatCurrency(monthIncome)} · Gider: {formatCurrency(monthExpense)}
             </Text>
-          </View>
+          </Card>
 
           <View style={styles.rowTwo}>
-            <View style={styles.halfCard}>
+            <Card style={styles.halfCard}>
               <Ionicons name="pie-chart-outline" size={24} color={COLORS.primary} />
               <Text style={styles.halfLabel}>Aylık Tasarruf Oranı</Text>
               <Text style={styles.halfValue}>%{savingsRate}</Text>
-            </View>
+            </Card>
 
-            <View style={styles.halfCard}>
+            <Card style={styles.halfCard}>
               <Ionicons name="wallet-outline" size={24} color={COLORS.emeraldText} />
               <Text style={styles.halfLabel}>Kümülatif Toplam Bakiye</Text>
               <Text style={styles.halfValue}>{formatCurrency(totalBalance)}</Text>
-            </View>
+            </Card>
           </View>
         </View>
       )}
 
       {/* ADVANCED PRO TABS GATE */}
       {!isPro && (activeSubTab === 'icgoru' || activeSubTab === 'trend' || activeSubTab === 'zaman') && (
-        <View style={styles.proLockedCard}>
+        <Card style={styles.proLockedCard}>
           <View style={styles.proLockedCrownWrap}>
             <Ionicons name="analytics-outline" size={28} color={COLORS.primary} />
           </View>
@@ -408,14 +409,14 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
             <Ionicons name="analytics-outline" size={16} color="#0F172A" style={{ marginRight: 6 }} />
             <Text style={styles.proLockedBtnText}>Analizleri Aç</Text>
           </TouchableOpacity>
-        </View>
+        </Card>
       )}
 
       {/* TAB 3: İÇGÖRÜLER (Smart Financial Insights) */}
       {isPro && activeSubTab === 'icgoru' && (
         <View style={styles.insightWrap}>
           {topExpenseCategory ? (
-            <View style={styles.insightAlertCard}>
+            <Card style={styles.insightAlertCard}>
               <View style={styles.insightAlertHeader}>
                 <Ionicons name="warning-outline" size={20} color={COLORS.amberText} />
                 <Text style={styles.insightAlertTitle}>En Yüksek Harcama Kategorisi</Text>
@@ -423,10 +424,10 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
               <Text style={styles.insightAlertBody}>
                 {topSpendingMessage(currentMonthName, topExpenseCategory.name, topExpenseCategory.percentage, formatCurrency(topExpenseCategory.rawAmount))}
               </Text>
-            </View>
+            </Card>
           ) : null}
 
-          <View style={styles.insightCard}>
+          <Card style={styles.insightCard}>
             <View style={styles.insightHeader}>
               <Ionicons name="trending-up-outline" size={18} color={COLORS.primary} />
               <Text style={styles.insightTitle}>Harcama Değişimi</Text>
@@ -438,10 +439,10 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 ? 'Harcamalarınız önceki ayla aynı seviyede.'
                 : localizeFormat(expenseChange > 0 ? 'Harcamalarınız önceki aya göre %{0} arttı.' : 'Harcamalarınız önceki aya göre %{0} azaldı.', [Math.abs(expenseChange)])}
             </Text>
-          </View>
+          </Card>
 
           {projectedExpense !== null && monthExpense > 0 && (
-            <View style={styles.insightCard}>
+            <Card style={styles.insightCard}>
               <View style={styles.insightHeader}>
                 <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
                 <Text style={styles.insightTitle}>Ay Sonu Harcama Tahmini</Text>
@@ -449,10 +450,10 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
               <Text style={styles.insightBody}>
                 {localizeFormat('Günlük ortalama korunursa ay sonu harcamanız yaklaşık {0} olur. Tahmin {1} günlük kayda dayanır.', [formatCurrency(projectedExpense), elapsedDays])}
               </Text>
-            </View>
+            </Card>
           )}
 
-          <View style={styles.insightCard}>
+          <Card style={styles.insightCard}>
             <View style={styles.insightHeader}>
               <Ionicons name="repeat-outline" size={18} color={COLORS.primary} />
               <Text style={styles.insightTitle}>Abonelik & Sabit Gider Yükü</Text>
@@ -461,9 +462,9 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
               {localizeFormat('{0} aktif abonelik için ayda ortalama {1} ödüyorsunuz. Yıllık toplam {2}.', [subscriptions.length, formatCurrency(totalMonthlySubscriptions), formatCurrency(totalMonthlySubscriptions * 12)])}
               {subscriptionBurden !== null ? ` ${localizeFormat('Bu, seçili ay gelirinizin yaklaşık %{0} kadarı.', [subscriptionBurden])}` : ''}
             </Text>
-          </View>
+          </Card>
 
-          <View style={styles.insightCard}>
+          <Card style={styles.insightCard}>
             <View style={styles.insightHeader}>
               <Ionicons name="flag-outline" size={18} color={COLORS.emeraldText} />
               <Text style={styles.insightTitle}>Tasarruf Hedefleri Durumu</Text>
@@ -472,14 +473,14 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
               {localizeFormat('Toplam birikiminiz: {0}.', [formatCurrency(totalSavedGoals)])}
               {goals.length === 0 ? ` ${localize('Henüz bir hedef tanımlamadınız.')}` : ` ${localizeFormat('{0} aktif hedefiniz takip ediliyor.', [goals.length])}`}
             </Text>
-          </View>
+          </Card>
         </View>
       )}
 
       {/* TAB 4: TREND (Income vs Expense Trend) */}
       {isPro && activeSubTab === 'trend' && (
         <View style={styles.trendWrap}>
-          <View style={styles.chartCard}>
+          <Card style={styles.chartCard}>
             <Text style={styles.chartCardTitle}>Son 6 Ay · Gelir ve Gider</Text>
             {trendMonths.every((month) => month.income === 0 && month.expense === 0) ? (
               <View style={styles.emptyStateBox}>
@@ -506,7 +507,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 ))}
               </View>
             )}
-          </View>
+          </Card>
         </View>
       )}
 
@@ -515,10 +516,10 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
         <View style={styles.zamanWrap}>
           <Text style={styles.sectionTitle}>{currentMonthName} İşlem Akışı</Text>
           {monthlyTransactions.length === 0 ? (
-            <View style={styles.emptyCard}>
+            <Card style={styles.emptyCard}>
               <Ionicons name="time-outline" size={36} color={COLORS.subtleText} />
               <Text style={styles.emptyText}>{localizeFormat('{0} döneminde kaydedilmiş işlem yok.', [currentMonthName])}</Text>
-            </View>
+            </Card>
           ) : (
             monthlyTransactions.map((tx) => (
               <View key={tx.id} style={styles.zamanRow}>
@@ -971,14 +972,14 @@ const lightStyles = StyleSheet.create({
 
   // Pro Lock Gate Card
   proLockedCard: {
-    backgroundColor: '#183B35',
+    backgroundColor: '#1E3477',
     borderRadius: 22,
     padding: 24,
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#31584F',
+    borderColor: '#4864B4',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -989,12 +990,12 @@ const lightStyles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#285148',
+    backgroundColor: '#3854A1',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#42695E',
+    borderColor: '#5B77C8',
   },
   proLockedTitle: {
     fontSize: 18,
@@ -1004,7 +1005,7 @@ const lightStyles = StyleSheet.create({
     marginBottom: 6,
   },
   proLockedBadgePill: {
-    backgroundColor: '#285148',
+    backgroundColor: '#3854A1',
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
@@ -1013,7 +1014,7 @@ const lightStyles = StyleSheet.create({
   proLockedBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#B9DED0',
+    color: '#D4E0FF',
     letterSpacing: 0.8,
   },
   proLockedDesc: {
@@ -1027,11 +1028,11 @@ const lightStyles = StyleSheet.create({
   proLockedBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#D9F0E5',
+    backgroundColor: '#DCE7FF',
     paddingVertical: 14,
     paddingHorizontal: 22,
     borderRadius: 14,
-    shadowColor: '#102923',
+    shadowColor: '#080F23',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

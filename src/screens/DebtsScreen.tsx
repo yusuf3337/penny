@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../context/ThemeContext';
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
@@ -89,17 +90,17 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
 
       {/* Summary Cards */}
       <View style={styles.summaryRow}>
-        <View style={styles.summaryCard}>
+        <Card style={styles.summaryCard}>
           <View style={[styles.iconDot, { backgroundColor: COLORS.emerald }]} />
           <Text style={styles.summaryLabel}>Toplam Alacak</Text>
           <Text style={styles.receivableAmount}>{formatCurrency(totalReceivables)}</Text>
-        </View>
+        </Card>
 
-        <View style={styles.summaryCard}>
+        <Card style={styles.summaryCard}>
           <View style={[styles.iconDot, { backgroundColor: COLORS.rose }]} />
           <Text style={styles.summaryLabel}>Toplam Borç</Text>
           <Text style={styles.payableAmount}>{formatCurrency(totalPayables)}</Text>
-        </View>
+        </Card>
       </View>
 
       {/* Hesap Bölüş Quick Card */}
@@ -147,7 +148,7 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
         renderItem={({ item }) => {
           const isGiven = item.type === 'given';
           return (
-            <View style={styles.debtCard}>
+            <Card style={styles.debtCard}>
               <View style={styles.cardHeader}>
                 <View style={styles.personWrap}>
                   <View
@@ -222,7 +223,7 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </Card>
           );
         }}
       />

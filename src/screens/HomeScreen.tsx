@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useTheme, useThemedStyles } from '../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
@@ -215,48 +216,48 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </View>
 
       {/* One balance overview instead of three swipeable cards. */}
-      <Surface variant="default" className="mb-5 rounded-[24px] border border-[#E1E9E5] bg-white p-5 dark:border-[#344A40] dark:bg-[#1B2923]">
-        <Text className="text-[13px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">Toplam Bakiye</Text>
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="mt-1 text-[34px] font-bold tracking-tight text-[#182B29] dark:text-[#EAF2EE]">{balanceStr}</Text>
+      <Surface variant="default" className="mb-5 rounded-[24px] border border-[#DAE3F4] border-t-[3px] border-t-brand bg-white p-5 dark:border-[#3E5280] dark:border-t-brand dark:bg-[#17213A]">
+        <Text className="text-[13px] font-semibold text-zinc-500 dark:text-[#BAC8E6]">Toplam Bakiye</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="mt-1 text-[34px] font-bold tracking-tight text-[#14203A] dark:text-[#F5F7FF]">{balanceStr}</Text>
 
         <View className="mt-5 flex-row gap-2">
-          <Surface variant="secondary" className="min-w-0 flex-1 rounded-2xl p-3">
+          <Surface variant="secondary" className="min-w-0 flex-1 rounded-2xl border border-[#D5E2FF] bg-[#E8EFFF] p-3 dark:border-[#3A5790] dark:bg-[#223B6F]">
             <View className="mb-1 flex-row items-center gap-1.5">
               <Ionicons name="card-outline" size={15} color={colors.primary} />
-              <Text localize={false} className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">{t('Banka')}</Text>
+              <Text localize={false} className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6]">{t('Banka')}</Text>
             </View>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="text-[16px] font-bold text-[#182B29] dark:text-[#EAF2EE]">{bankStr}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="text-[16px] font-bold text-[#14203A] dark:text-[#F5F7FF]">{bankStr}</Text>
           </Surface>
-          <Surface variant="secondary" className="min-w-0 flex-1 rounded-2xl p-3">
+          <Surface variant="secondary" className="min-w-0 flex-1 rounded-2xl border border-[#C5F0E2] bg-[#DFF8F0] p-3 dark:border-[#266A5C] dark:bg-[#164439]">
             <View className="mb-1 flex-row items-center gap-1.5">
-              <Ionicons name="wallet-outline" size={15} color={colors.primary} />
-              <Text localize={false} className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">{t('Nakit')}</Text>
+              <Ionicons name="wallet-outline" size={15} color={colors.emeraldText} />
+              <Text localize={false} className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6]">{t('Nakit')}</Text>
             </View>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="text-[16px] font-bold text-[#182B29] dark:text-[#EAF2EE]">{cashStr}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="text-[16px] font-bold text-[#14203A] dark:text-[#F5F7FF]">{cashStr}</Text>
           </Surface>
         </View>
 
-        <View className="my-4 h-px bg-[#E1E9E5] dark:bg-[#344A40]" />
+        <View className="my-4 h-px bg-[#DAE3F4] dark:bg-[#3E5280]" />
         <View className="flex-row gap-3">
           <View className="min-w-0 flex-1">
-            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">Gelir</Text>
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6]">Gelir</Text>
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="mt-1 text-[15px] font-bold text-emerald-700 dark:text-emerald-300">{isBalanceHidden ? '••••' : formatCurrency(heroIncome)}</Text>
           </View>
           <View className="min-w-0 flex-1">
-            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#A9BDB2]">Gider</Text>
+            <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6]">Gider</Text>
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} className="mt-1 text-[15px] font-bold text-rose-700 dark:text-rose-300">{isBalanceHidden ? '••••' : formatCurrency(heroExpense)}</Text>
           </View>
         </View>
 
-        <View className="mt-5 flex-row rounded-[14px] bg-zinc-100 p-1 dark:bg-[#25372F]">
+        <View className="mt-5 flex-row rounded-[14px] bg-[#EAF0FC] p-1 dark:bg-[#1E2A48]">
           {(['monthly', 'yearly'] as const).map((filter) => <TouchableOpacity
             key={filter}
             accessibilityRole="tab"
             accessibilityState={{ selected: activeFilter === filter }}
             onPress={() => setActiveFilter(filter)}
-            className={`min-w-0 flex-1 rounded-[11px] px-2 py-2 ${activeFilter === filter ? 'bg-white dark:bg-[#344A40]' : ''}`}
+            className={`min-w-0 flex-1 rounded-[11px] px-2 py-2 ${activeFilter === filter ? 'bg-white dark:bg-[#3E5280]' : ''}`}
           >
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} className={`text-center text-[12px] font-semibold ${activeFilter === filter ? 'text-[#182B29] dark:text-[#EAF2EE]' : 'text-zinc-500 dark:text-[#A9BDB2]'}`}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} className={`text-center text-[12px] font-semibold ${activeFilter === filter ? 'text-[#14203A] dark:text-[#F5F7FF]' : 'text-zinc-500 dark:text-[#BAC8E6]'}`}>
               {filter === 'monthly' ? 'Ay ay akış' : 'Yıllık özet'}
             </Text>
           </TouchableOpacity>)}
@@ -314,14 +315,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {activeFilter === 'yearly' ? (
         /* YILLIK MOD: Tüm ayların kartlar halinde konsolide özeti */
         Object.keys(monthGroups).length === 0 ? (
-          <View style={styles.emptyCard}>
+          <Card style={styles.emptyCard}>
             <Ionicons name="receipt-outline" size={36} color={COLORS.subtleText} />
             <Text style={styles.emptyText}>Henüz kaydedilmiş işlem bulunmuyor.</Text>
             <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
-              <Ionicons name="add" size={16} color="#FFF" />
-              <Text style={styles.emptyAddBtnText}>İlk İşlemini Ekle</Text>
+              <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
+              <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]}>İlk İşlemini Ekle</Text>
             </TouchableOpacity>
-          </View>
+          </Card>
         ) : (
           Object.keys(monthGroups).map((monthName) => {
             const monthTxs = monthGroups[monthName];
@@ -334,7 +335,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             const monthNet = monthIncome - monthExpense;
 
             return (
-              <View key={monthName} style={styles.monthCard}>
+              <Card key={monthName} style={styles.monthCard}>
                 <View style={styles.monthCardHeader}>
                   <Text style={styles.monthTitle}>{monthName}</Text>
                   <Text
@@ -369,7 +370,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     </View>
                   </View>
                 </View>
-              </View>
+              </Card>
             );
           })
         )
@@ -438,16 +439,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
           {/* Transactions for Current Selected Month */}
           {selectedMonthTransactions.length === 0 ? (
-            <View style={styles.emptyCard}>
+            <Card style={styles.emptyCard}>
               <Ionicons name="calendar-outline" size={38} color={COLORS.subtleText} />
               <Text style={styles.emptyText}>{localizeFormat('{0} döneminde kayıtlı işlem yok.', [currentMonthDisplay])}</Text>
               <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
-                <Ionicons name="add" size={16} color="#FFF" />
-                <Text style={styles.emptyAddBtnText}>Bu Aya İşlem Ekle</Text>
+                <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
+                <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]}>Bu Aya İşlem Ekle</Text>
               </TouchableOpacity>
-            </View>
+            </Card>
           ) : (
-            <View style={styles.monthTransactionsCard}>
+            <Card style={styles.monthTransactionsCard}>
               {selectedMonthTransactions.map((tx) => {
                 const isCash = tx.accountType === 'cash' || tx.accountName?.includes('Nakit');
                 const accountBadgeText = isCash ? 'Nakit' : 'Banka';
@@ -518,7 +519,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </View>
                 );
               })}
-            </View>
+            </Card>
           )}
         </View>
       )}
@@ -597,13 +598,13 @@ const lightStyles = StyleSheet.create({
 
   // Hero Card
   heroCard: {
-    backgroundColor: '#0F2C23',
+    backgroundColor: '#1E3A8A',
     borderRadius: 26,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#1E4D3E',
+    borderColor: '#4D6BD0',
     marginBottom: 16,
-    shadowColor: '#0F2C23',
+    shadowColor: '#1E3A8A',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -646,7 +647,7 @@ const lightStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   toggleBtnActive: {
-    backgroundColor: '#1E4D3E',
+    backgroundColor: '#3453A9',
   },
   toggleText: {
     fontSize: 12,
@@ -680,16 +681,16 @@ const lightStyles = StyleSheet.create({
     marginBottom: 2,
   },
   totalBalanceCard: {
-    backgroundColor: '#174235',
-    borderColor: '#265C4B',
+    backgroundColor: '#243B8B',
+    borderColor: '#4D6BD0',
   },
   cashBalanceCard: {
-    backgroundColor: '#174235',
-    borderColor: '#265C4B',
+    backgroundColor: '#663784',
+    borderColor: '#9554BB',
   },
   bankBalanceCard: {
-    backgroundColor: '#174235',
-    borderColor: '#265C4B',
+    backgroundColor: '#174E86',
+    borderColor: '#2C80C8',
   },
   balanceCardTopRow: {
     flexDirection: 'row',
@@ -711,7 +712,7 @@ const lightStyles = StyleSheet.create({
   },
   balanceCardLabel: {
     fontSize: 12,
-    color: '#A7F3D0',
+    color: '#D3DEFF',
     fontWeight: '600',
     marginTop: 12,
   },
@@ -762,22 +763,22 @@ const lightStyles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#A9C5BA',
+    color: '#C4D0F3',
   },
   incomeAmount: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#F4FBF7',
+    color: '#F5F7FF',
   },
   expenseAmount: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#F4FBF7',
+    color: '#F5F7FF',
   },
   divider: {
     width: 1,
     height: 32,
-    backgroundColor: '#2C5A4E',
+    backgroundColor: '#4D6BD0',
     marginHorizontal: 14,
   },
 

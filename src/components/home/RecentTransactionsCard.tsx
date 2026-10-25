@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
@@ -56,7 +57,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
   };
 
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.header}>
         <View>
           <Text style={styles.subLabel}>AKTİVİTE</Text>
@@ -79,7 +80,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
           </Text>
           <TouchableOpacity style={styles.addBtn} activeOpacity={0.8} onPress={onAddPress}>
             <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
-            <Text style={styles.addBtnText}>İlk İşlemi Ekle</Text>
+            <Text style={[styles.addBtnText, { color: COLORS.primaryForeground }]}>İlk İşlemi Ekle</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -125,7 +126,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
           ))}
         </View>
       )}
-    </View>
+    </Card>
   );
 };
 

@@ -1,3 +1,4 @@
+import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../../context/ThemeContext';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
@@ -21,23 +22,23 @@ export const SummaryCardsRow: React.FC<SummaryCardsRowProps> = ({
   const styles = useThemedStyles(lightStyles);
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
+      <Card style={styles.card}>
         <View style={styles.iconBox}>
           <Ionicons name="arrow-down-outline" size={18} color={COLORS.primary} />
         </View>
         <Text style={styles.cardTitle}>Bu ay gelir</Text>
         <Text style={styles.cardAmount}>{incomeAmount}</Text>
         <Text style={styles.cardChange}>{incomeChange}</Text>
-      </View>
+      </Card>
 
-      <View style={styles.card}>
+      <Card style={styles.card}>
         <View style={styles.iconBox}>
           <Ionicons name="arrow-up-outline" size={18} color={COLORS.primary} />
         </View>
         <Text style={styles.cardTitle}>Bu ay gider</Text>
         <Text style={styles.cardAmount}>{expenseAmount}</Text>
         <Text style={styles.cardChange}>{expenseChange}</Text>
-      </View>
+      </Card>
     </View>
   );
 };
