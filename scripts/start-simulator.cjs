@@ -18,20 +18,39 @@ function isMetroReady() {
   });
 }
 
-function openExpoGo() {
-  execFile('xcrun', ['simctl', 'openurl', 'booted', expoUrl], (error) => {
-    if (error) {
-      console.error('Açık bir iOS simülatörü bulunamadı. Simulator uygulamasını açıp yeniden deneyin.');
-      return;
-    }
-    console.log(`Expo Go açıldı: ${expoUrl}`);
+function openUrl() {
+  return new Promise((resolve, reject) => {
+    execFile('xcrun', ['simctl', 'openurl', 'booted', expoUrl], (error, _stdout, stderr) => {
+      if (error) {
+        reject(new Error(stderr.trim() || error.message));
+        return;
+      }
+      resolve();
+    });
   });
+}
+
+async function openExpoGo() {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await openUrl();
+      console.log(`Expo Go açıldı: ${expoUrl}`);
+      return;
+    } catch (error) {
+      if (attempt === 1) {
+        console.error(`Expo Go açılamadı: ${error.message}`);
+        process.exitCode = 1;
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
 }
 
 async function waitForMetro(child) {
   for (let attempt = 0; attempt < 80; attempt += 1) {
     if (child?.exitCode !== null && child?.exitCode !== undefined) return;
-    if (await isMetroReady()) { openExpoGo(); return; }
+    if (await isMetroReady()) { await openExpoGo(); return; }
     await new Promise((resolve) => setTimeout(resolve, 750));
   }
   console.error('Metro 60 saniye içinde hazır olmadı. Yukarıdaki Expo hatasını kontrol edin.');
@@ -40,12 +59,12 @@ async function waitForMetro(child) {
 async function main() {
   if (await isMetroReady()) {
     console.log('Metro zaten çalışıyor; Expo Go açılıyor.');
-    openExpoGo();
+    await openExpoGo();
     return;
   }
 
   const cli = path.join(__dirname, '../node_modules/expo/bin/cli');
-  const child = spawn(process.execPath, [cli, 'start', '--go', '--host', 'lan', '--port', String(port)], {
+  const child = spawn(process.execPath, [cli, 'start', '--go', '--host', 'localhost', '--port', String(port)], {
     cwd: path.join(__dirname, '..'),
     stdio: 'inherit',
   });

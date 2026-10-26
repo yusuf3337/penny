@@ -1,6 +1,6 @@
 import { Card } from 'heroui-native/card';
 import { useThemedStyles } from '../context/ThemeContext';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Text } from '../components/common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +10,6 @@ import { PayDebtModal } from '../components/modals/PayDebtModal';
 import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import { useData } from '../context/DataContext';
 import { useAppDialog } from '../context/AppDialogContext';
-import { usePremium } from '../context/PremiumContext';
 import { Debt } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { localizeFormat } from '../context/LocaleContext';
@@ -23,20 +22,11 @@ interface DebtsScreenProps {
 export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpenSplitModal }) => {
   const styles = useThemedStyles(lightStyles);
   const { alert } = useAppDialog();
-  const { isPro, openPaywall } = usePremium();
   const { debts, handleAddDebt, handlePayDebt, handleDeleteDebt } = useData();
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [selectedDebtForPay, setSelectedDebtForPay] = useState<Debt | null>(null);
 
-  useEffect(() => {
-    if (!isPro) setIsAddModalVisible(false);
-  }, [isPro]);
-
   const requestNewDebt = () => {
-    if (!isPro) {
-      openPaywall('debt_tracking');
-      return;
-    }
     if (onOpenAddModal) onOpenAddModal();
     else setIsAddModalVisible(true);
   };
@@ -72,21 +62,6 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
         rightActionIcon="add"
         onRightActionPress={requestNewDebt}
       />
-
-      {!isPro && (
-        <TouchableOpacity style={styles.splitBanner} onPress={requestNewDebt} activeOpacity={0.85}>
-          <View style={styles.splitBannerLeft}>
-            <View style={styles.splitIconWrap}>
-              <Ionicons name="lock-closed-outline" size={18} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.splitBannerTitle}>Yeni borç ve alacak kaydı · Pro</Text>
-              <Text style={styles.splitBannerSub}>Mevcut kayıtlarınızı yönetmeye devam edebilirsiniz.</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={COLORS.mutedText} />
-        </TouchableOpacity>
-      )}
 
       {/* Summary Cards */}
       <View style={styles.summaryRow}>
@@ -139,9 +114,7 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
             <Ionicons name="people-outline" size={36} color={COLORS.subtleText} />
             <Text style={styles.emptyTitle}>Henüz borç/alacak kaydı yok</Text>
             <Text style={styles.emptySubtitle}>
-              {isPro
-                ? 'Kişilere verdiğiniz veya aldığınız borçları eklemek için yukarıdaki + butonuna dokunun.'
-                : 'Borç ve alacak kaydı oluşturmak için Penny Pro erişimini açın.'}
+              Kişilere verdiğiniz veya aldığınız borçları eklemek için yukarıdaki + butonuna dokunun.
             </Text>
           </View>
         }
@@ -232,10 +205,6 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
         visible={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
         onSave={(name, type, amt, desc) => {
-          if (!isPro) {
-            openPaywall('debt_tracking');
-            return;
-          }
           void handleAddDebt(name, type, amt, desc);
           setIsAddModalVisible(false);
         }}

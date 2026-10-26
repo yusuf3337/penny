@@ -51,7 +51,7 @@ export const HeroUIModal: React.FC<HeroUIModalProps> = ({
               </View>
               {subtitle && <Text className="text-[13px] leading-[19px] mt-1" style={{ color: colors.mutedText }}>{subtitle}</Text>}
             </View>
-            {dismissible && <CloseButton onPress={onClose} accessibilityLabel={localize('Pencereyi kapat')} className="rounded-xl" />}
+            {dismissible && <CloseButton feedbackVariant="scale" onPress={onClose} accessibilityLabel={localize('Pencereyi kapat')} className="rounded-xl" />}
           </Card.Header>
           <View className="h-px" style={{ backgroundColor: colors.cardBorder }} />
           {scrollable ? <ScrollView

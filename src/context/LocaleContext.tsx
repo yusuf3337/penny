@@ -3,6 +3,7 @@ import { AppState, NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import translations from '../locales/translations.json';
 import { OVERRIDES } from '../locales/overrides';
+import { DEFAULT_LABELS } from '../locales/defaultLabels';
 
 export type AppLanguage = 'tr' | 'en' | 'de' | 'fr' | 'ko' | 'zh' | 'ja' | 'ru' | 'it';
 export type LanguagePreference = AppLanguage | 'system';
@@ -59,7 +60,7 @@ export const localize = (source: string, language: AppLanguage = activeLanguage)
   if (language === 'tr' || !source.trim()) return source;
   const key = source.replace(/\s+/g, ' ').trim();
   const code = language === 'zh' ? 'zh-CN' : language;
-  const translated = OVERRIDES[code]?.[key] ?? dictionary[code]?.[key]
+  const translated = DEFAULT_LABELS[language]?.[key] ?? OVERRIDES[code]?.[key] ?? dictionary[code]?.[key]
     ?? OVERRIDES.en?.[key] ?? dictionary.en?.[key];
   if (!translated) return source;
   const leading = source.match(/^\s*/)?.[0] ?? '';
@@ -70,6 +71,15 @@ export const localize = (source: string, language: AppLanguage = activeLanguage)
 export const localizeFormat = (source: string, values: Array<string | number>, language: AppLanguage = activeLanguage): string =>
   localize(source, language).replace(/\{(\d+)\}/g, (match, index: string) =>
     values[Number(index)] === undefined ? match : String(values[Number(index)]));
+
+export const localizeTransactionTitle = (title: string, language: AppLanguage = activeLanguage): string => {
+  for (const suffix of [' · Ortak Harcama Tahsilatı', ' Ortak Harcama Payı']) {
+    if (title.endsWith(suffix)) {
+      return `${title.slice(0, -suffix.length)}${suffix.startsWith(' · ') ? ' · ' : ' '}${localize(suffix.trim().replace(/^·\s*/, ''), language)}`;
+    }
+  }
+  return title;
+};
 
 interface LocaleContextValue {
   language: AppLanguage;

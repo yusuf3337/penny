@@ -8,7 +8,6 @@ import * as Haptics from 'expo-haptics';
 import { HeroUINativeProvider } from 'heroui-native/provider';
 import Animated, { Easing, FadeInLeft, FadeInRight, FadeOut } from 'react-native-reanimated';
 import { DataProvider, useData } from './src/context/DataContext';
-import { PremiumProvider, usePremium } from './src/context/PremiumContext';
 import { AppDialogProvider } from './src/context/AppDialogContext';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { GoalsScreen } from './src/screens/GoalsScreen';
@@ -26,7 +25,6 @@ import { AddBudgetModal } from './src/components/modals/AddBudgetModal';
 import { AddDebtModal } from './src/components/modals/AddDebtModal';
 import { UserNameModal } from './src/components/modals/UserNameModal';
 import { SettingsModal } from './src/components/modals/SettingsModal';
-import { ProUpgradeModal } from './src/components/modals/ProUpgradeModal';
 import { COLORS } from './src/constants/colors';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LocaleProvider, useLocale } from './src/context/LocaleContext';
@@ -54,10 +52,7 @@ const MainNavigator = () => {
     handleAddSubscription,
     handleSaveBudget,
     handleAddDebt,
-    goals,
   } = useData();
-
-  const { isPro, openPaywall } = usePremium();
   const previousTab = useRef(activeTab);
   const currentIndex = tabOrder.indexOf(navTab(activeTab) as typeof tabOrder[number]);
   const previousIndex = tabOrder.indexOf(navTab(previousTab.current) as typeof tabOrder[number]);
@@ -68,6 +63,8 @@ const MainNavigator = () => {
   // Modals state per active tab
   const [isAddTxModalVisible, setIsAddTxModalVisible] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<AppTransaction | null>(null);
+  const [repeatTransaction, setRepeatTransaction] = useState<AppTransaction | null>(null);
+  const [newTransactionType, setNewTransactionType] = useState<'income' | 'expense'>('expense');
   const [isAddGoalModalVisible, setIsAddGoalModalVisible] = useState(false);
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const [isAddSubModalVisible, setIsAddSubModalVisible] = useState(false);
@@ -78,18 +75,7 @@ const MainNavigator = () => {
   const [isSplitModalVisible, setIsSplitModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
-  useEffect(() => {
-    if (!isPro) {
-      setIsAddDebtModalVisible(false);
-      setIsSplitModalVisible(false);
-    }
-  }, [isPro]);
-
   const handleOpenDebtModal = () => {
-    if (!isPro) {
-      openPaywall('debt_tracking');
-      return;
-    }
     setIsAddDebtModalVisible(true);
   };
 
@@ -99,10 +85,6 @@ const MainNavigator = () => {
 
     switch (activeTab) {
       case 'goals':
-        if (!isPro && goals.length >= 2) {
-          openPaywall('goal_limit');
-          return;
-        }
         setEditingGoal(null);
         setIsAddGoalModalVisible(true);
         break;
@@ -118,6 +100,7 @@ const MainNavigator = () => {
         handleOpenDebtModal();
         break;
       default:
+        setNewTransactionType('expense');
         setIsAddTxModalVisible(true);
         break;
     }
@@ -129,10 +112,6 @@ const MainNavigator = () => {
 
   const handleOpenSplitExpense = () => {
     triggerAddHaptic();
-    if (!isPro) {
-      openPaywall('split_expense');
-      return;
-    }
     setIsSplitModalVisible(true);
   };
 
@@ -147,14 +126,22 @@ const MainNavigator = () => {
       >
       {activeTab === 'timeline' && (
         <HomeScreen
-          onOpenAddModal={() => {
+          onOpenAddModal={(type = 'expense') => {
             triggerAddHaptic();
             setEditingTransaction(null);
+            setRepeatTransaction(null);
+            setNewTransactionType(type);
             setIsAddTxModalVisible(true);
           }}
           onEditTransaction={(tx) => {
             triggerAddHaptic();
             setEditingTransaction(tx);
+            setRepeatTransaction(null);
+            setIsAddTxModalVisible(true);
+          }}
+          onRepeatTransaction={(tx) => {
+            setEditingTransaction(null);
+            setRepeatTransaction(tx);
             setIsAddTxModalVisible(true);
           }}
           onOpenSettingsModal={() => setIsSettingsModalVisible(true)}
@@ -165,10 +152,6 @@ const MainNavigator = () => {
         <GoalsScreen
           onOpenGoalModal={(goal) => {
             triggerAddHaptic();
-            if (!goal && !isPro && goals.length >= 2) {
-              openPaywall('goal_limit');
-              return;
-            }
             setEditingGoal(goal || null);
             setIsAddGoalModalVisible(true);
           }}
@@ -234,7 +217,9 @@ const MainNavigator = () => {
       <AddTransactionModal
         visible={isAddTxModalVisible}
         initialTransaction={editingTransaction}
-        onClose={() => { setIsAddTxModalVisible(false); setEditingTransaction(null); }}
+        prefillTransaction={repeatTransaction}
+        initialType={newTransactionType}
+        onClose={() => { setIsAddTxModalVisible(false); setEditingTransaction(null); setRepeatTransaction(null); }}
         onSave={(tx) => editingTransaction ? handleUpdateTransaction(editingTransaction.id, tx) : handleAddTransaction(tx)}
       />
 
@@ -269,10 +254,6 @@ const MainNavigator = () => {
         visible={isAddDebtModalVisible}
         onClose={() => setIsAddDebtModalVisible(false)}
         onSave={(name, type, amount, description) => {
-          if (!isPro) {
-            openPaywall('debt_tracking');
-            return;
-          }
           void handleAddDebt(name, type, amount, description);
         }}
       />
@@ -289,8 +270,6 @@ const MainNavigator = () => {
         onClose={() => setIsSettingsModalVisible(false)}
       />
 
-      {/* Global Penny Pro Paywall */}
-      <ProUpgradeModal />
     </View>
   );
 };
@@ -335,13 +314,11 @@ export default function App() {
         <HeroUINativeProvider>
           <SafeAreaProvider>
             <ThemeProvider>
-              <PremiumProvider>
                 <AppDialogProvider>
                   <DataProvider>
                     <AppBody />
                   </DataProvider>
                 </AppDialogProvider>
-              </PremiumProvider>
             </ThemeProvider>
           </SafeAreaProvider>
         </HeroUINativeProvider>

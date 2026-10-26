@@ -106,4 +106,5 @@ export interface SavingsGoal {
   isCompleted: boolean;
   dueDate?: string;
   iconName?: string;
+  emoji?: string;
 }

@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, LIGHT_COLORS } from '../../constants/colors';
 import { useAppDialog } from '../../context/AppDialogContext';
 import { AppTransaction } from '../../types';
-import { localizeFormat } from '../../context/LocaleContext';
+import { localizeFormat, localizeTransactionTitle, useLocale } from '../../context/LocaleContext';
 
 interface RecentTransactionsCardProps {
   transactions: AppTransaction[];
@@ -21,6 +21,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
   onDeleteTransaction,
 }) => {
   const styles = useThemedStyles(lightStyles);
+  const { language } = useLocale();
   const { alert } = useAppDialog();
   const [showAll, setShowAll] = useState(false);
 
@@ -96,7 +97,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
               <View style={styles.iconContainer}>{renderIcon(item.iconName, item.type)}</View>
 
               <View style={styles.itemMain}>
-                <Text style={styles.itemTitle}>{item.title}</Text>
+                <Text localize={false} style={styles.itemTitle}>{localizeTransactionTitle(item.title, language)}</Text>
                 <Text style={styles.itemSubtitle}>
                   {item.category} · {item.date}
                 </Text>

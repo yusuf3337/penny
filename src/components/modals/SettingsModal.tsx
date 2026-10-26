@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Linking, View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { Text, TextInput } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { ACCENT_PALETTES, AccentPreference, COLORS } from '../../constants/colors';
@@ -11,27 +11,13 @@ import {
   shareTransactionsFileCSV,
   pickAndImportBackupFileJSON,
 } from '../../services/storageService';
-import { usePremium } from '../../context/PremiumContext';
 import { HeroUIModal } from '../common/HeroUIModal';
 import { Alert } from 'heroui-native/alert';
 import { useAppDialog } from '../../context/AppDialogContext';
 import { ThemePreference, useTheme } from '../../context/ThemeContext';
 import { LANGUAGE_OPTIONS, LanguagePreference, AppLanguage, getLanguageName, useLocale } from '../../context/LocaleContext';
 import { CURRENCY_OPTIONS, CurrencyPreference, useCurrency } from '../../context/CurrencyContext';
-import { getReminderStatus } from '../../services/notificationService';
 import { isValidNickname, sanitizeNickname } from '../../utils/nickname';
-
-const reminderCopy: Record<AppLanguage, { title: string; allowed: string; quiet: string; blocked: string; count: (n: number) => string; test: string; settings: string; testReady: string; testFailed: string }> = {
-  tr: { title: 'Abonelik bildirimleri', allowed: 'Bildirim izni açık', quiet: 'Bildirimler sessiz veya kilit ekranında kapalı', blocked: 'Bildirim izni kapalı', count: n => `${n} hatırlatma planlandı`, test: '15 saniyelik test bildirimi', settings: 'Telefon ayarlarını aç', testReady: 'Telefonu kilitleyin; test bildirimi 15 saniye sonra gelmeli.', testFailed: 'Bildirim izni verilemedi. Telefon ayarlarını kontrol edin.' },
-  en: { title: 'Subscription notifications', allowed: 'Notifications enabled', quiet: 'Notifications are quiet or hidden on the lock screen', blocked: 'Notifications disabled', count: n => `${n} reminders scheduled`, test: '15-second test notification', settings: 'Open phone settings', testReady: 'Lock your phone; the test should arrive in 15 seconds.', testFailed: 'Notification permission is unavailable. Check phone settings.' },
-  de: { title: 'Abo-Benachrichtigungen', allowed: 'Benachrichtigungen aktiviert', quiet: 'Benachrichtigungen sind stumm oder auf dem Sperrbildschirm verborgen', blocked: 'Benachrichtigungen deaktiviert', count: n => `${n} Erinnerungen geplant`, test: 'Test in 15 Sekunden', settings: 'Telefoneinstellungen öffnen', testReady: 'Sperren Sie das Telefon; der Test sollte in 15 Sekunden erscheinen.', testFailed: 'Keine Berechtigung. Prüfen Sie die Telefoneinstellungen.' },
-  fr: { title: 'Notifications d’abonnement', allowed: 'Notifications activées', quiet: 'Notifications silencieuses ou masquées sur l’écran verrouillé', blocked: 'Notifications désactivées', count: n => `${n} rappels programmés`, test: 'Test dans 15 secondes', settings: 'Ouvrir les réglages', testReady: 'Verrouillez le téléphone ; le test arrivera dans 15 secondes.', testFailed: 'Autorisation indisponible. Vérifiez les réglages du téléphone.' },
-  ko: { title: '구독 알림', allowed: '알림이 켜져 있습니다', quiet: '알림이 조용히 전달되거나 잠금 화면에서 숨겨집니다', blocked: '알림이 꺼져 있습니다', count: n => `${n}개 알림 예약됨`, test: '15초 테스트 알림', settings: '휴대전화 설정 열기', testReady: '휴대전화를 잠그세요. 15초 후 테스트 알림이 옵니다.', testFailed: '알림 권한이 없습니다. 휴대전화 설정을 확인하세요.' },
-  zh: { title: '订阅通知', allowed: '通知已开启', quiet: '通知为静默模式或在锁屏上隐藏', blocked: '通知已关闭', count: n => `已安排 ${n} 条提醒`, test: '15 秒测试通知', settings: '打开手机设置', testReady: '锁定手机；测试通知应在 15 秒后出现。', testFailed: '无法获得通知权限。请检查手机设置。' },
-  ja: { title: '購読通知', allowed: '通知が有効です', quiet: '通知は静かに配信されるかロック画面で非表示です', blocked: '通知が無効です', count: n => `${n} 件の通知を予約済み`, test: '15 秒後にテスト通知', settings: '端末の設定を開く', testReady: '端末をロックしてください。15 秒後に通知が届きます。', testFailed: '通知の許可がありません。端末の設定を確認してください。' },
-  ru: { title: 'Уведомления о подписках', allowed: 'Уведомления включены', quiet: 'Уведомления без звука или скрыты на экране блокировки', blocked: 'Уведомления выключены', count: n => `Запланировано напоминаний: ${n}`, test: 'Проверка через 15 секунд', settings: 'Открыть настройки телефона', testReady: 'Заблокируйте телефон; уведомление придёт через 15 секунд.', testFailed: 'Нет разрешения на уведомления. Проверьте настройки телефона.' },
-  it: { title: 'Notifiche abbonamenti', allowed: 'Notifiche attive', quiet: 'Notifiche silenziose o nascoste nella schermata di blocco', blocked: 'Notifiche disattivate', count: n => `${n} promemoria programmati`, test: 'Notifica di prova tra 15 secondi', settings: 'Apri impostazioni telefono', testReady: 'Blocca il telefono; la prova arriverà tra 15 secondi.', testFailed: 'Autorizzazione non disponibile. Controlla le impostazioni.' },
-};
 
 const currencyCopy: Record<AppLanguage, { title: string; system: string; note: string }> = {
   tr: { title: 'Para birimi', system: 'Sistem', note: 'Para birimi değişirse kayıtlı tutarlar dönüştürülmez.' },
@@ -68,7 +54,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   const { language, preference: languagePreference, setPreference: setLanguagePreference, t } = useLocale();
   const { currency, preference: currencyPreference, setPreference: setCurrencyPreference } = useCurrency();
   const { userName, updateUserName, reloadAllData, handleResetAllData } = useData();
-  const { isPro, isBillingConfigured, openPaywall, toggleDevPro, resetPremiumStatus } = usePremium();
   const [nameInput, setNameInput] = useState(userName);
   const [statusMsg, setStatusMsg] = useState('');
   const [importError, setImportError] = useState('');
@@ -79,7 +64,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   const resetPending = useRef(false);
   const importPending = useRef<string | null>(null);
   const [importing, setImporting] = useState(false);
-  const [reminderStatus, setReminderStatus] = useState<Awaited<ReturnType<typeof getReminderStatus>> | null>(null);
   const [expandedSetting, setExpandedSetting] = useState<'appearance' | 'accent' | 'language' | 'currency' | null>(null);
 
   useEffect(() => {
@@ -87,7 +71,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
       setNameInput(userName);
       setImportError('');
       if (!resetting) setShowResetConfirm(false);
-      void getReminderStatus().then(setReminderStatus).catch((error) => console.warn('Could not read notification status:', error));
     }
   }, [visible, userName]);
 
@@ -112,13 +95,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
 
   // Share CSV File for Excel
   const handleShareCSVFile = async () => {
-    if (!isPro) {
-      onClose();
-      setTimeout(() => {
-        openPaywall('csv_export');
-      }, 350);
-      return;
-    }
     setStatusMsg('Excel CSV rapor dosyası hazırlanıyor...');
     const ok = await shareTransactionsFileCSV();
     if (ok) {
@@ -192,7 +168,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
     resetPending.current = false;
     void (async () => {
       try {
-        await resetPremiumStatus();
         await handleResetAllData();
       } catch (error) {
         console.error('Reset error:', error);
@@ -226,42 +201,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
           <Alert.Content><Alert.Description>{statusMsg}</Alert.Description></Alert.Content>
         </Alert>
       ) : null}
-
-      {/* Penny Pro Status Banner Card */}
-      <TouchableOpacity
-        className="flex-row items-center justify-between p-3.5 rounded-2xl mb-4 border border-[#BFCDE8] dark:border-[#3E5280] bg-brand-soft dark:bg-brand-soft"
-        activeOpacity={0.85}
-        onPress={() => {
-          onClose();
-          setTimeout(() => {
-            openPaywall('settings_upgrade');
-          }, 350);
-        }}
-      >
-        <View className="flex-row items-center gap-3 flex-1 mr-2">
-          <View className="w-10 h-10 rounded-[14px] items-center justify-center bg-white dark:bg-[#17213A]">
-            <Ionicons name={isPro ? 'checkmark-circle-outline' : 'lock-closed-outline'} size={20} color={colors.primary} />
-          </View>
-          <View className="flex-1">
-            <View className="flex-row items-center gap-2 mb-0.5">
-              <Text className="text-sm font-bold text-zinc-900 dark:text-[#F5F7FF]">
-                {isPro ? 'Penny Pro Aktif' : 'Penny Pro özellikleri'}
-              </Text>
-              <View className="px-1.5 py-0.5 rounded-md bg-white dark:bg-[#17213A]">
-                <Text className="text-[10px] font-bold text-brand dark:text-brand">
-                  {isPro ? 'AKTİF' : 'İNCELE'}
-                </Text>
-              </View>
-            </View>
-            <Text className="text-[11px] text-zinc-500 dark:text-[#BAC8E6] leading-snug">
-              {isPro
-                ? 'Sınırsız bütçe & hedef, harcama bölüştürme ve tüm raporlar açık.'
-                : 'Sınırsız bütçe, hedef, ortak harcama ve ayrıntılı raporlar.'}
-            </Text>
-          </View>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-      </TouchableOpacity>
 
       {/* Profil İsmi Güncelleme */}
       <Text className="text-xs font-bold text-zinc-400 dark:text-[#93A5C8] uppercase tracking-wider mb-2">Profil İsmi</Text>
@@ -342,30 +281,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         })}
       </View>}
 
-      <Text localize={false} className="text-xs font-bold text-zinc-400 dark:text-[#93A5C8] uppercase tracking-wider mb-2">
-        {reminderCopy[language].title}
-      </Text>
-      <View className="bg-zinc-100 dark:bg-[#1E2A48] rounded-2xl p-3.5 mb-5">
-        <Text localize={false} className="text-sm font-semibold text-zinc-800 dark:text-[#F5F7FF]">
-          {reminderStatus ? reminderCopy[language][reminderStatus.status] : '…'}
-        </Text>
-        {reminderStatus ? (
-          <Text localize={false} className="text-xs text-zinc-500 dark:text-[#BAC8E6] mt-1">
-            {reminderCopy[language].count(reminderStatus.scheduled)}
-          </Text>
-        ) : null}
-        <View className="flex-row flex-wrap gap-2 mt-3">
-          {reminderStatus?.status !== 'allowed' ? (
-            <TouchableOpacity
-              className="rounded-xl border border-brand px-3 py-2.5"
-              onPress={() => void Linking.openSettings()}
-            >
-              <Text localize={false} className="text-xs font-bold text-brand dark:text-brand">{reminderCopy[language].settings}</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-
       <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'currency' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#1E2A48] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'currency' ? null : 'currency')}>
         <Text localize={false} style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>{currencyCopy[language].title} · {currency}</Text>
         <Ionicons name={expandedSetting === 'currency' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedText} />
@@ -430,16 +345,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         <View className="flex-1">
           <View className="flex-row items-center gap-1.5">
             <Text className="text-sm font-bold text-zinc-900 dark:text-[#F5F7FF]">Excel (CSV) Dosyası İndir</Text>
-            {!isPro && (
-              <View className="bg-amber-100 dark:bg-[#43341D] px-1.5 py-0.5 rounded">
-                <Text className="text-[9px] font-extrabold text-amber-800 dark:text-[#FCD34D]">PRO</Text>
-              </View>
-            )}
           </View>
           <Text className="text-[11px] text-zinc-500 dark:text-[#BAC8E6] mt-0.5">
-            {isPro
-              ? "İşlemleri Excel'de açılabilir .csv rapor dosyası olarak kaydedin"
-              : 'Penny Pro ile tüm işlemlerinizi Excel raporu olarak indirin'}
+            İşlemleri Excel'de açılabilir .csv rapor dosyası olarak kaydedin
           </Text>
         </View>
       </TouchableOpacity>
@@ -478,33 +386,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
         </View>
       ) : null}
 
-      {__DEV__ && !isBillingConfigured && (
-        <>
-          <Text className="text-xs font-bold text-zinc-400 dark:text-[#93A5C8] uppercase tracking-wider mb-2 mt-2">
-            Geliştirici Testi
-          </Text>
-          <TouchableOpacity
-            className="flex-row items-center gap-3 bg-zinc-100 dark:bg-[#1E2A48] p-3.5 rounded-2xl mb-4 active:bg-zinc-200"
-            onPress={async () => {
-              await toggleDevPro();
-              alert('Test Modu', !isPro ? 'Pro erişimi test için açıldı.' : 'Pro test erişimi kapatıldı.');
-            }}
-          >
-            <Ionicons name="flask-outline" size={18} color={colors.primary} />
-            <View className="flex-1">
-              <Text className="text-sm font-bold text-zinc-900 dark:text-[#F5F7FF]">{isPro ? 'Pro testini kapat' : 'Pro erişimini test et'}</Text>
-            </View>
-          </TouchableOpacity>
-        </>
-      )}
-
       {/* Sıfırlama Butonu */}
       <Text className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-2">Tehlikeli Bölge</Text>
       {showResetConfirm ? (
         <View className="bg-rose-50 dark:bg-[#44252E] p-3.5 rounded-2xl border border-rose-200 dark:border-[#68404A] mb-2">
           <Text className="text-sm font-bold text-rose-600 mb-1">Tüm Verileri Sıfırla</Text>
           <Text className="text-xs text-rose-700 dark:text-[#FDA4AF] mb-3">
-            İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.
+            İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.
           </Text>
           <View className="flex-row gap-2">
             <TouchableOpacity className="flex-1 items-center rounded-xl bg-white dark:bg-[#1E2A48] py-3" onPress={() => setShowResetConfirm(false)}>

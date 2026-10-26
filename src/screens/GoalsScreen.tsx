@@ -11,9 +11,8 @@ import { useAppDialog } from '../context/AppDialogContext';
 import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import { formatCurrency } from '../utils/formatters';
 import { SavingsGoal } from '../types';
-import { localizeFormat } from '../context/LocaleContext';
+import { localize, localizeFormat } from '../context/LocaleContext';
 
-import { usePremium } from '../context/PremiumContext';
 
 interface GoalsScreenProps {
   onOpenGoalModal: (goal?: SavingsGoal) => void;
@@ -23,7 +22,6 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
   const styles = useThemedStyles(lightStyles);
   const { alert } = useAppDialog();
   const { goals, totalSavedGoals, totalTargetGoals, handleSaveGoal, handleDeleteGoal } = useData();
-  const { isPro, openPaywall } = usePremium();
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
   const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState<SavingsGoal | null>(null);
 
@@ -56,32 +54,6 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
         rightActionIcon="add"
         onRightActionPress={() => onOpenGoalModal()}
       />
-
-      {/* Freemium Limit Tracker Bar */}
-      <View style={styles.quotaBarContainer}>
-        {isPro ? (
-          <View style={styles.proQuotaBadge}>
-            <Ionicons name="checkmark-circle-outline" size={15} color={COLORS.primary} />
-            <Text style={styles.proQuotaText}>Penny Pro Aktif · Sınırsız Birikim Hedefi</Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.freeQuotaBadge}
-            activeOpacity={0.8}
-            onPress={() => openPaywall('goal_limit')}
-          >
-            <View style={styles.freeQuotaLeft}>
-              <Ionicons name="flag-outline" size={14} color={COLORS.primary} />
-              <Text style={styles.freeQuotaText}>
-                Hedef Kotası: <Text style={{ fontWeight: '800' }}>{goals.length}/2</Text> (Ücretsiz)
-              </Text>
-            </View>
-            <View style={styles.freeQuotaRight}>
-              <Text style={styles.freeQuotaUpgradeLink}>Sınırsız Yap</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      </View>
 
       {/* Top Biriken Summary Card (Matching Image 2) */}
       <Card style={styles.summaryCard}>
@@ -149,17 +121,18 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
             <TouchableOpacity
               key={goal.id}
               style={styles.goalCard}
+              accessible={false}
               activeOpacity={0.9}
               onPress={() => onOpenGoalModal(goal)}
             >
               <View style={styles.goalHeader}>
                 <View style={styles.goalTitleWrap}>
                   <View style={styles.iconCircle}>
-                    <Ionicons
+                    {goal.emoji ? <Text localize={false} style={{ fontSize: 22 }}>{goal.emoji}</Text> : <Ionicons
                       name={(goal.iconName as any) || 'flag-outline'}
                       size={18}
                       color={COLORS.emeraldText}
-                    />
+                    />}
                   </View>
                   <View>
                     <Text style={styles.goalTitle}>{goal.title}</Text>
@@ -230,6 +203,8 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
 
                 <TouchableOpacity
                   style={styles.addProgressBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={localize('Birikim Ekle')}
                   onPress={() => setSelectedGoalForUpdate(goal)}
                 >
                   <Ionicons name="add-circle" size={14} color={COLORS.primaryForeground} />
@@ -238,6 +213,8 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
 
                 <TouchableOpacity
                   style={styles.deleteIconBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={localize('Hedefi Düzenle')}
                   onPress={() => onOpenGoalModal(goal)}
                 >
                   <Ionicons name="create-outline" size={16} color={COLORS.primary} />
@@ -245,6 +222,8 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
 
                 <TouchableOpacity
                   style={styles.deleteIconBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={localize('Hedefi Sil')}
                   onPress={() => confirmDelete(goal.id, goal.title)}
                 >
                   <Ionicons name="trash-outline" size={16} color={COLORS.subtleText} />
@@ -530,50 +509,4 @@ const lightStyles = StyleSheet.create({
     padding: 4,
   },
 
-  // Quota bar styles
-  quotaBarContainer: {
-    marginBottom: 16,
-  },
-  proQuotaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: LIGHT_COLORS.primaryLight,
-    borderWidth: 1,
-    borderColor: '#BFCDE8',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  proQuotaText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: LIGHT_COLORS.primary,
-  },
-  freeQuotaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: LIGHT_COLORS.card,
-    borderWidth: 1,
-    borderColor: LIGHT_COLORS.cardBorder,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  freeQuotaLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  freeQuotaText: {
-    fontSize: 12,
-    color: LIGHT_COLORS.foreground,
-  },
-  freeQuotaRight: {},
-  freeQuotaUpgradeLink: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: LIGHT_COLORS.primary,
-  },
 });

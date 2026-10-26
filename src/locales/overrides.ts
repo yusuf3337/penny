@@ -1,6 +1,7 @@
 // Reviewed financial and navigation terms. General screen copy lives in translations.json.
 export const OVERRIDES: Record<string, Record<string, string>> = {
   en: {
+    'Gelir Ekle': 'Add income', 'Gider Ekle': 'Add expense', 'Son İşlemler': 'Recent transactions',
     'Zarfı Düzenle': 'Edit envelope',
     'Bu kategori için zaten bir zarf var.': 'An envelope already exists for this category.',
     'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'If you change the category, spending is recalculated for the new category.',
@@ -39,6 +40,7 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': ' receivable records will be created.',
   },
   de: {
+    'Gelir Ekle': 'Einnahme hinzufügen', 'Gider Ekle': 'Ausgabe hinzufügen', 'Son İşlemler': 'Letzte Buchungen',
     'Zarfı Düzenle': 'Umschlag bearbeiten',
     'Bu kategori için zaten bir zarf var.': 'Für diese Kategorie gibt es bereits einen Umschlag.',
     'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'Wenn Sie die Kategorie ändern, werden die Ausgaben für die neue Kategorie neu berechnet.',
@@ -83,6 +85,7 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': ' Personen erhalten einen Forderungseintrag.',
   },
   fr: {
+    'Gelir Ekle': 'Ajouter un revenu', 'Gider Ekle': 'Ajouter une dépense', 'Son İşlemler': 'Opérations récentes',
     'Zarfı Düzenle': 'Modifier l’enveloppe',
     'Bu kategori için zaten bir zarf var.': 'Une enveloppe existe déjà pour cette catégorie.',
     'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'Si vous changez de catégorie, les dépenses sont recalculées pour la nouvelle catégorie.',
@@ -126,6 +129,7 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': ' créances seront créées.',
   },
   ko: {
+    'Gelir Ekle': '수입 추가', 'Gider Ekle': '지출 추가', 'Son İşlemler': '최근 거래',
     'Zarfı Düzenle': '예산 봉투 수정',
     'Bu kategori için zaten bir zarf var.': '이 카테고리에는 이미 예산 봉투가 있습니다.',
     'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': '카테고리를 변경하면 새 카테고리의 지출을 기준으로 다시 계산됩니다.',
@@ -165,6 +169,7 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': '명의 받을 돈 기록이 생성됩니다.',
   },
   'zh-CN': {
+    'Gelir Ekle': '添加收入', 'Gider Ekle': '添加支出', 'Son İşlemler': '最近交易',
     'Zarfı Düzenle': '编辑预算类别',
     'Bu kategori için zaten bir zarf var.': '此类别已有预算。',
     'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': '更改类别后，支出将按新类别重新计算。',
@@ -212,6 +217,7 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': '人将创建应收款记录。',
   },
   ja: {
+    'Gelir Ekle': '収入を追加', 'Gider Ekle': '支出を追加', 'Son İşlemler': '最近の取引',
     'Zarfı Düzenle': '予算封筒を編集',
     'Bu kategori için zaten bir zarf var.': 'このカテゴリには既に予算封筒があります。',
     'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'カテゴリを変更すると、新しいカテゴリの支出に基づいて再計算されます。',
@@ -251,6 +257,7 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': '人分の貸付金記録が作成されます。',
   },
   ru: {
+    'Gelir Ekle': 'Добавить доход', 'Gider Ekle': 'Добавить расход', 'Son İşlemler': 'Последние операции',
     'Zarfı Düzenle': 'Изменить конверт',
     'Bu kategori için zaten bir zarf var.': 'Для этой категории уже есть конверт.',
     'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'При смене категории расходы пересчитываются для новой категории.',
@@ -289,6 +296,7 @@ export const OVERRIDES: Record<string, Record<string, string>> = {
     'kişi için alacak kaydı açılacak.': ': будут созданы записи о суммах к получению.',
   },
   it: {
+    'Gelir Ekle': 'Aggiungi entrata', 'Gider Ekle': 'Aggiungi spesa', 'Son İşlemler': 'Operazioni recenti',
     'Zarfı Düzenle': 'Modifica busta',
     'Bu kategori için zaten bir zarf var.': 'Esiste già una busta per questa categoria.',
     'Kategori değişirse harcamalar yeni kategoriye göre hesaplanır.': 'Se cambi categoria, le spese vengono ricalcolate per la nuova categoria.',

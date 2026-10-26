@@ -46,6 +46,7 @@ export const HeroUIButton: React.FC<HeroUIButtonProps> = ({
 
   return <Button
     variant={nativeVariant[variant]}
+    feedbackVariant="scale"
     size={size}
     onPress={onPress}
     isDisabled={disabled || isLoading}

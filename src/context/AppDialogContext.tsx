@@ -52,6 +52,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             <View className="gap-2">
               {dialog?.actions.filter((action) => action.style !== 'cancel').map((action, index) => (
                 <Button
+                  feedbackVariant="scale"
                   key={`${action.text}-${index}`}
                   variant={action.style === 'destructive' ? 'danger' : 'primary'}
                   className="w-full rounded-2xl"
@@ -59,7 +60,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 ><Button.Label>{localize(action.text)}</Button.Label></Button>
               ))}
               {dialog?.actions.filter((action) => action.style === 'cancel').map((action, index) => (
-                <Button key={`${action.text}-${index}`} variant="ghost" className="w-full rounded-2xl" onPress={close}>
+                <Button key={`${action.text}-${index}`} feedbackVariant="scale" variant="ghost" className="w-full rounded-2xl" onPress={close}>
                   <Button.Label>{localize(action.text)}</Button.Label>
                 </Button>
               ))}

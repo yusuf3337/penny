@@ -14,7 +14,6 @@ import {
   isSameMonthAndYear,
 } from '../utils/formatters';
 
-import { usePremium } from '../context/PremiumContext';
 import { CategoryBudget } from '../types';
 import { useLocale } from '../context/LocaleContext';
 
@@ -27,7 +26,6 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEd
   const styles = useThemedStyles(lightStyles);
   const { t } = useLocale();
   const { budgets, transactions, totalBudgetedSpending } = useData();
-  const { isPro, openPaywall } = usePremium();
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
 
   const handlePrevMonth = () => setSelectedMonth((prev) => changeMonth(prev, -1));
@@ -66,32 +64,6 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEd
         rightActionIcon="add"
         onRightActionPress={onOpenAddModal}
       />
-
-      {/* Freemium Limit Tracker Bar */}
-      <View style={styles.quotaBarContainer}>
-        {isPro ? (
-          <View style={styles.proQuotaBadge}>
-            <Ionicons name="checkmark-circle-outline" size={15} color={COLORS.primary} />
-            <Text style={styles.proQuotaText}>Penny Pro Aktif · Sınırsız Bütçe Zarfı</Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.freeQuotaBadge}
-            activeOpacity={0.8}
-            onPress={() => openPaywall('budget_limit')}
-          >
-            <View style={styles.freeQuotaLeft}>
-              <Ionicons name="pie-chart-outline" size={14} color={COLORS.primary} />
-              <Text style={styles.freeQuotaText}>
-                Zarf Kotası: <Text style={{ fontWeight: '800' }}>{budgets.length}/3</Text> (Ücretsiz)
-              </Text>
-            </View>
-            <View style={styles.freeQuotaRight}>
-              <Text style={styles.freeQuotaUpgradeLink}>Sınırsız Yap</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      </View>
 
       {/* Month Selector */}
       <View style={styles.monthSelectorRow}>
@@ -201,7 +173,7 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEd
                     />
                   </View>
                   <View style={styles.catTextWrap}>
-                    <Text style={styles.catName}>{b.categoryName} Zarfı</Text>
+                    <Text localize={false} style={styles.catName}>{t(b.categoryName)} · {t('Zarfı')}</Text>
                     <Text style={styles.badgeText}>
                       Kalan: <Text style={{ fontWeight: '700', color: isOverLimit ? COLORS.rose : COLORS.emeraldText }}>{formatCurrency(remaining)}</Text>
                     </Text>
@@ -211,7 +183,7 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEd
                   style={[styles.editButton, { backgroundColor: `${accent}22` }]}
                   onPress={() => onEditBudget(b)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${t('Zarfı Düzenle')}: ${b.categoryName}`}
+                  accessibilityLabel={`${t('Zarfı Düzenle')}: ${t(b.categoryName)}`}
                   activeOpacity={0.72}
                 >
                   <Ionicons name="create-outline" size={18} color={accent} />
@@ -539,50 +511,4 @@ const lightStyles = StyleSheet.create({
     borderRadius: 3,
   },
 
-  // Quota bar styles
-  quotaBarContainer: {
-    marginBottom: 16,
-  },
-  proQuotaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: LIGHT_COLORS.primaryLight,
-    borderWidth: 1,
-    borderColor: '#BFCDE8',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  proQuotaText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: LIGHT_COLORS.primary,
-  },
-  freeQuotaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: LIGHT_COLORS.card,
-    borderWidth: 1,
-    borderColor: LIGHT_COLORS.cardBorder,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  freeQuotaLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  freeQuotaText: {
-    fontSize: 12,
-    color: LIGHT_COLORS.foreground,
-  },
-  freeQuotaRight: {},
-  freeQuotaUpgradeLink: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: LIGHT_COLORS.primary,
-  },
 });
