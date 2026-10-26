@@ -9,10 +9,11 @@ import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import { useData } from '../context/DataContext';
 import { useAppDialog } from '../context/AppDialogContext';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
-import { localizeFormat } from '../context/LocaleContext';
+import { localizeFormat, localizeTransactionTitle, useLocale } from '../context/LocaleContext';
 
 export const TransactionsScreen = () => {
   const styles = useThemedStyles(lightStyles);
+  const { language } = useLocale();
   const { alert } = useAppDialog();
   const { transactions, handleDeleteTransaction } = useData();
   const [accountFilter, setAccountFilter] = useState<'all' | 'bank' | 'cash'>('all');
@@ -84,7 +85,7 @@ export const TransactionsScreen = () => {
             <Card style={styles.itemCard}>
               <View style={styles.itemMain}>
                 <View style={styles.titleRow}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
+                  <Text localize={false} style={styles.itemTitle}>{localizeTransactionTitle(item.title, language)}</Text>
                   <View style={styles.accountBadgeChip}>
                     <Ionicons name={accountIconName} size={10} color={COLORS.mutedText} />
                     <Text style={styles.accountBadgeText}>{accountBadgeText}</Text>

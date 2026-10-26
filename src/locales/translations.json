@@ -567,7 +567,7 @@
     "İşlem bilgilerini güncelleyin.": "Update the transaction details.",
     "İşlem kaydedilemedi. Tekrar deneyin.": "Could not save the transaction. Try again.",
     "Veriler sıfırlanamadı. Tekrar deneyin.": "Could not reset the data. Try again.",
-    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Transactions, goals, subscription records and budgets will be deleted. Your App Store subscription will remain active.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.": "Transactions, goals, subscription records and budgets will be deleted.",
     "Evet, Sıfırla": "Yes, reset"
   },
   "de": {
@@ -1138,7 +1138,7 @@
     "İşlem bilgilerini güncelleyin.": "Buchungsdetails aktualisieren.",
     "İşlem kaydedilemedi. Tekrar deneyin.": "Buchung konnte nicht gespeichert werden. Bitte erneut versuchen.",
     "Veriler sıfırlanamadı. Tekrar deneyin.": "Daten konnten nicht zurückgesetzt werden. Bitte erneut versuchen.",
-    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Buchungen, Ziele, Abo-Einträge und Budgets werden gelöscht. Ihr App-Store-Abo bleibt aktiv.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.": "Buchungen, Ziele, Abo-Einträge und Budgets werden gelöscht.",
     "Evet, Sıfırla": "Ja, zurücksetzen"
   },
   "fr": {
@@ -1709,7 +1709,7 @@
     "İşlem bilgilerini güncelleyin.": "Modifiez les détails de la transaction.",
     "İşlem kaydedilemedi. Tekrar deneyin.": "Impossible d’enregistrer la transaction. Réessayez.",
     "Veriler sıfırlanamadı. Tekrar deneyin.": "Impossible de réinitialiser les données. Réessayez.",
-    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Les transactions, objectifs, abonnements enregistrés et budgets seront supprimés. Votre abonnement App Store restera actif.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.": "Les transactions, objectifs, abonnements enregistrés et budgets seront supprimés.",
     "Evet, Sıfırla": "Oui, réinitialiser"
   },
   "ko": {
@@ -2280,7 +2280,7 @@
     "İşlem bilgilerini güncelleyin.": "거래 정보를 수정하세요.",
     "İşlem kaydedilemedi. Tekrar deneyin.": "거래를 저장하지 못했습니다. 다시 시도하세요.",
     "Veriler sıfırlanamadı. Tekrar deneyin.": "데이터를 초기화하지 못했습니다. 다시 시도하세요.",
-    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "거래, 목표, 구독 기록 및 예산이 삭제됩니다. App Store 구독은 유지됩니다.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.": "거래, 목표, 구독 기록 및 예산이 삭제됩니다.",
     "Evet, Sıfırla": "예, 초기화"
   },
   "zh-CN": {
@@ -2851,7 +2851,7 @@
     "İşlem bilgilerini güncelleyin.": "更新交易详情。",
     "İşlem kaydedilemedi. Tekrar deneyin.": "无法保存交易，请重试。",
     "Veriler sıfırlanamadı. Tekrar deneyin.": "无法重置数据，请重试。",
-    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "交易、目标、订阅记录和预算将被删除。您的 App Store 订阅仍然有效。",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.": "交易、目标、订阅记录和预算将被删除。",
     "Evet, Sıfırla": "是，重置"
   },
   "ja": {
@@ -3422,7 +3422,7 @@
     "İşlem bilgilerini güncelleyin.": "取引内容を更新してください。",
     "İşlem kaydedilemedi. Tekrar deneyin.": "取引を保存できませんでした。もう一度お試しください。",
     "Veriler sıfırlanamadı. Tekrar deneyin.": "データをリセットできませんでした。もう一度お試しください。",
-    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "取引、目標、購読の記録、予算が削除されます。App Store の定期購入は継続します。",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.": "取引、目標、購読の記録、予算が削除されます。",
     "Evet, Sıfırla": "はい、リセット"
   },
   "ru": {
@@ -3993,7 +3993,7 @@
     "İşlem bilgilerini güncelleyin.": "Обновите данные операции.",
     "İşlem kaydedilemedi. Tekrar deneyin.": "Не удалось сохранить операцию. Повторите попытку.",
     "Veriler sıfırlanamadı. Tekrar deneyin.": "Не удалось сбросить данные. Повторите попытку.",
-    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Операции, цели, записи о подписках и бюджеты будут удалены. Подписка App Store останется активной.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.": "Операции, цели, записи о подписках и бюджеты будут удалены.",
     "Evet, Sıfırla": "Да, сбросить"
   },
   "it": {
@@ -4564,7 +4564,7 @@
     "İşlem bilgilerini güncelleyin.": "Aggiorna i dettagli della transazione.",
     "İşlem kaydedilemedi. Tekrar deneyin.": "Impossibile salvare la transazione. Riprova.",
     "Veriler sıfırlanamadı. Tekrar deneyin.": "Impossibile reimpostare i dati. Riprova.",
-    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek. App Store aboneliğiniz devam eder.": "Transazioni, obiettivi, abbonamenti registrati e budget verranno eliminati. L’abbonamento App Store resterà attivo.",
+    "İşlemler, hedefler, abonelik kayıtları ve bütçeler silinecek.": "Transazioni, obiettivi, abbonamenti registrati e budget verranno eliminati.",
     "Evet, Sıfırla": "Sì, reimposta"
   }
 }

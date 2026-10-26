@@ -4,7 +4,7 @@ Penny, işlemler, bütçeler, hedefler, borç/alacaklar ve görünüm tercihleri
 
 Yedek dosyası paylaşmayı seçerseniz dosya, seçtiğiniz uygulama veya hizmete aktarılır. Paylaşımdan sonraki saklama ve işleme koşulları seçtiğiniz hizmetin politikasına bağlıdır. Uygulama içinden kayıtlarınızı silebilirsiniz.
 
-Pro abonelikleri Apple App Store üzerinden işlenir. Penny, StoreKit'in bildirdiği etkin abonelik durumunu okuyarak Pro erişimini açar. Ödeme kartı bilgilerinizi Penny almaz veya saklamaz. Satın alma ve abonelik yönetiminde Apple'ın gizlilik koşulları geçerlidir.
+Penny tamamen ücretsizdir. Uygulama içi satın alma veya ücretli abonelik bulunmaz. Penny ödeme kartı bilgilerinizi almaz veya saklamaz.
 
 Penny reklam veya üçüncü taraf analiz hizmeti içermez.
 

@@ -40,7 +40,6 @@ import {
   resetAllAppData,
 } from '../services/storageService';
 import { calculateNextDueDate, advanceSubscriptionDueDate, isSameMonthAndYear, formatCurrency } from '../utils/formatters';
-import { usePremium } from './PremiumContext';
 import { useLocale } from './LocaleContext';
 import { useCurrency } from './CurrencyContext';
 import { notifySubscriptionRecorded, requestNotificationPermissions, syncSubscriptionReminders } from '../services/notificationService';
@@ -105,7 +104,6 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isPro, checkGoalAllowed, checkBudgetAllowed } = usePremium();
   const { language } = useLocale();
   const { currency } = useCurrency();
   const [userName, setUserName] = useState<string>('Kullanıcı');
@@ -297,7 +295,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     iconName?: string,
     color?: string
   ) => {
-    if (!isPro) throw new Error('Özel kategori oluşturmak için Penny Pro gerekir.');
     const updated = await addCatService(name, type, iconName, color);
     setCategories(updated);
   };
@@ -328,9 +325,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleSaveGoal = async (goal: Partial<SavingsGoal>) => {
-    if (!goal.id && !checkGoalAllowed(goals.length)) {
-      throw new Error('Ücretsiz plandaki hedef sınırına ulaşıldı.');
-    }
     const updated = await saveGoalService(goal);
     setGoals(updated);
   };
@@ -354,11 +348,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     color?: string,
     budgetId?: string
   ) => {
-    const normalizedCategory = categoryName.trim().toLocaleLowerCase('tr-TR');
-    const alreadyExists = budgets.some((budget) => budget.categoryName.trim().toLocaleLowerCase('tr-TR') === normalizedCategory);
-    if (!budgetId && !alreadyExists && !checkBudgetAllowed(budgets.length)) {
-      throw new Error('Ücretsiz plandaki bütçe sınırına ulaşıldı.');
-    }
     const updated = await addBudgetService(categoryName, allocatedAmount, iconName, color, budgetId);
     setBudgets(updated);
   };

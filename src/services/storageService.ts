@@ -221,6 +221,7 @@ export const addOrUpdateGoal = async (goal: Partial<SavingsGoal>): Promise<Savin
       remainingAmount: Math.max(target - saved, 0),
       isCompleted: saved >= target,
       iconName: goal.iconName || 'flag-outline',
+      emoji: goal.emoji,
     };
     const updated = [newGoal, ...current];
     await saveStoredGoals(updated);

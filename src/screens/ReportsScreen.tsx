@@ -15,11 +15,10 @@ import {
   changeMonth,
   isSameMonthAndYear,
 } from '../utils/formatters';
-import { usePremium } from '../context/PremiumContext';
-import { getActiveLanguage, getFormattingLocale, localize, localizeFormat } from '../context/LocaleContext';
+import { AppLanguage, getFormattingLocale, localize, localizeFormat, localizeTransactionTitle, useLocale } from '../context/LocaleContext';
 
-const topSpendingMessage = (month: string, category: string, percentage: number, amount: string): string => {
-  switch (getActiveLanguage()) {
+const topSpendingMessage = (language: AppLanguage, month: string, category: string, percentage: number, amount: string): string => {
+  switch (language) {
     case 'en': return `In ${month}, ${category} was your top spending category at ${percentage}% (${amount}).`;
     case 'de': return `Im ${month} entfielen ${percentage}% Ihrer Ausgaben (${amount}) auf ${category}.`;
     case 'fr': return `En ${month}, ${category} représentait ${percentage} % de vos dépenses (${amount}).`;
@@ -38,6 +37,7 @@ interface ReportsScreenProps {
 
 export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) => {
   const styles = useThemedStyles(lightStyles);
+  const { language, t } = useLocale();
   const {
     transactions,
     totalBalance,
@@ -47,7 +47,6 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
     totalSavedGoals,
   } = useData();
 
-  const { isPro, openPaywall } = usePremium();
 
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [activeSubTab, setActiveSubTab] = useState<'kategori' | 'genel' | 'icgoru' | 'trend' | 'zaman'>('kategori');
@@ -187,11 +186,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {/* Sub Navigation Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabRow} contentContainerStyle={styles.subTabContent}>
         {[
-          { id: 'genel', label: 'Genel', isProTab: false },
-          { id: 'kategori', label: 'Kategori', isProTab: false },
-          { id: 'icgoru', label: 'İçgörüler', isProTab: true },
-          { id: 'trend', label: 'Trend', isProTab: true },
-          { id: 'zaman', label: 'Zaman', isProTab: true },
+          { id: 'genel', label: 'Genel' },
+          { id: 'kategori', label: 'Kategori' },
+          { id: 'icgoru', label: 'İçgörüler' },
+          { id: 'trend', label: 'Trend' },
+          { id: 'zaman', label: 'Zaman' },
         ].map((tab) => {
           const isActive = activeSubTab === tab.id;
           return (
@@ -204,9 +203,6 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 <Text style={[styles.subTabText, isActive && styles.subTabTextActive]}>
                   {tab.label}
                 </Text>
-                {tab.isProTab && !isPro && (
-                  <Ionicons name="lock-closed-outline" size={11} color={COLORS.mutedText} />
-                )}
               </View>
             </TouchableOpacity>
           );
@@ -381,39 +377,8 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
         </View>
       )}
 
-      {/* ADVANCED PRO TABS GATE */}
-      {!isPro && (activeSubTab === 'icgoru' || activeSubTab === 'trend' || activeSubTab === 'zaman') && (
-        <Card style={styles.proLockedCard}>
-          <View style={styles.proLockedCrownWrap}>
-            <Ionicons name="analytics-outline" size={28} color={COLORS.primary} />
-          </View>
-          <Text style={styles.proLockedTitle}>
-            {activeSubTab === 'icgoru'
-              ? 'Akıllı Finansal İçgörüler'
-              : activeSubTab === 'trend'
-              ? 'Gelir & Gider Trend Analizi'
-              : 'Detaylı Zaman Akışı'}
-          </Text>
-          <View style={styles.proLockedBadgePill}>
-            <Text style={styles.proLockedBadgeText}>PENNY PRO ANALİTİK</Text>
-          </View>
-          <Text style={styles.proLockedDesc}>
-            Altı aylık karşılaştırma, harcama değişimi, ay sonu tahmini ve abonelik yükünü tek yerde görün.
-          </Text>
-
-          <TouchableOpacity
-            style={styles.proLockedBtn}
-            onPress={() => openPaywall('reports_advanced')}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="analytics-outline" size={16} color="#0F172A" style={{ marginRight: 6 }} />
-            <Text style={styles.proLockedBtnText}>Analizleri Aç</Text>
-          </TouchableOpacity>
-        </Card>
-      )}
-
       {/* TAB 3: İÇGÖRÜLER (Smart Financial Insights) */}
-      {isPro && activeSubTab === 'icgoru' && (
+      {activeSubTab === 'icgoru' && (
         <View style={styles.insightWrap}>
           {topExpenseCategory ? (
             <Card style={styles.insightAlertCard}>
@@ -422,7 +387,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 <Text style={styles.insightAlertTitle}>En Yüksek Harcama Kategorisi</Text>
               </View>
               <Text style={styles.insightAlertBody}>
-                {topSpendingMessage(currentMonthName, topExpenseCategory.name, topExpenseCategory.percentage, formatCurrency(topExpenseCategory.rawAmount))}
+                {topSpendingMessage(language, currentMonthName, t(topExpenseCategory.name), topExpenseCategory.percentage, formatCurrency(topExpenseCategory.rawAmount))}
               </Text>
             </Card>
           ) : null}
@@ -478,7 +443,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       )}
 
       {/* TAB 4: TREND (Income vs Expense Trend) */}
-      {isPro && activeSubTab === 'trend' && (
+      {activeSubTab === 'trend' && (
         <View style={styles.trendWrap}>
           <Card style={styles.chartCard}>
             <Text style={styles.chartCardTitle}>Son 6 Ay · Gelir ve Gider</Text>
@@ -512,7 +477,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       )}
 
       {/* TAB 5: ZAMAN (Chronological Stream Breakdown) */}
-      {isPro && activeSubTab === 'zaman' && (
+      {activeSubTab === 'zaman' && (
         <View style={styles.zamanWrap}>
           <Text style={styles.sectionTitle}>{currentMonthName} İşlem Akışı</Text>
           {monthlyTransactions.length === 0 ? (
@@ -526,7 +491,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 <View style={styles.zamanLeft}>
                   <View style={[styles.zamanDot, { backgroundColor: tx.type === 'income' ? COLORS.emerald : tx.type === 'transfer' ? COLORS.primary : COLORS.rose }]} />
                   <View>
-                    <Text style={styles.zamanTitle}>{tx.title}</Text>
+                    <Text localize={false} style={styles.zamanTitle}>{localizeTransactionTitle(tx.title, language)}</Text>
                     <Text style={styles.zamanSub}>{tx.category} · {formatShortDate(tx.date)}</Text>
                   </View>
                 </View>
@@ -970,77 +935,4 @@ const lightStyles = StyleSheet.create({
     borderColor: LIGHT_COLORS.cardBorder,
   },
 
-  // Pro Lock Gate Card
-  proLockedCard: {
-    backgroundColor: '#1E3477',
-    borderRadius: 22,
-    padding: 24,
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#4864B4',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  proLockedCrownWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#3854A1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#5B77C8',
-  },
-  proLockedTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  proLockedBadgePill: {
-    backgroundColor: '#3854A1',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  proLockedBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#D4E0FF',
-    letterSpacing: 0.8,
-  },
-  proLockedDesc: {
-    fontSize: 13,
-    color: '#94A3B8',
-    textAlign: 'center',
-    lineHeight: 19,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-  },
-  proLockedBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#DCE7FF',
-    paddingVertical: 14,
-    paddingHorizontal: 22,
-    borderRadius: 14,
-    shadowColor: '#080F23',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  proLockedBtnText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
 });

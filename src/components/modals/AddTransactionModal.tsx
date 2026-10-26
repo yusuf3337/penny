@@ -1,5 +1,5 @@
 import { getCurrencySymbol } from '../../context/CurrencyContext';
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,6 @@ import { useData } from '../../context/DataContext';
 import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
 import { HeroUIButton } from '../common/HeroUIButton';
-import { usePremium } from '../../context/PremiumContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Surface } from 'heroui-native/surface';
 import { useVoiceTransaction } from '../../hooks/useVoiceTransaction';
@@ -20,6 +19,8 @@ import { parseVoiceTransaction } from '../../utils/voiceTransaction';
 interface AddTransactionModalProps {
   visible: boolean;
   initialTransaction?: AppTransaction | null;
+  prefillTransaction?: AppTransaction | null;
+  initialType?: 'income' | 'expense';
   onClose: () => void;
   onSave: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => Promise<void> | void;
 }
@@ -34,6 +35,17 @@ const accountCopy: Record<AppLanguage, { title: string; required: string }> = {
   ja: { title: '口座を選択', required: '銀行または現金を選択してください。' },
   ru: { title: 'Счёт', required: 'Выберите банк или наличные.' },
   it: { title: 'Conto', required: 'Scegli banca o contanti.' },
+};
+const quickCopy: Record<AppLanguage, { repeat: string; remembered: string; repeatHint: string }> = {
+  tr: { repeat: 'İşlemi Tekrarla', remembered: 'Önceki seçimi kullan', repeatHint: 'Önceki işlem hazır. Tutarı kontrol edip kaydedin.' },
+  en: { repeat: 'Repeat transaction', remembered: 'Use previous selection', repeatHint: 'Previous details are ready. Check the amount before saving.' },
+  de: { repeat: 'Buchung wiederholen', remembered: 'Vorherige Auswahl verwenden', repeatHint: 'Vorherige Angaben sind bereit. Prüfen Sie den Betrag.' },
+  fr: { repeat: 'Répéter l’opération', remembered: 'Utiliser le choix précédent', repeatHint: 'Les détails précédents sont prêts. Vérifiez le montant.' },
+  ko: { repeat: '거래 다시 입력', remembered: '이전 선택 사용', repeatHint: '이전 거래 정보가 준비되었습니다. 금액을 확인하세요.' },
+  zh: { repeat: '重复交易', remembered: '使用上次选择', repeatHint: '已填入上次交易信息，请确认金额。' },
+  ja: { repeat: '取引を再入力', remembered: '前回の選択を使用', repeatHint: '前回の内容を入力しました。金額を確認してください。' },
+  ru: { repeat: 'Повторить операцию', remembered: 'Использовать прошлый выбор', repeatHint: 'Предыдущие данные готовы. Проверьте сумму.' },
+  it: { repeat: 'Ripeti operazione', remembered: 'Usa la scelta precedente', repeatHint: 'I dati precedenti sono pronti. Controlla l’importo.' },
 };
 
 const voiceCopy: Record<AppLanguage, { title: string; hint: string; start: string; stop: string; listening: string; review: string; permission: string; unavailable: string; noSpeech: string; failed: string }> = {
@@ -51,11 +63,12 @@ const voiceCopy: Record<AppLanguage, { title: string; hint: string; start: strin
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   visible,
   initialTransaction,
+  prefillTransaction,
+  initialType = 'expense',
   onClose,
   onSave,
 }) => {
-  const { categories: contextCategories, budgets, handleAddCategory } = useData();
-  const { isPro, openPaywall } = usePremium();
+  const { categories: contextCategories, budgets, transactions, handleAddCategory } = useData();
   const { colors } = useTheme();
   const { language, t } = useLocale();
   const voice = useVoiceTransaction(visible);
@@ -73,13 +86,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [txDate, setTxDate] = useState<Date>(new Date());
   const [error, setError] = useState('');
   const [showDetails, setShowDetails] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
   const [showCategoryInput, setShowCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [categoryError, setCategoryError] = useState('');
   const [selectionError, setSelectionError] = useState('');
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [saving, setSaving] = useState(false);
-  const pendingCategoryPaywall = useRef(false);
 
   const filteredCategories = useMemo(() => {
     const matching = categoriesList.filter((category) => category.type === type);
@@ -94,13 +107,23 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     () => new Set(budgets.map((budget) => budget.categoryName.trim().toLocaleLowerCase('tr-TR'))),
     [budgets]
   );
+  const rememberedTransaction = useMemo(() => {
+    if (initialTransaction || prefillTransaction || title.trim().length < 2) return null;
+    const normalizedTitle = title.trim().toLocaleLowerCase(language === 'tr' ? 'tr-TR' : undefined);
+    return transactions.find((transaction) =>
+      transaction.type === type &&
+      transaction.title.trim().toLocaleLowerCase(language === 'tr' ? 'tr-TR' : undefined) === normalizedTitle &&
+      filteredCategories.some((category) => category.name === transaction.category)
+    ) ?? null;
+  }, [transactions, title, type, filteredCategories, initialTransaction, prefillTransaction, language]);
 
   useEffect(() => {
     if (visible) {
-      setType(initialTransaction?.type === 'income' ? 'income' : 'expense');
-      setTitle(initialTransaction?.title ?? '');
-      setAmountInput(initialTransaction ? formatNumberInput(String(initialTransaction.rawAmount)) : '');
-      setSelectedCategory(initialTransaction?.category ?? '');
+      const source = initialTransaction ?? prefillTransaction;
+      setType(source?.type === 'income' ? 'income' : source?.type === 'expense' ? 'expense' : initialType);
+      setTitle(source?.title ?? '');
+      setAmountInput(source ? formatNumberInput(String(source.rawAmount)) : '');
+      setSelectedCategory(source?.category ?? '');
       const existingDate = initialTransaction?.date ? new Date(initialTransaction.date) : new Date();
       setTxDate(Number.isNaN(existingDate.getTime()) ? new Date() : existingDate);
       setError('');
@@ -108,14 +131,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setAccountError(false);
       setSelectedAccountId('');
       setShowDetails(false);
+      setShowVoice(false);
       getAccounts().then((accs) => {
         setAccounts(accs);
-        const matching = accs.find((acc) => acc.id === initialTransaction?.accountId)
-          ?? accs.find((acc) => acc.type === initialTransaction?.accountType);
+        const matching = accs.find((acc) => acc.id === source?.accountId)
+          ?? accs.find((acc) => acc.type === source?.accountType);
         setSelectedAccountId(matching?.id ?? '');
       });
     }
-  }, [visible, initialTransaction]);
+  }, [visible, initialTransaction, prefillTransaction, initialType]);
 
   useEffect(() => {
     if (!voice.finalTranscript) return;
@@ -137,7 +161,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   }, [voice.finalTranscript, accounts]);
 
   const createCategory = async () => {
-    if (!isPro) return;
     const name = newCategoryName.trim();
     if (!name) {
       setCategoryError('Lütfen bir kategori adı girin.');
@@ -262,14 +285,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     <HeroUIModal
       isOpen={visible}
       onClose={onClose}
-      onDismiss={() => {
-        if (pendingCategoryPaywall.current) {
-          pendingCategoryPaywall.current = false;
-          openPaywall('custom_category');
-        }
-      }}
-      title={initialTransaction ? 'İşlemi Düzenle' : 'Yeni İşlem Ekle'}
-      subtitle={initialTransaction ? 'İşlem bilgilerini güncelleyin.' : 'Gelir veya gider hareketlerinizi anında kaydedin.'}
+      title={initialTransaction ? 'İşlemi Düzenle' : prefillTransaction ? quickCopy[language].repeat : 'Yeni İşlem Ekle'}
+      subtitle={initialTransaction ? 'İşlem bilgilerini güncelleyin.' : prefillTransaction ? quickCopy[language].repeatHint : 'Gelir veya gider hareketlerinizi anında kaydedin.'}
       badge={{
         text: type === 'expense' ? 'GİDER' : 'GELİR',
         color: type === 'expense' ? '#BE123C' : '#047857',
@@ -287,7 +304,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         </HeroUIButton>
       }
     >
-      {!initialTransaction && <Surface variant="secondary" className="mb-5 rounded-2xl p-4">
+      {!initialTransaction && !prefillTransaction && <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={{ expanded: showVoice }}
+        onPress={() => setShowVoice((current) => !current)}
+        className="mb-4 flex-row items-center justify-between rounded-2xl px-4 py-3 bg-brand-soft"
+      >
+        <View className="flex-row items-center gap-2">
+          <Ionicons name="mic-outline" size={18} color={colors.primary} />
+          <Text localize={false} className="text-[13px] font-semibold text-brand">{voiceCopy[language].title}</Text>
+        </View>
+        <Ionicons name={showVoice ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
+      </TouchableOpacity>}
+      {!initialTransaction && !prefillTransaction && showVoice && <Surface variant="secondary" className="mb-5 rounded-2xl p-4">
         <View className="mb-3 flex-row items-center gap-3">
           <View className="h-10 w-10 items-center justify-center rounded-[14px] bg-brand-soft">
             <Ionicons name="mic-outline" size={20} color={colors.primary} />
@@ -368,6 +397,30 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         }}
         errorMessage={!title.trim() && error ? error : undefined}
       />
+      {rememberedTransaction && (selectedCategory !== rememberedTransaction.category ||
+        !selectedAccountId ||
+        (rememberedTransaction.accountId && selectedAccountId !== rememberedTransaction.accountId)) && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => {
+            setSelectedCategory(rememberedTransaction.category);
+            const matchingAccount = accounts.find((account) => account.id === rememberedTransaction.accountId)
+              ?? accounts.find((account) => account.type === rememberedTransaction.accountType);
+            if (matchingAccount) setSelectedAccountId(matchingAccount.id);
+            setSelectionError('');
+            setAccountError(false);
+          }}
+          className="mb-4 flex-row items-center gap-3 rounded-2xl border px-3.5 py-3"
+          style={{ borderColor: colors.cardBorder, backgroundColor: colors.card }}
+        >
+          <Ionicons name="time-outline" size={18} color={colors.primary} />
+          <View className="flex-1">
+            <Text localize={false} className="text-[12px] font-bold text-brand">{quickCopy[language].remembered}</Text>
+            <Text localize={false} className="text-[12px] text-zinc-500 dark:text-[#BAC8E6]">{t(rememberedTransaction.category)} · {rememberedTransaction.accountType === 'cash' ? t('Nakit') : t('Banka')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={15} color={colors.mutedText} />
+        </TouchableOpacity>
+      )}
 
       {/* Amount Input */}
       <HeroUIInput
@@ -427,20 +480,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         <Text className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8]">Kategori</Text>
         <TouchableOpacity
           onPress={() => {
-            if (!isPro) {
-              pendingCategoryPaywall.current = true;
-              onClose();
-              return;
-            }
             setShowCategoryInput((current) => !current);
             setCategoryError('');
           }}
           activeOpacity={0.7}
           className="flex-row items-center gap-1"
         >
-          <Ionicons name={isPro ? 'add' : 'lock-closed-outline'} size={15} color={colors.primary} />
+          <Ionicons name="add" size={15} color={colors.primary} />
           <Text className="text-xs font-bold text-brand dark:text-brand">Yeni Kategori</Text>
-          {!isPro && <Text className="text-[10px] font-bold text-brand dark:text-brand">PRO</Text>}
         </TouchableOpacity>
       </View>
 

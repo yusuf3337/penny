@@ -51,7 +51,6 @@
           "speechRecognitionPermission": "Penny turns your speech into a transaction draft for you to review before saving."
         }
       ],
-      "expo-iap",
       [
         "expo-splash-screen",
         {

@@ -55,4 +55,4 @@ Kullanıcı hesabı oluşturma zorunluluğu olmadan, tüm verilerinizi yalnızca
 - **Dil:** TypeScript
 - **Stil & Tasarım:** Tailwind CSS / NativeWind & HeroUI Native
 - **Veri Saklama:** React Native AsyncStorage (Local-first)
-- **Monetizasyon:** Apple StoreKit (`expo-iap`)
+- **Ücretlendirme:** Tüm özellikler ücretsizdir; uygulama içi satın alma ve reklam yoktur.

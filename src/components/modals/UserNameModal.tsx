@@ -90,7 +90,6 @@ export const UserNameModal: React.FC<UserNameModalProps> = ({ visible, onSave })
           if (error) setError('');
         }}
         errorMessage={error}
-        autoFocus
         autoCapitalize="words"
         autoCorrect={false}
         maxLength={40}
