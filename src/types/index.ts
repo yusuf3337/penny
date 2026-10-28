@@ -85,6 +85,19 @@ export interface AppTransaction {
   accountId?: string;
   accountName?: string;
   accountType?: 'bank' | 'cash';
+  installmentPlanId?: string;
+  installmentNumber?: number;
+}
+
+export interface InstallmentPlan {
+  id: string;
+  title: string;
+  totalAmount: number;
+  count: number;
+  firstDueDate: string;
+  category: string;
+  accountType: 'bank' | 'cash';
+  createdAt: string;
 }
 
 export interface SpendingCategory {

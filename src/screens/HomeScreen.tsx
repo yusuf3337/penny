@@ -933,15 +933,15 @@ const lightStyles = StyleSheet.create({
   },
 
   streamStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'stretch',
+    gap: 8,
     paddingHorizontal: 4,
     marginBottom: 10,
   },
   streamStatsLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 10,
   },
   streamTxCountText: {
@@ -956,6 +956,7 @@ const lightStyles = StyleSheet.create({
   deleteCurrentMonthBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-end',
     gap: 4,
     backgroundColor: '#FEE2E2',
     paddingHorizontal: 8,

@@ -10,15 +10,15 @@ import { AppLanguage, useLocale } from '../../context/LocaleContext';
 import { Tabs } from 'heroui-native/tabs';
 
 const NAV_LABELS: Record<AppLanguage, Record<TabType | 'add', string>> = {
-  tr: { timeline: 'Akış', goals: 'Hedef', subscriptions: 'Abone', budget: 'Bütçe', reports: 'Rapor', debts: 'Borç', more: 'Diğer', add: 'Ekle' },
-  en: { timeline: 'Feed', goals: 'Goals', subscriptions: 'Plans', budget: 'Budget', reports: 'Reports', debts: 'Debts', more: 'More', add: 'Add' },
-  de: { timeline: 'Verlauf', goals: 'Ziele', subscriptions: 'Abos', budget: 'Budget', reports: 'Berichte', debts: 'Schulden', more: 'Mehr', add: 'Neu' },
-  fr: { timeline: 'Flux', goals: 'Objectifs', subscriptions: 'Abos', budget: 'Budget', reports: 'Rapports', debts: 'Dettes', more: 'Plus', add: 'Ajout' },
-  ko: { timeline: '내역', goals: '목표', subscriptions: '구독', budget: '예산', reports: '보고서', debts: '빚', more: '더보기', add: '추가' },
-  zh: { timeline: '记录', goals: '目标', subscriptions: '订阅', budget: '预算', reports: '报告', debts: '债务', more: '更多', add: '添加' },
-  ja: { timeline: '履歴', goals: '目標', subscriptions: '定期購入', budget: '予算', reports: 'レポート', debts: '借入', more: 'その他', add: '追加' },
-  ru: { timeline: 'Лента', goals: 'Цели', subscriptions: 'Подписки', budget: 'Бюджет', reports: 'Отчёты', debts: 'Долги', more: 'Ещё', add: 'Новое' },
-  it: { timeline: 'Flusso', goals: 'Obiettivi', subscriptions: 'Abbon.', budget: 'Budget', reports: 'Report', debts: 'Debiti', more: 'Altro', add: 'Nuovo' },
+  tr: { timeline: 'Akış', goals: 'Hedef', subscriptions: 'Abone', budget: 'Bütçe', reports: 'Rapor', debts: 'Borç', installments: 'Taksit', more: 'Diğer', add: 'Ekle' },
+  en: { timeline: 'Feed', goals: 'Goals', subscriptions: 'Plans', budget: 'Budget', reports: 'Reports', debts: 'Debts', installments: 'Payments', more: 'More', add: 'Add' },
+  de: { timeline: 'Verlauf', goals: 'Ziele', subscriptions: 'Abos', budget: 'Budget', reports: 'Berichte', debts: 'Schulden', installments: 'Raten', more: 'Mehr', add: 'Neu' },
+  fr: { timeline: 'Flux', goals: 'Objectifs', subscriptions: 'Abos', budget: 'Budget', reports: 'Rapports', debts: 'Dettes', installments: 'Échéances', more: 'Plus', add: 'Ajout' },
+  ko: { timeline: '내역', goals: '목표', subscriptions: '구독', budget: '예산', reports: '보고서', debts: '빚', installments: '할부', more: '더보기', add: '추가' },
+  zh: { timeline: '记录', goals: '目标', subscriptions: '订阅', budget: '预算', reports: '报告', debts: '债务', installments: '分期', more: '更多', add: '添加' },
+  ja: { timeline: '履歴', goals: '目標', subscriptions: '定期購入', budget: '予算', reports: 'レポート', debts: '借入', installments: '分割', more: 'その他', add: '追加' },
+  ru: { timeline: 'Лента', goals: 'Цели', subscriptions: 'Подписки', budget: 'Бюджет', reports: 'Отчёты', debts: 'Долги', installments: 'Рассрочка', more: 'Ещё', add: 'Новое' },
+  it: { timeline: 'Flusso', goals: 'Obiettivi', subscriptions: 'Abbon.', budget: 'Budget', reports: 'Report', debts: 'Debiti', installments: 'Rate', more: 'Altro', add: 'Nuovo' },
 };
 
 interface BottomNavBarProps {
@@ -49,7 +49,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onTabChange(tabId as TabType);
   };
-  const selectedTab = ['subscriptions', 'reports', 'debts'].includes(activeTab) ? 'more' : activeTab;
+  const selectedTab = ['subscriptions', 'reports', 'debts', 'installments'].includes(activeTab) ? 'more' : activeTab;
 
   return (
     <View

@@ -58,10 +58,10 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
       {/* Top Biriken Summary Card (Matching Image 2) */}
       <Card style={styles.summaryCard}>
         <View style={styles.summaryTopRow}>
-          <View>
+          <View style={styles.summaryValues}>
             <Text style={styles.summaryLabel}>Biriken</Text>
-            <Text style={styles.savedTotalText}>{formatCurrency(totalSavedGoals)}</Text>
-            <Text style={styles.targetSubText}>
+            <Text style={styles.savedTotalText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{formatCurrency(totalSavedGoals)}</Text>
+            <Text style={styles.targetSubText} numberOfLines={2}>
               {localizeFormat('{0} Aktif · {1} Tamamlanan', [activeCount, completedCount])}
             </Text>
           </View>
@@ -93,7 +93,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
               style={[styles.filterChip, isActive && styles.filterChipActive]}
               onPress={() => setActiveTab(tabKey)}
             >
-              <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+              <Text style={[styles.filterText, isActive && styles.filterTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {labels[tabKey]}
               </Text>
             </TouchableOpacity>
@@ -134,9 +134,9 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
                       color={COLORS.emeraldText}
                     />}
                   </View>
-                  <View>
-                    <Text style={styles.goalTitle}>{goal.title}</Text>
-                    <Text style={styles.goalCategory}>{goal.category}</Text>
+                  <View style={styles.goalTitleText}>
+                    <Text style={styles.goalTitle} numberOfLines={2}>{goal.title}</Text>
+                    <Text style={styles.goalCategory} numberOfLines={1}>{goal.category}</Text>
                   </View>
                 </View>
 
@@ -198,9 +198,11 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
 
               {/* Amounts Footer */}
               <View style={styles.goalFooter}>
-                <Text style={styles.savedAmount}>{formatCurrency(goal.savedAmount)}</Text>
-                <Text style={styles.targetAmount}>/ {formatCurrency(goal.targetAmount)}</Text>
-
+                <View style={styles.goalAmounts}>
+                  <Text style={styles.savedAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatCurrency(goal.savedAmount)}</Text>
+                  <Text style={styles.targetAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>/ {formatCurrency(goal.targetAmount)}</Text>
+                </View>
+                <View style={styles.goalFooterActions}>
                 <TouchableOpacity
                   style={styles.addProgressBtn}
                   accessibilityRole="button"
@@ -208,7 +210,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
                   onPress={() => setSelectedGoalForUpdate(goal)}
                 >
                   <Ionicons name="add-circle" size={14} color={COLORS.primaryForeground} />
-                  <Text style={[styles.addProgressBtnText, { color: COLORS.primaryForeground }]}>Birikim Ekle</Text>
+                  <Text style={[styles.addProgressBtnText, { color: COLORS.primaryForeground }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>Birikim Ekle</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -228,6 +230,7 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
                 >
                   <Ionicons name="trash-outline" size={16} color={COLORS.subtleText} />
                 </TouchableOpacity>
+                </View>
               </View>
             </TouchableOpacity>
           );
@@ -276,6 +279,7 @@ const lightStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  summaryValues: { flex: 1, minWidth: 0, marginRight: 12 },
   summaryLabel: {
     fontSize: 12,
     color: LIGHT_COLORS.mutedText,
@@ -328,6 +332,8 @@ const lightStyles = StyleSheet.create({
     marginBottom: 16,
   },
   filterChip: {
+    flex: 1,
+    minWidth: 0,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -340,6 +346,7 @@ const lightStyles = StyleSheet.create({
     borderColor: LIGHT_COLORS.primary,
   },
   filterText: {
+    textAlign: 'center',
     fontSize: 12,
     fontWeight: '600',
     color: LIGHT_COLORS.mutedText,
@@ -396,7 +403,11 @@ const lightStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 10,
   },
+  goalTitleText: { flex: 1, minWidth: 0 },
   iconCircle: {
     width: 36,
     height: 36,
@@ -476,9 +487,10 @@ const lightStyles = StyleSheet.create({
   },
 
   goalFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
+  goalAmounts: { minWidth: 0, flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 4 },
+  goalFooterActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 10 },
   savedAmount: {
     fontSize: 14,
     fontWeight: '800',
@@ -487,8 +499,7 @@ const lightStyles = StyleSheet.create({
   targetAmount: {
     fontSize: 12,
     color: LIGHT_COLORS.mutedText,
-    marginLeft: 4,
-    flex: 1,
+    flexShrink: 1,
   },
   addProgressBtn: {
     flexDirection: 'row',
@@ -499,6 +510,7 @@ const lightStyles = StyleSheet.create({
     borderRadius: 10,
     gap: 4,
     marginRight: 8,
+    maxWidth: '75%',
   },
   addProgressBtnText: {
     color: LIGHT_COLORS.primaryForeground,

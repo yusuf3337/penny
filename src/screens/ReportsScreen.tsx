@@ -35,6 +35,18 @@ interface ReportsScreenProps {
   onOpenAddModal: () => void;
 }
 
+const reportTabLabels: Record<AppLanguage, { overview: string; time: string }> = {
+  tr: { overview: 'Genel', time: 'Zaman' },
+  en: { overview: 'Overview', time: 'Timeline' },
+  de: { overview: 'Übersicht', time: 'Zeitverlauf' },
+  fr: { overview: 'Vue d’ensemble', time: 'Chronologie' },
+  ko: { overview: '개요', time: '시간별' },
+  zh: { overview: '概览', time: '时间线' },
+  ja: { overview: '概要', time: '時系列' },
+  ru: { overview: 'Обзор', time: 'Периоды' },
+  it: { overview: 'Panoramica', time: 'Cronologia' },
+};
+
 export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) => {
   const styles = useThemedStyles(lightStyles);
   const { language, t } = useLocale();
@@ -186,11 +198,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {/* Sub Navigation Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabRow} contentContainerStyle={styles.subTabContent}>
         {[
-          { id: 'genel', label: 'Genel' },
+          { id: 'genel', label: reportTabLabels[language].overview },
           { id: 'kategori', label: 'Kategori' },
           { id: 'icgoru', label: 'İçgörüler' },
           { id: 'trend', label: 'Trend' },
-          { id: 'zaman', label: 'Zaman' },
+          { id: 'zaman', label: reportTabLabels[language].time },
         ].map((tab) => {
           const isActive = activeSubTab === tab.id;
           return (
@@ -288,7 +300,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
 
                 <View style={styles.donutCenter}>
                   <Text style={styles.donutLabel}>Toplam Gider</Text>
-                  <Text style={styles.donutTotalText}>{formatCurrency(monthExpense)}</Text>
+                  <Text style={styles.donutTotalText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{formatCurrency(monthExpense)}</Text>
                 </View>
               </View>
             ) : null}
@@ -304,11 +316,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                   <View key={cat.name} style={styles.catRow}>
                     <View style={styles.catLeft}>
                       <View style={[styles.colorDot, { backgroundColor: cat.color }]} />
-                      <Text style={styles.catName}>{cat.name}</Text>
+                      <Text style={styles.catName} numberOfLines={1}>{cat.name}</Text>
                     </View>
 
                     <View style={styles.catRight}>
-                      <Text style={styles.catAmount}>{formatCurrency(cat.rawAmount)}</Text>
+                      <Text style={styles.catAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCurrency(cat.rawAmount)}</Text>
                       <Text style={styles.catPercent}>%{cat.percentage}</Text>
                     </View>
                   </View>
@@ -330,10 +342,10 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 <View key={cat.name} style={styles.catRow}>
                   <View style={styles.catLeft}>
                     <View style={[styles.colorDot, { backgroundColor: cat.color }]} />
-                    <Text style={styles.catName}>{cat.name}</Text>
+                    <Text style={styles.catName} numberOfLines={1}>{cat.name}</Text>
                   </View>
                   <View style={styles.catRight}>
-                    <Text style={styles.catAmount}>{formatCurrency(cat.rawAmount)}</Text>
+                    <Text style={styles.catAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCurrency(cat.rawAmount)}</Text>
                     <Text style={styles.catPercent}>%{cat.percentage}</Text>
                   </View>
                 </View>
@@ -353,6 +365,9 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                 styles.metricBigValue,
                 { color: monthNet >= 0 ? COLORS.emeraldText : COLORS.roseText },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.55}
             >
               {monthNet >= 0 ? '+' : ''}{formatCurrency(monthNet)}
             </Text>
@@ -371,7 +386,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
             <Card style={styles.halfCard}>
               <Ionicons name="wallet-outline" size={24} color={COLORS.emeraldText} />
               <Text style={styles.halfLabel}>Kümülatif Toplam Bakiye</Text>
-              <Text style={styles.halfValue}>{formatCurrency(totalBalance)}</Text>
+              <Text style={styles.halfValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{formatCurrency(totalBalance)}</Text>
             </Card>
           </View>
         </View>
@@ -467,7 +482,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
                       <View style={[styles.trendBar, { width: `${(month.income / trendMax) * 100}%`, backgroundColor: COLORS.emerald }]} />
                       <View style={[styles.trendBar, { width: `${(month.expense / trendMax) * 100}%`, backgroundColor: COLORS.rose }]} />
                     </View>
-                    <Text style={styles.trendNet}>{formatCurrency(month.income - month.expense)}</Text>
+                    <Text style={styles.trendNet} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatCurrency(month.income - month.expense)}</Text>
                   </View>
                 ))}
               </View>
@@ -660,6 +675,9 @@ const lightStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   colorDot: {
     width: 8,
@@ -675,8 +693,12 @@ const lightStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    maxWidth: '58%',
+    minWidth: 0,
   },
   catAmount: {
+    minWidth: 0,
+    flexShrink: 1,
     fontSize: 13,
     fontWeight: '700',
     color: LIGHT_COLORS.foreground,
@@ -733,6 +755,7 @@ const lightStyles = StyleSheet.create({
   },
   halfCard: {
     flex: 1,
+    minWidth: 0,
     backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     padding: 16,

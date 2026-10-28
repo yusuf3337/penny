@@ -68,13 +68,13 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
         <Card style={styles.summaryCard}>
           <View style={[styles.iconDot, { backgroundColor: COLORS.emerald }]} />
           <Text style={styles.summaryLabel}>Toplam Alacak</Text>
-          <Text style={styles.receivableAmount}>{formatCurrency(totalReceivables)}</Text>
+          <Text style={styles.receivableAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.58}>{formatCurrency(totalReceivables)}</Text>
         </Card>
 
         <Card style={styles.summaryCard}>
           <View style={[styles.iconDot, { backgroundColor: COLORS.rose }]} />
           <Text style={styles.summaryLabel}>Toplam Borç</Text>
-          <Text style={styles.payableAmount}>{formatCurrency(totalPayables)}</Text>
+          <Text style={styles.payableAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.58}>{formatCurrency(totalPayables)}</Text>
         </Card>
       </View>
 
@@ -89,9 +89,9 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
             <View style={styles.splitIconWrap}>
               <Ionicons name="people" size={18} color={COLORS.primary} />
             </View>
-            <View>
-              <Text style={styles.splitBannerTitle}>Ortak Harcama / Hesap Bölüş</Text>
-              <Text style={styles.splitBannerSub}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.splitBannerTitle} numberOfLines={2}>Ortak Harcama / Hesap Bölüş</Text>
+              <Text style={styles.splitBannerSub} numberOfLines={3}>
                 Yemek veya tatil hesabını kişi başı bölüp alacaklara aktarın
               </Text>
             </View>
@@ -136,10 +136,10 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
                       color={isGiven ? COLORS.emeraldText : COLORS.roseText}
                     />
                   </View>
-                  <View>
-                    <Text style={styles.personName}>{item.personName}</Text>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.personName} numberOfLines={1}>{item.personName}</Text>
                     {item.description ? (
-                      <Text style={styles.descriptionText}>{item.description}</Text>
+                      <Text style={styles.descriptionText} numberOfLines={2}>{item.description}</Text>
                     ) : null}
                   </View>
                 </View>
@@ -162,13 +162,16 @@ export const DebtsScreen: React.FC<DebtsScreenProps> = ({ onOpenAddModal, onOpen
               </View>
 
               <View style={styles.cardFooter}>
-                <View>
+                <View style={{ flex: 1, minWidth: 0, marginRight: 10 }}>
                   <Text style={styles.amountLabel}>Kalan Tutar</Text>
                   <Text
                     style={[
                       styles.amountText,
                       item.isCompleted && styles.completedText,
                     ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.62}
                   >
                     {item.isCompleted ? 'Tamamlandı' : formatCurrency(item.remainingAmount)}
                   </Text>
@@ -237,6 +240,7 @@ const lightStyles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
+    minWidth: 0,
     backgroundColor: LIGHT_COLORS.card,
     borderRadius: 18,
     padding: 16,
@@ -320,6 +324,9 @@ const lightStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   avatarCircle: {
     width: 36,
@@ -342,6 +349,7 @@ const lightStyles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
+    maxWidth: '38%',
   },
   typeBadgeText: {
     fontSize: 11,

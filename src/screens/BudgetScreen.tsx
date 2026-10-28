@@ -102,10 +102,10 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEd
         <Text style={styles.monthLabel}>{currentMonthName} · Bütçe Durumu</Text>
 
         <View style={styles.summaryRow}>
-          <View>
+          <View style={{ flex: 1, minWidth: 0, marginRight: 10 }}>
             <Text style={styles.summarySubTitle}>Bütçelenen Harcama</Text>
-            <Text style={styles.usedAmountText}>{formatCurrency(dynamicTotalUsed)}</Text>
-            <Text style={styles.allocatedSubText}>
+            <Text style={styles.usedAmountText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.58}>{formatCurrency(dynamicTotalUsed)}</Text>
+            <Text style={styles.allocatedSubText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               / {formatCurrency(totalBudgetedSpending)}
             </Text>
           </View>
@@ -141,7 +141,7 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEd
           <Text style={styles.emptyText}>Henüz sanal zarf bütçesi eklenmedi.</Text>
           <TouchableOpacity style={styles.emptyAddBtn} onPress={onOpenAddModal}>
             <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
-            <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]}>İlk Zarf Bütçeni Oluştur</Text>
+            <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>İlk Zarf Bütçeni Oluştur</Text>
           </TouchableOpacity>
         </Card>
       ) : (
@@ -173,8 +173,8 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEd
                     />
                   </View>
                   <View style={styles.catTextWrap}>
-                    <Text localize={false} style={styles.catName}>{t(b.categoryName)} · {t('Zarfı')}</Text>
-                    <Text style={styles.badgeText}>
+                    <Text localize={false} style={styles.catName} numberOfLines={2}>{t(b.categoryName)} · {t('Zarfı')}</Text>
+                    <Text style={styles.badgeText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
                       Kalan: <Text style={{ fontWeight: '700', color: isOverLimit ? COLORS.rose : COLORS.emeraldText }}>{formatCurrency(remaining)}</Text>
                     </Text>
                   </View>
@@ -191,8 +191,8 @@ export const BudgetScreen: React.FC<BudgetScreenProps> = ({ onOpenAddModal, onEd
               </View>
 
               <View style={styles.amountRow}>
-                <Text style={styles.amountsText}>{formatCurrency(usedAmt)}</Text>
-                <Text style={styles.allocatedText}>/ {formatCurrency(b.allocatedAmount)}</Text>
+                <Text style={styles.amountsText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCurrency(usedAmt)}</Text>
+                <Text style={styles.allocatedText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>/ {formatCurrency(b.allocatedAmount)}</Text>
               </View>
 
               {/* Progress Bar */}
@@ -398,7 +398,7 @@ const lightStyles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
-  catTextWrap: { flex: 1 },
+  catTextWrap: { flex: 1, minWidth: 0 },
   editButton: {
     width: 38,
     height: 38,
@@ -436,11 +436,13 @@ const lightStyles = StyleSheet.create({
   },
 
   amountsText: {
+    maxWidth: '100%',
     fontSize: 13,
     fontWeight: '800',
     color: LIGHT_COLORS.foreground,
   },
   allocatedText: {
+    maxWidth: '100%',
     fontSize: 12,
     color: LIGHT_COLORS.mutedText,
     fontWeight: '400',
