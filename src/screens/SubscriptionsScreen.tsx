@@ -54,7 +54,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
         <View style={styles.summaryRow}>
           <View style={styles.summaryCol}>
             <Text style={styles.summaryLabel}>Aylık Toplam</Text>
-            <Text style={styles.monthlyText}>
+            <Text style={styles.monthlyText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.58}>
               {formatCurrency(totalMonthlySubscriptions)}
             </Text>
           </View>
@@ -63,7 +63,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
 
           <View style={styles.summaryCol}>
             <Text style={styles.summaryLabel}>Yıllık Tahmini</Text>
-            <Text style={styles.yearlyText}>
+            <Text style={styles.yearlyText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.58}>
               {formatCurrency(totalYearlySubscriptions)}
             </Text>
           </View>
@@ -90,12 +90,12 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
                     color={COLORS.primary}
                   />
                 </View>
-                <View>
-                  <Text style={styles.subTitle}>{sub.title}</Text>
-                  <Text style={styles.dueTag}>{getDaysRemainingText(sub.nextDueDate)}</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.subTitle} numberOfLines={1}>{sub.title}</Text>
+                  <Text style={styles.dueTag} numberOfLines={1}>{getDaysRemainingText(sub.nextDueDate)}</Text>
                 </View>
               </View>
-              <Text style={styles.subAmount}>{formatCurrency(sub.amount)}</Text>
+              <Text style={styles.subAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.62}>{formatCurrency(sub.amount)}</Text>
             </View>
           ))
         )}
@@ -122,7 +122,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
           <Text style={styles.emptyText}>Henüz kaydedilmiş abonelik bulunmuyor.</Text>
           <TouchableOpacity style={styles.emptyAddBtn} onPress={() => onOpenAddModal()}>
             <Ionicons name="add" size={16} color={COLORS.primaryForeground} />
-            <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]}>İlk Aboneliğini Ekle</Text>
+          <Text style={[styles.emptyAddBtnText, { color: COLORS.primaryForeground }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>İlk Aboneliğini Ekle</Text>
           </TouchableOpacity>
         </Card>
       ) : (
@@ -146,16 +146,16 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({ onOpen
                   color={sub.color || COLORS.primary}
                 />
               </View>
-              <View>
-                <Text style={styles.cardSubTitle}>{sub.title}</Text>
-                <Text style={styles.cardSubDetails}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.cardSubTitle} numberOfLines={1}>{sub.title}</Text>
+                <Text style={styles.cardSubDetails} numberOfLines={2}>
                   {sub.cycle === 'monthly' ? 'Aylık' : 'Yıllık'} · {sub.accountType === 'cash' ? 'Nakit' : 'Banka'} · {getDaysRemainingText(sub.nextDueDate)}
                 </Text>
               </View>
             </View>
 
             <View style={styles.subRight}>
-              <Text style={styles.cardSubAmount}>{formatCurrency(sub.amount)}</Text>
+              <Text style={styles.cardSubAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatCurrency(sub.amount)}</Text>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => onOpenAddModal(sub)}>
                   <Ionicons name="create-outline" size={16} color={COLORS.primary} />
@@ -201,6 +201,7 @@ const lightStyles = StyleSheet.create({
   },
   summaryCol: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
   },
   summaryLabel: {
@@ -258,6 +259,9 @@ const lightStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   subIcon: {
     width: 32,
@@ -276,6 +280,7 @@ const lightStyles = StyleSheet.create({
     color: LIGHT_COLORS.mutedText,
   },
   subAmount: {
+    maxWidth: '42%',
     fontSize: 13,
     fontWeight: '800',
     color: LIGHT_COLORS.foreground,
@@ -364,6 +369,9 @@ const lightStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   cardIconWrap: {
     width: 40,
@@ -385,8 +393,12 @@ const lightStyles = StyleSheet.create({
   subRight: {
     alignItems: 'flex-end',
     gap: 6,
+    width: '37%',
+    minWidth: 0,
   },
   cardSubAmount: {
+    width: '100%',
+    textAlign: 'right',
     fontSize: 14,
     fontWeight: '800',
     color: LIGHT_COLORS.foreground,

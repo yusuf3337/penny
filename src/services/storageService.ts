@@ -8,6 +8,7 @@ import {
   SubscriptionItem,
   PendingCollection,
   CategoryBudget,
+  InstallmentPlan,
 } from '../types';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -27,6 +28,7 @@ const STORAGE_KEYS = {
   SUBSCRIPTIONS: '@penny_subscriptions_v2',
   PENDING_COLLECTIONS: '@penny_pending_collections_v1',
   BUDGETS: '@penny_budgets_v2',
+  INSTALLMENTS: '@penny_installments_v1',
 };
 
 // Default Categories matching  screenshots
@@ -115,6 +117,64 @@ export const getStoredTransactions = async (): Promise<AppTransaction[]> => {
 
 export const saveTransactions = async (txs: AppTransaction[]): Promise<void> => {
   await saveStoredItem(STORAGE_KEYS.TRANSACTIONS, txs);
+};
+
+export const getInstallmentPlans = async (): Promise<InstallmentPlan[]> =>
+  loadStoredItem(STORAGE_KEYS.INSTALLMENTS, []);
+
+export const saveInstallmentPlan = async (input: Omit<InstallmentPlan, 'id' | 'createdAt'>): Promise<InstallmentPlan[]> => {
+  if (!input.title.trim() || !Number.isFinite(input.totalAmount) || input.totalAmount <= 0 ||
+      !Number.isInteger(input.count) || input.count < 2 || input.count > 120 || Math.round(input.totalAmount * 100) < input.count ||
+      Number.isNaN(new Date(input.firstDueDate).getTime())) throw new Error('Invalid installment plan');
+  const plans = await getInstallmentPlans();
+  const updated = [{ ...input, title: input.title.trim(), id: `installment_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, createdAt: new Date().toISOString() }, ...plans];
+  await saveStoredItem(STORAGE_KEYS.INSTALLMENTS, updated);
+  return updated;
+};
+
+export const deleteInstallmentPlan = async (id: string): Promise<InstallmentPlan[]> => {
+  const updated = (await getInstallmentPlans()).filter((plan) => plan.id !== id);
+  await saveStoredItem(STORAGE_KEYS.INSTALLMENTS, updated);
+  return updated;
+};
+
+export const installmentDueDate = (plan: InstallmentPlan, number: number): Date => {
+  const first = new Date(plan.firstDueDate);
+  const day = first.getDate();
+  const monthStart = new Date(first.getFullYear(), first.getMonth() + number - 1, 1, 12);
+  const lastDay = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+  return new Date(monthStart.getFullYear(), monthStart.getMonth(), Math.min(day, lastDay), 12);
+};
+
+export const installmentAmount = (plan: InstallmentPlan, number: number): number => {
+  const totalCents = Math.round(plan.totalAmount * 100);
+  const regular = Math.floor(totalCents / plan.count);
+  return (number === plan.count ? totalCents - regular * (plan.count - 1) : regular) / 100;
+};
+
+export const recordInstallmentPayment = async (planId: string, number: number): Promise<AppTransaction[]> => {
+  const plan = (await getInstallmentPlans()).find((item) => item.id === planId);
+  if (!plan || !Number.isInteger(number) || number < 1 || number > plan.count) throw new Error('Invalid installment');
+  const current = await getStoredTransactions();
+  if (current.some((tx) => tx.installmentPlanId === planId && tx.installmentNumber === number)) return current;
+  const amount = installmentAmount(plan, number);
+  const tx: AppTransaction = {
+    id: `tx_installment_${planId}_${number}`,
+    title: `${plan.title} · ${number}/${plan.count}`,
+    category: plan.category,
+    date: new Date().toISOString(),
+    amount: `-${formatCurrency(amount)}`,
+    rawAmount: amount,
+    type: 'expense',
+    iconName: 'card-outline',
+    accountType: plan.accountType,
+    accountName: plan.accountType === 'cash' ? 'Nakit Cüzdan' : 'Banka Hesabı',
+    installmentPlanId: planId,
+    installmentNumber: number,
+  };
+  const updated = [tx, ...current];
+  await saveTransactions(updated);
+  return updated;
 };
 
 export const addTransaction = async (
@@ -410,7 +470,7 @@ export const markHasOnboarded = async (): Promise<void> => {
 
 // Backup & Restore
 export const exportAllDataJSON = async (): Promise<string> => {
-  const [name, txs, goalList, subList, budgetList, debtList, catList, pendingList] = await Promise.all([
+  const [name, txs, goalList, subList, budgetList, debtList, catList, pendingList, installments] = await Promise.all([
     getUserName(),
     getStoredTransactions(),
     getStoredGoals(),
@@ -419,6 +479,7 @@ export const exportAllDataJSON = async (): Promise<string> => {
     getDebts(),
     getCategories(),
     getPendingCollections(),
+    getInstallmentPlans(),
   ]);
 
   const backupObj = {
@@ -432,6 +493,7 @@ export const exportAllDataJSON = async (): Promise<string> => {
     debts: debtList,
     categories: catList,
     pendingCollections: pendingList,
+    installments,
   };
 
   return JSON.stringify(backupObj, null, 2);
@@ -500,6 +562,10 @@ const backupItemChecks: Record<string, (value: Record<string, unknown>) => boole
   pendingCollections: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
     isAmount(item.expectedAmount) && isAmount(item.actualAmount) &&
     ['pending', 'completed'].includes(String(item.status)),
+  installments: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
+    isAmount(item.totalAmount) && Number.isInteger(item.count) && Number(item.count) >= 2 &&
+    Number(item.count) <= 120 && isDateString(item.firstDueDate) && isNonEmptyString(item.category) &&
+    ['bank', 'cash'].includes(String(item.accountType)),
 };
 
 const backupStorageKeys: Record<string, string> = {
@@ -510,6 +576,7 @@ const backupStorageKeys: Record<string, string> = {
   debts: STORAGE_KEYS.DEBTS,
   categories: STORAGE_KEYS.CATEGORIES,
   pendingCollections: STORAGE_KEYS.PENDING_COLLECTIONS,
+  installments: STORAGE_KEYS.INSTALLMENTS,
 };
 const requiredBackupSections = ['transactions', 'goals', 'subscriptions', 'budgets', 'debts', 'categories'];
 
@@ -522,14 +589,14 @@ export const importAllDataJSON = async (jsonString: string): Promise<boolean> =>
 
     const presentSections = Object.keys(backupStorageKeys);
     for (const section of presentSections) {
-      const values = section === 'pendingCollections' && data[section] === undefined ? [] : data[section];
+      const values = (section === 'pendingCollections' || section === 'installments') && data[section] === undefined ? [] : data[section];
       if (!Array.isArray(values) || !values.every((value) => isRecord(value) && backupItemChecks[section](value))) {
         return false;
       }
     }
 
     const entries: [string, string][] = presentSections.map((section) =>
-      [backupStorageKeys[section], JSON.stringify(section === 'pendingCollections' && data[section] === undefined ? [] : data[section])]);
+      [backupStorageKeys[section], JSON.stringify((section === 'pendingCollections' || section === 'installments') && data[section] === undefined ? [] : data[section])]);
     entries.push([STORAGE_KEYS.USER_NAME, backupUserName.trim()]);
     entries.push([STORAGE_KEYS.HAS_ONBOARDED, JSON.stringify(true)]);
     const previous = await AsyncStorage.multiGet(entries.map(([key]) => key));
@@ -565,6 +632,7 @@ export const resetAllAppData = async (): Promise<void> => {
     STORAGE_KEYS.SUBSCRIPTIONS,
     STORAGE_KEYS.PENDING_COLLECTIONS,
     STORAGE_KEYS.BUDGETS,
+    STORAGE_KEYS.INSTALLMENTS,
     '@penny_is_pro_v1',
     '@penny_pro_plan_v1',
     '@penny_pro_expiry_v1',

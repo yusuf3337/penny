@@ -8,6 +8,7 @@ import {
   Debt,
   PendingCollection,
   Category,
+  InstallmentPlan,
 } from '../types';
 import {
   getUserName,
@@ -38,13 +39,17 @@ import {
   getHasOnboarded,
   markHasOnboarded as markOnboardedService,
   resetAllAppData,
+  getInstallmentPlans,
+  saveInstallmentPlan,
+  deleteInstallmentPlan,
+  recordInstallmentPayment,
 } from '../services/storageService';
 import { calculateNextDueDate, advanceSubscriptionDueDate, isSameMonthAndYear, formatCurrency } from '../utils/formatters';
 import { useLocale } from './LocaleContext';
 import { useCurrency } from './CurrencyContext';
 import { notifySubscriptionRecorded, requestNotificationPermissions, syncSubscriptionReminders } from '../services/notificationService';
 
-export type TabType = 'timeline' | 'goals' | 'subscriptions' | 'budget' | 'reports' | 'debts' | 'more';
+export type TabType = 'timeline' | 'goals' | 'subscriptions' | 'budget' | 'reports' | 'debts' | 'installments' | 'more';
 
 interface DataContextType {
   userName: string;
@@ -62,6 +67,10 @@ interface DataContextType {
   handleAddCategory: (name: string, type: 'income' | 'expense', iconName?: string, color?: string) => Promise<void>;
 
   transactions: AppTransaction[];
+  installments: InstallmentPlan[];
+  handleSaveInstallment: (plan: Omit<InstallmentPlan, 'id' | 'createdAt'>) => Promise<void>;
+  handleDeleteInstallment: (id: string) => Promise<void>;
+  handlePayInstallment: (id: string, number: number) => Promise<void>;
   handleAddTransaction: (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => Promise<void>;
   handleUpdateTransaction: (id: string, tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => Promise<void>;
   handleDeleteTransaction: (id: string) => Promise<void>;
@@ -115,6 +124,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
+  const [installments, setInstallments] = useState<InstallmentPlan[]>([]);
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
@@ -142,7 +152,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const task = (async () => {
     try {
       setIsLoading(true);
-      const [name, onboardedStatus, catList, txs, goalList, subList, budgetList, debtList, pendingList] = await Promise.all([
+      const [name, onboardedStatus, catList, txs, goalList, subList, budgetList, debtList, pendingList, installmentList] = await Promise.all([
         getUserName(),
         getHasOnboarded(),
         getCategories(),
@@ -152,6 +162,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getStoredBudgets(),
         getDebts(),
         getPendingCollections(),
+        getInstallmentPlans(),
       ]);
 
       // 1. Clean up any runaway duplicate subscription transactions caused by the previous loop
@@ -255,6 +266,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setBudgets(budgetList);
       setDebts(debtList);
       setPendingCollections(pendingList);
+      setInstallments(installmentList);
     } catch (error) {
       console.error('Error initializing DataContext:', error);
     } finally {
@@ -302,6 +314,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleAddTransaction = async (tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => {
     const updated = await addTxService(tx);
     setTransactions(updated);
+  };
+
+  const handleSaveInstallment = async (plan: Omit<InstallmentPlan, 'id' | 'createdAt'>) => {
+    setInstallments(await saveInstallmentPlan(plan));
+  };
+
+  const handleDeleteInstallment = async (id: string) => {
+    setInstallments(await deleteInstallmentPlan(id));
+  };
+
+  const handlePayInstallment = async (id: string, number: number) => {
+    setTransactions(await recordInstallmentPayment(id, number));
   };
 
   const handleUpdateTransaction = async (id: string, tx: Omit<AppTransaction, 'id' | 'date'> & { date?: string }) => {
@@ -484,6 +508,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         categories,
         handleAddCategory,
         transactions,
+        installments,
+        handleSaveInstallment,
+        handleDeleteInstallment,
+        handlePayInstallment,
         handleAddTransaction,
         handleUpdateTransaction,
         handleDeleteTransaction,

@@ -15,6 +15,7 @@ import { SubscriptionsScreen } from './src/screens/SubscriptionsScreen';
 import { BudgetScreen } from './src/screens/BudgetScreen';
 import { ReportsScreen } from './src/screens/ReportsScreen';
 import { DebtsScreen } from './src/screens/DebtsScreen';
+import { InstallmentsScreen } from './src/screens/InstallmentsScreen';
 import { BottomNavBar } from './src/components/common/BottomNavBar';
 import { SplashIntro } from './src/components/common/SplashIntro';
 import { MoreScreen } from './src/screens/MoreScreen';
@@ -38,7 +39,7 @@ const enterFromRight = FadeInRight.duration(260).easing(Easing.out(Easing.cubic)
 const enterFromLeft = FadeInLeft.duration(260).easing(Easing.out(Easing.cubic));
 const fadePreviousScreen = FadeOut.duration(170).easing(Easing.out(Easing.quad));
 const tabOrder = ['timeline', 'goals', 'budget', 'more'] as const;
-const navTab = (tab: string) => ['subscriptions', 'reports', 'debts'].includes(tab) ? 'more' : tab;
+const navTab = (tab: string) => ['subscriptions', 'reports', 'debts', 'installments'].includes(tab) ? 'more' : tab;
 
 const MainNavigator = () => {
   useLocale(); // Re-render date and currency labels when the language changes.
@@ -74,6 +75,7 @@ const MainNavigator = () => {
   const [isAddDebtModalVisible, setIsAddDebtModalVisible] = useState(false);
   const [isSplitModalVisible, setIsSplitModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+  const [installmentAddRequest, setInstallmentAddRequest] = useState(0);
 
   const handleOpenDebtModal = () => {
     setIsAddDebtModalVisible(true);
@@ -98,6 +100,9 @@ const MainNavigator = () => {
         break;
       case 'debts':
         handleOpenDebtModal();
+        break;
+      case 'installments':
+        setInstallmentAddRequest((value) => value + 1);
         break;
       default:
         setNewTransactionType('expense');
@@ -201,6 +206,8 @@ const MainNavigator = () => {
           onOpenSplitModal={handleOpenSplitExpense}
         />
       )}
+
+      {activeTab === 'installments' && <InstallmentsScreen openRequest={installmentAddRequest} />}
 
       {activeTab === 'more' && <MoreScreen onNavigate={setActiveTab} />}
       </Animated.View>
