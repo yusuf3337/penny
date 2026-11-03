@@ -3,8 +3,8 @@ const http = require('node:http');
 const path = require('node:path');
 
 const port = 8081;
-const expoUrl = `exp://127.0.0.1:${port}`;
-const statusUrl = `http://127.0.0.1:${port}/status`;
+const expoUrl = `exp://localhost:${port}`;
+const statusUrl = `http://localhost:${port}/status`;
 
 function isMetroReady() {
   return new Promise((resolve) => {

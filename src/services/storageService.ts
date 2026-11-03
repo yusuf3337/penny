@@ -9,13 +9,15 @@ import {
   PendingCollection,
   CategoryBudget,
   InstallmentPlan,
+  FinancialAsset,
 } from '../types';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { parseAmountSafely, formatCurrency } from '../utils/formatters';
 import { getFormattingLocale, localize } from '../context/LocaleContext';
-import { getActiveCurrency, getCurrencySymbol } from '../context/CurrencyContext';
+import { CURRENCY_OPTIONS, getActiveCurrency, getCurrencySymbol } from '../context/CurrencyContext';
+import type { GoalUnit } from '../utils/goalUnits';
 
 const STORAGE_KEYS = {
   USER_NAME: '@penny_user_name_v1',
@@ -29,6 +31,7 @@ const STORAGE_KEYS = {
   PENDING_COLLECTIONS: '@penny_pending_collections_v1',
   BUDGETS: '@penny_budgets_v2',
   INSTALLMENTS: '@penny_installments_v1',
+  ASSETS: '@penny_assets_v1',
 };
 
 // Default Categories matching  screenshots
@@ -121,6 +124,30 @@ export const saveTransactions = async (txs: AppTransaction[]): Promise<void> => 
 
 export const getInstallmentPlans = async (): Promise<InstallmentPlan[]> =>
   loadStoredItem(STORAGE_KEYS.INSTALLMENTS, []);
+
+export const getFinancialAssets = async (): Promise<FinancialAsset[]> =>
+  loadStoredItem(STORAGE_KEYS.ASSETS, []);
+
+export const saveFinancialAsset = async (asset: Omit<FinancialAsset, 'id' | 'updatedAt'> & { id?: string }): Promise<FinancialAsset[]> => {
+  if (!asset.title.trim() || !Number.isFinite(asset.estimatedValue) || asset.estimatedValue < 0 ||
+      !CURRENCY_OPTIONS.some((option) => option.code === asset.currency)) throw new Error('Invalid asset');
+  const current = await getFinancialAssets();
+  const updatedAsset: FinancialAsset = {
+    ...asset, title: asset.title.trim(), id: asset.id || `asset_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    updatedAt: new Date().toISOString(),
+  };
+  const updated = asset.id && current.some((item) => item.id === asset.id)
+    ? current.map((item) => item.id === asset.id ? updatedAsset : item)
+    : [updatedAsset, ...current];
+  await saveStoredItem(STORAGE_KEYS.ASSETS, updated);
+  return updated;
+};
+
+export const deleteFinancialAsset = async (id: string): Promise<FinancialAsset[]> => {
+  const updated = (await getFinancialAssets()).filter((asset) => asset.id !== id);
+  await saveStoredItem(STORAGE_KEYS.ASSETS, updated);
+  return updated;
+};
 
 export const saveInstallmentPlan = async (input: Omit<InstallmentPlan, 'id' | 'createdAt'>): Promise<InstallmentPlan[]> => {
   if (!input.title.trim() || !Number.isFinite(input.totalAmount) || input.totalAmount <= 0 ||
@@ -241,7 +268,14 @@ export const clearAllTransactions = async (): Promise<AppTransaction[]> => {
 };
 
 export const getStoredGoals = async (): Promise<SavingsGoal[]> => {
-  return loadStoredItem(STORAGE_KEYS.SAVINGS_GOALS, DEFAULT_GOALS);
+  const goals = await loadStoredItem<SavingsGoal[]>(STORAGE_KEYS.SAVINGS_GOALS, DEFAULT_GOALS);
+  if (!goals.some((goal) => !goal.unit)) return goals;
+  const preference = await AsyncStorage.getItem('@penny_currency_preference_v1');
+  const legacyUnit: GoalUnit = CURRENCY_OPTIONS.some((item) => item.code === preference)
+    ? preference as GoalUnit : preference === 'system' ? getActiveCurrency() : 'TRY';
+  const migrated = goals.map((goal) => ({ ...goal, unit: goal.unit || legacyUnit }));
+  await saveStoredGoals(migrated);
+  return migrated;
 };
 
 export const saveStoredGoals = async (goals: SavingsGoal[]): Promise<void> => {
@@ -260,6 +294,7 @@ export const addOrUpdateGoal = async (goal: Partial<SavingsGoal>): Promise<Savin
         ? {
           ...g,
           ...goal,
+          unit: goal.unit ?? g.unit ?? getActiveCurrency(),
           savedAmount: saved,
           targetAmount: target,
           percentage,
@@ -282,6 +317,7 @@ export const addOrUpdateGoal = async (goal: Partial<SavingsGoal>): Promise<Savin
       isCompleted: saved >= target,
       iconName: goal.iconName || 'flag-outline',
       emoji: goal.emoji,
+      unit: goal.unit ?? getActiveCurrency(),
     };
     const updated = [newGoal, ...current];
     await saveStoredGoals(updated);
@@ -470,7 +506,7 @@ export const markHasOnboarded = async (): Promise<void> => {
 
 // Backup & Restore
 export const exportAllDataJSON = async (): Promise<string> => {
-  const [name, txs, goalList, subList, budgetList, debtList, catList, pendingList, installments] = await Promise.all([
+  const [name, txs, goalList, subList, budgetList, debtList, catList, pendingList, installments, assets] = await Promise.all([
     getUserName(),
     getStoredTransactions(),
     getStoredGoals(),
@@ -480,6 +516,7 @@ export const exportAllDataJSON = async (): Promise<string> => {
     getCategories(),
     getPendingCollections(),
     getInstallmentPlans(),
+    getFinancialAssets(),
   ]);
 
   const backupObj = {
@@ -494,6 +531,7 @@ export const exportAllDataJSON = async (): Promise<string> => {
     categories: catList,
     pendingCollections: pendingList,
     installments,
+    assets,
   };
 
   return JSON.stringify(backupObj, null, 2);
@@ -545,7 +583,8 @@ const backupItemChecks: Record<string, (value: Record<string, unknown>) => boole
     isNonEmptyString(item.amount) && isAmount(item.rawAmount) &&
     ['income', 'expense', 'transfer'].includes(String(item.type)) && isNonEmptyString(item.iconName),
   goals: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
-    isAmount(item.savedAmount) && isAmount(item.targetAmount),
+    isAmount(item.savedAmount) && isAmount(item.targetAmount) &&
+    (item.unit === undefined || item.unit === 'XAU_G' || CURRENCY_OPTIONS.some((option) => option.code === item.unit)),
   subscriptions: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
     isAmount(item.amount) && isNonEmptyString(item.category) &&
     ['monthly', 'yearly'].includes(String(item.cycle)) &&
@@ -566,6 +605,9 @@ const backupItemChecks: Record<string, (value: Record<string, unknown>) => boole
     isAmount(item.totalAmount) && Number.isInteger(item.count) && Number(item.count) >= 2 &&
     Number(item.count) <= 120 && isDateString(item.firstDueDate) && isNonEmptyString(item.category) &&
     ['bank', 'cash'].includes(String(item.accountType)),
+  assets: (item) => isNonEmptyString(item.id) && isNonEmptyString(item.title) &&
+    isAmount(item.estimatedValue) && CURRENCY_OPTIONS.some((option) => option.code === item.currency) &&
+    isDateString(item.updatedAt),
 };
 
 const backupStorageKeys: Record<string, string> = {
@@ -577,6 +619,7 @@ const backupStorageKeys: Record<string, string> = {
   categories: STORAGE_KEYS.CATEGORIES,
   pendingCollections: STORAGE_KEYS.PENDING_COLLECTIONS,
   installments: STORAGE_KEYS.INSTALLMENTS,
+  assets: STORAGE_KEYS.ASSETS,
 };
 const requiredBackupSections = ['transactions', 'goals', 'subscriptions', 'budgets', 'debts', 'categories'];
 
@@ -589,14 +632,14 @@ export const importAllDataJSON = async (jsonString: string): Promise<boolean> =>
 
     const presentSections = Object.keys(backupStorageKeys);
     for (const section of presentSections) {
-      const values = (section === 'pendingCollections' || section === 'installments') && data[section] === undefined ? [] : data[section];
+      const values = ['pendingCollections', 'installments', 'assets'].includes(section) && data[section] === undefined ? [] : data[section];
       if (!Array.isArray(values) || !values.every((value) => isRecord(value) && backupItemChecks[section](value))) {
         return false;
       }
     }
 
     const entries: [string, string][] = presentSections.map((section) =>
-      [backupStorageKeys[section], JSON.stringify((section === 'pendingCollections' || section === 'installments') && data[section] === undefined ? [] : data[section])]);
+      [backupStorageKeys[section], JSON.stringify(['pendingCollections', 'installments', 'assets'].includes(section) && data[section] === undefined ? [] : data[section])]);
     entries.push([STORAGE_KEYS.USER_NAME, backupUserName.trim()]);
     entries.push([STORAGE_KEYS.HAS_ONBOARDED, JSON.stringify(true)]);
     const previous = await AsyncStorage.multiGet(entries.map(([key]) => key));
@@ -633,6 +676,9 @@ export const resetAllAppData = async (): Promise<void> => {
     STORAGE_KEYS.PENDING_COLLECTIONS,
     STORAGE_KEYS.BUDGETS,
     STORAGE_KEYS.INSTALLMENTS,
+    STORAGE_KEYS.ASSETS,
+    '@penny_tour_eligible_v1',
+    '@penny_tour_complete_v1',
     '@penny_is_pro_v1',
     '@penny_pro_plan_v1',
     '@penny_pro_expiry_v1',

@@ -9,6 +9,7 @@ import {
   PendingCollection,
   Category,
   InstallmentPlan,
+  FinancialAsset,
 } from '../types';
 import {
   getUserName,
@@ -43,10 +44,14 @@ import {
   saveInstallmentPlan,
   deleteInstallmentPlan,
   recordInstallmentPayment,
+  getFinancialAssets,
+  saveFinancialAsset,
+  deleteFinancialAsset,
 } from '../services/storageService';
 import { calculateNextDueDate, advanceSubscriptionDueDate, isSameMonthAndYear, formatCurrency } from '../utils/formatters';
 import { useLocale } from './LocaleContext';
 import { useCurrency } from './CurrencyContext';
+import { goalUnit } from '../utils/goalUnits';
 import { notifySubscriptionRecorded, requestNotificationPermissions, syncSubscriptionReminders } from '../services/notificationService';
 
 export type TabType = 'timeline' | 'goals' | 'subscriptions' | 'budget' | 'reports' | 'debts' | 'installments' | 'more';
@@ -68,6 +73,9 @@ interface DataContextType {
 
   transactions: AppTransaction[];
   installments: InstallmentPlan[];
+  assets: FinancialAsset[];
+  handleSaveAsset: (asset: Omit<FinancialAsset, 'id' | 'updatedAt'> & { id?: string }) => Promise<void>;
+  handleDeleteAsset: (id: string) => Promise<void>;
   handleSaveInstallment: (plan: Omit<InstallmentPlan, 'id' | 'createdAt'>) => Promise<void>;
   handleDeleteInstallment: (id: string) => Promise<void>;
   handlePayInstallment: (id: string, number: number) => Promise<void>;
@@ -125,6 +133,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
   const [installments, setInstallments] = useState<InstallmentPlan[]>([]);
+  const [assets, setAssets] = useState<FinancialAsset[]>([]);
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
@@ -152,7 +161,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const task = (async () => {
     try {
       setIsLoading(true);
-      const [name, onboardedStatus, catList, txs, goalList, subList, budgetList, debtList, pendingList, installmentList] = await Promise.all([
+      const [name, onboardedStatus, catList, txs, goalList, subList, budgetList, debtList, pendingList, installmentList, assetList] = await Promise.all([
         getUserName(),
         getHasOnboarded(),
         getCategories(),
@@ -163,6 +172,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getDebts(),
         getPendingCollections(),
         getInstallmentPlans(),
+        getFinancialAssets(),
       ]);
 
       // 1. Clean up any runaway duplicate subscription transactions caused by the previous loop
@@ -267,6 +277,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setDebts(debtList);
       setPendingCollections(pendingList);
       setInstallments(installmentList);
+      setAssets(assetList);
     } catch (error) {
       console.error('Error initializing DataContext:', error);
     } finally {
@@ -318,6 +329,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSaveInstallment = async (plan: Omit<InstallmentPlan, 'id' | 'createdAt'>) => {
     setInstallments(await saveInstallmentPlan(plan));
+  };
+
+  const handleSaveAsset = async (asset: Omit<FinancialAsset, 'id' | 'updatedAt'> & { id?: string }) => {
+    setAssets(await saveFinancialAsset(asset));
+  };
+
+  const handleDeleteAsset = async (id: string) => {
+    setAssets(await deleteFinancialAsset(id));
   };
 
   const handleDeleteInstallment = async (id: string) => {
@@ -462,12 +481,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const totalBalance = useMemo(() => bankBalance + cashBalance, [bankBalance, cashBalance]);
 
   const totalSavedGoals = useMemo(() => {
-    return goals.reduce((sum, g) => sum + (g.savedAmount || 0), 0);
-  }, [goals]);
+    return goals.filter((g) => goalUnit(g) === currency).reduce((sum, g) => sum + (g.savedAmount || 0), 0);
+  }, [goals, currency]);
 
   const totalTargetGoals = useMemo(() => {
-    return goals.reduce((sum, g) => sum + (g.targetAmount || 0), 0);
-  }, [goals]);
+    return goals.filter((g) => goalUnit(g) === currency).reduce((sum, g) => sum + (g.targetAmount || 0), 0);
+  }, [goals, currency]);
 
   const totalMonthlySubscriptions = useMemo(() => {
     return subscriptions
@@ -509,6 +528,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleAddCategory,
         transactions,
         installments,
+        assets,
+        handleSaveAsset,
+        handleDeleteAsset,
         handleSaveInstallment,
         handleDeleteInstallment,
         handlePayInstallment,

@@ -1,4 +1,4 @@
-import { getCurrencySymbol } from '../../context/CurrencyContext';
+import { goalUnit, goalUnitSymbol } from '../../utils/goalUnits';
 import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { SavingsGoal } from '../../types';
@@ -54,6 +54,7 @@ export const EditSavingsGoalModal: React.FC<EditSavingsGoalModalProps> = ({
       percentage,
       remainingAmount,
       isCompleted: savedVal >= targetVal,
+      unit: goalUnit(currentGoal),
     });
 
     onClose();
@@ -79,7 +80,7 @@ export const EditSavingsGoalModal: React.FC<EditSavingsGoalModalProps> = ({
     >
       <HeroUIInput
         label="Hedef Tutar"
-        prefix={getCurrencySymbol()}
+        prefix={goalUnitSymbol(goalUnit(currentGoal))}
         placeholder="Örn: 10.000"
         keyboardType="numeric"
         value={targetInput}
@@ -92,7 +93,7 @@ export const EditSavingsGoalModal: React.FC<EditSavingsGoalModalProps> = ({
 
       <HeroUIInput
         label="Şu Ana Kadar Biriken Tutar"
-        prefix={getCurrencySymbol()}
+        prefix={goalUnitSymbol(goalUnit(currentGoal))}
         placeholder="Örn: 6.800"
         keyboardType="numeric"
         value={savedInput}
