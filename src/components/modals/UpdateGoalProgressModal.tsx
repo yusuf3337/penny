@@ -1,9 +1,9 @@
-import { getCurrencySymbol } from '../../context/CurrencyContext';
 import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
 import { SavingsGoal } from '../../types';
-import { parseAmountSafely, formatCurrency, formatNumberInput } from '../../utils/formatters';
+import { parseAmountSafely, formatNumberInput } from '../../utils/formatters';
+import { formatGoalAmount, goalUnit, goalUnitSymbol } from '../../utils/goalUnits';
 import { HeroUIModal } from '../common/HeroUIModal';
 import { HeroUIInput } from '../common/HeroUIInput';
 import { HeroUIButton } from '../common/HeroUIButton';
@@ -78,17 +78,17 @@ export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = (
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-1 items-center">
             <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6] mb-0.5">Şu An Biriken</Text>
-            <Text className="text-sm font-extrabold text-brand dark:text-brand">{formatCurrency(goal.savedAmount)}</Text>
+            <Text className="text-sm font-extrabold text-brand dark:text-brand">{formatGoalAmount(goal.savedAmount, goalUnit(goal))}</Text>
           </View>
           <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2B3A5D]" />
           <View className="flex-1 items-center">
             <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6] mb-0.5">Hedef Tutar</Text>
-            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#F5F7FF]">{formatCurrency(goal.targetAmount)}</Text>
+            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#F5F7FF]">{formatGoalAmount(goal.targetAmount, goalUnit(goal))}</Text>
           </View>
           <View className="w-[1px] h-7 bg-zinc-200 dark:bg-[#2B3A5D]" />
           <View className="flex-1 items-center">
             <Text className="text-[11px] font-semibold text-zinc-500 dark:text-[#BAC8E6] mb-0.5">Kalan</Text>
-            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#F5F7FF]">{formatCurrency(goal.remainingAmount)}</Text>
+            <Text className="text-[13px] font-bold text-zinc-900 dark:text-[#F5F7FF]">{formatGoalAmount(goal.remainingAmount, goalUnit(goal))}</Text>
           </View>
         </View>
 
@@ -103,7 +103,7 @@ export const UpdateGoalProgressModal: React.FC<UpdateGoalProgressModalProps> = (
 
       <HeroUIInput
         label="Eklenecek Birikim Tutarı"
-        prefix={getCurrencySymbol()}
+        prefix={goalUnitSymbol(goalUnit(goal))}
         placeholder="Örn: 1.000 veya 10.000"
         keyboardType="numeric"
         value={addAmountInput}

@@ -1,3 +1,5 @@
+import type { AppCurrency } from '../context/CurrencyContext';
+
 export type TransactionType = 'income' | 'expense' | 'transfer';
 
 export interface Category {
@@ -100,6 +102,14 @@ export interface InstallmentPlan {
   createdAt: string;
 }
 
+export interface FinancialAsset {
+  id: string;
+  title: string;
+  estimatedValue: number;
+  currency: AppCurrency;
+  updatedAt: string;
+}
+
 export interface SpendingCategory {
   name: string;
   value: string;
@@ -120,4 +130,5 @@ export interface SavingsGoal {
   dueDate?: string;
   iconName?: string;
   emoji?: string;
+  unit?: AppCurrency | 'XAU_G';
 }

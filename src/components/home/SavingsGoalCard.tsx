@@ -5,7 +5,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
 import { COLORS, LIGHT_COLORS } from '../../constants/colors';
 import { SavingsGoal } from '../../types';
-import { formatCurrency } from '../../utils/formatters';
+import { formatGoalAmount, goalUnit } from '../../utils/goalUnits';
 import { localizeFormat } from '../../context/LocaleContext';
 
 interface SavingsGoalCardProps {
@@ -21,8 +21,8 @@ export const SavingsGoalCard: React.FC<SavingsGoalCardProps> = ({ goal, onEditPr
       <Text style={styles.title}>Biriktirmeye devam et.</Text>
 
       <Text style={styles.amountText}>
-        {formatCurrency(goal.savedAmount)}
-        <Text style={styles.targetText}> / {formatCurrency(goal.targetAmount)}</Text>
+        {formatGoalAmount(goal.savedAmount, goalUnit(goal))}
+        <Text style={styles.targetText}> / {formatGoalAmount(goal.targetAmount, goalUnit(goal))}</Text>
       </Text>
 
       <View style={styles.track}>
@@ -30,7 +30,7 @@ export const SavingsGoalCard: React.FC<SavingsGoalCardProps> = ({ goal, onEditPr
       </View>
 
       <Text style={styles.infoText}>
-        {localizeFormat('Hedefinize ulaşmak için {0} kaldı.', [formatCurrency(goal.remainingAmount)])}
+        {localizeFormat('Hedefinize ulaşmak için {0} kaldı.', [formatGoalAmount(goal.remainingAmount, goalUnit(goal))])}
       </Text>
 
       <TouchableOpacity style={styles.button} activeOpacity={0.8} onPress={onEditPress}>

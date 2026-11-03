@@ -1,4 +1,4 @@
-import { getCurrencySymbol } from '../../context/CurrencyContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, TextInput } from 'react-native';
 import { Text } from '../common/LocalizedPrimitives';
@@ -9,6 +9,7 @@ import { HeroUIInput } from '../common/HeroUIInput';
 import { HeroUIButton } from '../common/HeroUIButton';
 import { useTheme } from '../../context/ThemeContext';
 import { AppLanguage, useLocale } from '../../context/LocaleContext';
+import { GOAL_UNITS, GoalUnit, goalUnitSymbol } from '../../utils/goalUnits';
 
 const GOAL_EMOJIS = ['🎯', '🏠', '✈️', '🚗', '💻', '🎓', '💍', '🏖️', '🛟', '🎁', '🐾', '📚'];
 const isEmoji = (value: string) => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(value);
@@ -22,6 +23,17 @@ const goalCopy: Record<AppLanguage, { subtitle: string; emoji: string; custom: s
   ja: { subtitle: '目標を設定して進捗を確認しましょう。', emoji: '目標の絵文字', custom: '好きな絵文字を入力または貼り付け', saveError: '目標を保存できませんでした。再試行してください。' },
   ru: { subtitle: 'Поставьте цель и отслеживайте прогресс.', emoji: 'Эмодзи цели', custom: 'Введите или вставьте свой эмодзи', saveError: 'Не удалось сохранить цель. Повторите попытку.' },
   it: { subtitle: 'Imposta un obiettivo e segui i progressi.', emoji: 'Emoji obiettivo', custom: 'Scrivi o incolla la tua emoji', saveError: 'Impossibile salvare l’obiettivo. Riprova.' },
+};
+const unitCopy: Record<AppLanguage, { label: string; gold: string; note: string }> = {
+  tr: { label: 'Hedef birimi', gold: 'Altın · gram', note: 'Birim değiştirilince tutarlar otomatik çevrilmez.' },
+  en: { label: 'Goal unit', gold: 'Gold · grams', note: 'Changing the unit does not convert amounts.' },
+  de: { label: 'Zieleinheit', gold: 'Gold · Gramm', note: 'Beim Wechsel der Einheit werden Beträge nicht umgerechnet.' },
+  fr: { label: 'Unité de l’objectif', gold: 'Or · grammes', note: 'Changer d’unité ne convertit pas les montants.' },
+  ko: { label: '목표 단위', gold: '금 · 그램', note: '단위를 변경해도 금액은 자동 환산되지 않습니다.' },
+  zh: { label: '目标单位', gold: '黄金 · 克', note: '更改单位不会自动换算金额。' },
+  ja: { label: '目標の単位', gold: '金 · グラム', note: '単位を変えても金額は自動換算されません。' },
+  ru: { label: 'Единица цели', gold: 'Золото · граммы', note: 'При смене единицы суммы не пересчитываются.' },
+  it: { label: 'Unità obiettivo', gold: 'Oro · grammi', note: 'Cambiare unità non converte gli importi.' },
 };
 
 interface AddGoalModalProps {
@@ -42,10 +54,12 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
   const [targetAmountInput, setTargetAmountInput] = useState('');
   const [savedAmountInput, setSavedAmountInput] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState('🎯');
+  const [unit, setUnit] = useState<GoalUnit>('TRY');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const { colors } = useTheme();
   const { language, t } = useLocale();
+  const { currency } = useCurrency();
 
   useEffect(() => {
     if (visible) {
@@ -59,16 +73,18 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
           initialGoal.savedAmount ? formatNumberInput(initialGoal.savedAmount.toString()) : ''
         );
         setSelectedEmoji(initialGoal.emoji || '🎯');
+        setUnit(initialGoal.unit || currency);
       } else {
         setTitle('');
         setCategory('Birikim');
         setTargetAmountInput('');
         setSavedAmountInput('');
         setSelectedEmoji('🎯');
+        setUnit(currency);
       }
       setError('');
     }
-  }, [visible, initialGoal]);
+  }, [visible, initialGoal, currency]);
 
   const handleSave = async () => {
     if (saving) return;
@@ -92,6 +108,7 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
         targetAmount: target,
         savedAmount: saved,
         emoji: selectedEmoji,
+        unit,
       });
       setTitle('');
       setCategory('Birikim');
@@ -150,9 +167,28 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
         onChangeText={(value) => setCategory(value === t('Birikim') ? 'Birikim' : value)}
       />
 
+      <Text localize={false} className="text-[13px] font-bold text-zinc-700 dark:text-[#D5E0F8] mb-2">{unitCopy[language].label}</Text>
+      <View className="flex-row flex-wrap gap-2 mb-2">
+        {[...new Set<GoalUnit>([currency, ...(initialGoal?.unit ? [initialGoal.unit] : []), ...GOAL_UNITS])].map((option) => (
+          <TouchableOpacity
+            key={option}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: unit === option }}
+            onPress={() => setUnit(option)}
+            className="rounded-xl border px-3 py-2"
+            style={{ backgroundColor: unit === option ? colors.primaryLight : colors.card, borderColor: unit === option ? colors.primary : colors.cardBorder }}
+          >
+            <Text localize={false} style={{ color: colors.foreground, fontWeight: '700' }}>
+              {option === 'XAU_G' ? unitCopy[language].gold : option}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Text localize={false} className="text-xs text-zinc-500 dark:text-[#BAC8E6] mb-4">{unitCopy[language].note}</Text>
+
       <HeroUIInput
         label="Hedef Tutar"
-        prefix={getCurrencySymbol()}
+        prefix={goalUnitSymbol(unit)}
         placeholder="Örn: 50.000 veya 1.000.000"
         keyboardType="numeric"
         value={targetAmountInput}
@@ -169,7 +205,7 @@ export const AddGoalModal: React.FC<AddGoalModalProps> = ({
 
       <HeroUIInput
         label="Mevcut Birikim (Opsiyonel)"
-        prefix={getCurrencySymbol()}
+        prefix={goalUnitSymbol(unit)}
         placeholder="0"
         keyboardType="numeric"
         value={savedAmountInput}

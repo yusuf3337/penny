@@ -1,5 +1,5 @@
 import { Card } from 'heroui-native/card';
-import { useThemedStyles } from '../context/ThemeContext';
+import { useThemedStyles, useTheme } from '../context/ThemeContext';
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text } from '../components/common/LocalizedPrimitives';
@@ -16,6 +16,8 @@ import {
   isSameMonthAndYear,
 } from '../utils/formatters';
 import { AppLanguage, getFormattingLocale, localize, localizeFormat, localizeTransactionTitle, useLocale } from '../context/LocaleContext';
+import { FinancialStatus } from '../components/reports/FinancialStatus';
+import { formatGoalAmount, goalUnit, GoalUnit } from '../utils/goalUnits';
 
 const topSpendingMessage = (language: AppLanguage, month: string, category: string, percentage: number, amount: string): string => {
   switch (language) {
@@ -33,22 +35,24 @@ const topSpendingMessage = (language: AppLanguage, month: string, category: stri
 
 interface ReportsScreenProps {
   onOpenAddModal: () => void;
+  tourMode?: boolean;
 }
 
-const reportTabLabels: Record<AppLanguage, { overview: string; time: string }> = {
-  tr: { overview: 'Genel', time: 'Zaman' },
-  en: { overview: 'Overview', time: 'Timeline' },
-  de: { overview: 'Übersicht', time: 'Zeitverlauf' },
-  fr: { overview: 'Vue d’ensemble', time: 'Chronologie' },
-  ko: { overview: '개요', time: '시간별' },
-  zh: { overview: '概览', time: '时间线' },
-  ja: { overview: '概要', time: '時系列' },
-  ru: { overview: 'Обзор', time: 'Периоды' },
-  it: { overview: 'Panoramica', time: 'Cronologia' },
+const reportTabLabels: Record<AppLanguage, { overview: string; time: string; position: string; flow: string; remaining: string }> = {
+  tr: { overview: 'Genel', time: 'Zaman', position: 'Durum', flow: 'Aylık akış', remaining: 'Kalan' },
+  en: { overview: 'Overview', time: 'Timeline', position: 'Position', flow: 'Monthly flow', remaining: 'Remaining' },
+  de: { overview: 'Übersicht', time: 'Zeitverlauf', position: 'Vermögen', flow: 'Monatsübersicht', remaining: 'Übrig' },
+  fr: { overview: 'Vue d’ensemble', time: 'Chronologie', position: 'Situation', flow: 'Flux mensuel', remaining: 'Reste' },
+  ko: { overview: '개요', time: '시간별', position: '자산 현황', flow: '월간 흐름', remaining: '잔액' },
+  zh: { overview: '概览', time: '时间线', position: '财务状况', flow: '每月收支', remaining: '结余' },
+  ja: { overview: '概要', time: '時系列', position: '資産状況', flow: '月間収支', remaining: '残り' },
+  ru: { overview: 'Обзор', time: 'Периоды', position: 'Состояние', flow: 'Месячный поток', remaining: 'Остаток' },
+  it: { overview: 'Panoramica', time: 'Cronologia', position: 'Situazione', flow: 'Flusso mensile', remaining: 'Rimanente' },
 };
 
-export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) => {
+export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal, tourMode = false }) => {
   const styles = useThemedStyles(lightStyles);
+  const { colors } = useTheme();
   const { language, t } = useLocale();
   const {
     transactions,
@@ -56,12 +60,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
     subscriptions,
     totalMonthlySubscriptions,
     goals,
-    totalSavedGoals,
   } = useData();
 
 
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
-  const [activeSubTab, setActiveSubTab] = useState<'kategori' | 'genel' | 'icgoru' | 'trend' | 'zaman'>('kategori');
+  const [activeSubTab, setActiveSubTab] = useState<'kategori' | 'genel' | 'icgoru' | 'trend' | 'zaman' | 'durum'>(tourMode ? 'durum' : 'kategori');
 
   const handlePrevMonth = () => setSelectedMonth((prev) => changeMonth(prev, -1));
   const handleNextMonth = () => setSelectedMonth((prev) => changeMonth(prev, 1));
@@ -82,6 +85,12 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
     .reduce((sum, t) => sum + (t.rawAmount || 0), 0);
 
   const monthNet = monthIncome - monthExpense;
+  const flowMax = Math.max(monthIncome, monthExpense, 1);
+  const goalSavingsByUnit = Object.entries(goals.reduce((totals, goal) => {
+    const unit = goalUnit(goal);
+    totals[unit] = (totals[unit] || 0) + (goal.savedAmount || 0);
+    return totals;
+  }, {} as Partial<Record<GoalUnit, number>>)).map(([unit, amount]) => formatGoalAmount(amount || 0, unit as GoalUnit)).join(' · ');
 
   const categoryColors: { [key: string]: string } = {
     Teknoloji: '#3B82F6',
@@ -203,6 +212,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
           { id: 'icgoru', label: 'İçgörüler' },
           { id: 'trend', label: 'Trend' },
           { id: 'zaman', label: reportTabLabels[language].time },
+          { id: 'durum', label: reportTabLabels[language].position },
         ].map((tab) => {
           const isActive = activeSubTab === tab.id;
           return (
@@ -222,7 +232,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       </ScrollView>
 
       {/* Month Selector */}
-      <View style={styles.monthSelectorRow}>
+      {activeSubTab !== 'durum' && <View style={styles.monthSelectorRow}>
         <TouchableOpacity
           style={styles.arrowBtn}
           onPress={handlePrevMonth}
@@ -251,7 +261,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
         >
           <Ionicons name="chevron-forward" size={18} color={COLORS.foreground} />
         </TouchableOpacity>
-      </View>
+      </View>}
 
       {/* TAB 1: KATEGORİ (Donut Chart & Breakdown) */}
       {activeSubTab === 'kategori' && (
@@ -359,6 +369,25 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
       {activeSubTab === 'genel' && (
         <View style={styles.genelWrap}>
           <Card style={styles.metricCard}>
+            <Text localize={false} style={{ color: colors.foreground, fontSize: 15, fontWeight: '800', marginBottom: 14 }}>{reportTabLabels[language].flow}</Text>
+            {[
+              { label: t('Gelir'), amount: monthIncome, color: colors.emerald },
+              { label: t('Gider'), amount: monthExpense, color: colors.rose },
+            ].map((item) => <View key={item.label} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginBottom: 5 }}>
+                <Text localize={false} style={{ color: colors.mutedText, fontSize: 12, fontWeight: '600' }}>{item.label}</Text>
+                <Text localize={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ color: colors.foreground, fontSize: 13, fontWeight: '700', maxWidth: '65%' }}>{formatCurrency(item.amount)}</Text>
+              </View>
+              <View style={{ height: 9, borderRadius: 5, backgroundColor: colors.secondary, overflow: 'hidden' }}>
+                <View style={{ height: 9, width: `${(item.amount / flowMax) * 100}%`, borderRadius: 5, backgroundColor: item.color }} />
+              </View>
+            </View>)}
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.cardBorder, marginTop: 2, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+              <Text localize={false} style={{ color: colors.mutedText, fontSize: 12 }}>{reportTabLabels[language].remaining}</Text>
+              <Text localize={false} style={{ color: monthNet >= 0 ? colors.emeraldText : colors.roseText, fontSize: 15, fontWeight: '800' }}>{formatCurrency(monthNet)}</Text>
+            </View>
+          </Card>
+          <Card style={styles.metricCard}>
             <Text style={styles.metricLabel}>{currentMonthName.toUpperCase()} NET DURUM</Text>
             <Text
               style={[
@@ -450,7 +479,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
               <Text style={styles.insightTitle}>Tasarruf Hedefleri Durumu</Text>
             </View>
             <Text style={styles.insightBody}>
-              {localizeFormat('Toplam birikiminiz: {0}.', [formatCurrency(totalSavedGoals)])}
+              {localizeFormat('Toplam birikiminiz: {0}.', [goalSavingsByUnit || formatCurrency(0)])}
               {goals.length === 0 ? ` ${localize('Henüz bir hedef tanımlamadınız.')}` : ` ${localizeFormat('{0} aktif hedefiniz takip ediliyor.', [goals.length])}`}
             </Text>
           </Card>
@@ -518,6 +547,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ onOpenAddModal }) 
           )}
         </View>
       )}
+      {activeSubTab === 'durum' && <FinancialStatus />}
     </ScrollView>
   );
 };

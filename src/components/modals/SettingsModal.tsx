@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { Platform, View, TouchableOpacity } from 'react-native';
 import { Text, TextInput } from '../common/LocalizedPrimitives';
 import { Ionicons } from '@expo/vector-icons';
 import { ACCENT_PALETTES, AccentPreference, COLORS } from '../../constants/colors';
@@ -43,12 +43,20 @@ const accentCopy: Record<AppLanguage, { title: string; teal: string; blue: strin
   it: { title: 'Colore principale', teal: 'Turchese', blue: 'Blu', violet: 'Viola', coral: 'Corallo' },
 };
 
+const tourCopy: Record<AppLanguage, string> = {
+  tr: 'Uygulama turunu yeniden başlat', en: 'Replay the app tour',
+  de: 'App-Tour erneut starten', fr: 'Revoir la visite de l’application',
+  ko: '앱 둘러보기 다시 보기', zh: '重新查看应用导览', ja: 'アプリツアーをもう一度見る',
+  ru: 'Повторить обзор приложения', it: 'Rivedi il tour dell’app',
+};
+
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
+  onStartTour: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onStartTour }) => {
   const { alert } = useAppDialog();
   const { preference, setPreference, accent, setAccent, isDark, colors } = useTheme();
   const { language, preference: languagePreference, setPreference: setLanguagePreference, t } = useLocale();
@@ -63,6 +71,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   const [resetting, setResetting] = useState(false);
   const resetPending = useRef(false);
   const importPending = useRef<string | null>(null);
+  const tourPending = useRef(false);
   const [importing, setImporting] = useState(false);
   const [expandedSetting, setExpandedSetting] = useState<'appearance' | 'accent' | 'language' | 'currency' | null>(null);
 
@@ -155,6 +164,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
   };
 
   const handleResetAfterDismiss = () => {
+    if (tourPending.current) {
+      tourPending.current = false;
+      onStartTour();
+      return;
+    }
     if (importPending.current) {
       const message = importPending.current;
       importPending.current = null;
@@ -223,6 +237,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }
           <Text className="text-brand-foreground text-xs font-bold">Kaydet</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity accessibilityRole="button" onPress={() => {
+        tourPending.current = true;
+        onClose();
+        if (Platform.OS === 'android') setTimeout(() => {
+          if (tourPending.current) { tourPending.current = false; onStartTour(); }
+        }, 350);
+      }} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, backgroundColor: colors.secondary, marginBottom: 14 }}>
+        <Ionicons name="compass-outline" size={18} color={colors.primary} />
+        <Text localize={false} style={{ color: colors.foreground, fontSize: 14, fontWeight: '600', flex: 1 }}>{tourCopy[language]}</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.mutedText} />
+      </TouchableOpacity>
 
       <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: expandedSetting === 'appearance' }} className="flex-row items-center justify-between bg-zinc-100 dark:bg-[#1E2A48] rounded-xl px-4 py-3 mb-2" onPress={() => setExpandedSetting(expandedSetting === 'appearance' ? null : 'appearance')}>
         <Text className="text-sm font-semibold text-zinc-900 dark:text-[#F5F7FF]">{t('Görünüm')} · {preference === 'system' ? t('Sistem') : preference === 'light' ? t('Açık') : t('Koyu')}</Text>

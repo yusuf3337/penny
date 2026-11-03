@@ -12,6 +12,8 @@ import { COLORS, LIGHT_COLORS } from '../constants/colors';
 import { formatCurrency } from '../utils/formatters';
 import { SavingsGoal } from '../types';
 import { localize, localizeFormat } from '../context/LocaleContext';
+import { useCurrency } from '../context/CurrencyContext';
+import { formatGoalAmount, goalUnit, GoalUnit } from '../utils/goalUnits';
 
 
 interface GoalsScreenProps {
@@ -21,14 +23,19 @@ interface GoalsScreenProps {
 export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => {
   const styles = useThemedStyles(lightStyles);
   const { alert } = useAppDialog();
-  const { goals, totalSavedGoals, totalTargetGoals, handleSaveGoal, handleDeleteGoal } = useData();
+  const { goals, handleSaveGoal, handleDeleteGoal } = useData();
+  const { currency } = useCurrency();
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
   const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState<SavingsGoal | null>(null);
 
-  const overallPercentage =
-    totalTargetGoals > 0
-      ? Math.min(Math.round((totalSavedGoals / totalTargetGoals) * 100), 100)
-      : 0;
+  const overallPercentage = goals.length
+    ? Math.round(goals.reduce((sum, goal) => sum + Math.min(Math.max(goal.percentage || 0, 0), 100), 0) / goals.length)
+    : 0;
+  const goalTotals = Object.entries(goals.reduce((totals, goal) => {
+    const unit = goalUnit(goal);
+    totals[unit] = (totals[unit] || 0) + (goal.savedAmount || 0);
+    return totals;
+  }, {} as Partial<Record<GoalUnit, number>>)).sort(([a], [b]) => a === currency ? -1 : b === currency ? 1 : a.localeCompare(b));
 
   const activeCount = goals.filter((g) => !g.isCompleted).length;
   const completedCount = goals.filter((g) => g.isCompleted).length;
@@ -60,7 +67,9 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
         <View style={styles.summaryTopRow}>
           <View style={styles.summaryValues}>
             <Text style={styles.summaryLabel}>Biriken</Text>
-            <Text style={styles.savedTotalText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{formatCurrency(totalSavedGoals)}</Text>
+            <Text style={styles.savedTotalText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+              {goalTotals.length ? formatGoalAmount(goalTotals[0][1] || 0, goalTotals[0][0] as GoalUnit) : formatCurrency(0)}
+            </Text>
             <Text style={styles.targetSubText} numberOfLines={2}>
               {localizeFormat('{0} Aktif · {1} Tamamlanan', [activeCount, completedCount])}
             </Text>
@@ -70,6 +79,12 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
             <Text style={styles.percentRingText}>%{overallPercentage}</Text>
           </View>
         </View>
+
+        {goalTotals.slice(1).map(([unit, amount]) => (
+          <Text key={unit} localize={false} style={styles.targetSubText} numberOfLines={1}>
+            {formatGoalAmount(amount || 0, unit as GoalUnit)}
+          </Text>
+        ))}
 
         {/* Global Progress Bar */}
         <View style={styles.globalProgressTrack}>
@@ -199,8 +214,8 @@ export const GoalsScreen: React.FC<GoalsScreenProps> = ({ onOpenGoalModal }) => 
               {/* Amounts Footer */}
               <View style={styles.goalFooter}>
                 <View style={styles.goalAmounts}>
-                  <Text style={styles.savedAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatCurrency(goal.savedAmount)}</Text>
-                  <Text style={styles.targetAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>/ {formatCurrency(goal.targetAmount)}</Text>
+                  <Text style={styles.savedAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatGoalAmount(goal.savedAmount, goalUnit(goal))}</Text>
+                  <Text style={styles.targetAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>/ {formatGoalAmount(goal.targetAmount, goalUnit(goal))}</Text>
                 </View>
                 <View style={styles.goalFooterActions}>
                 <TouchableOpacity

@@ -32,6 +32,8 @@ import { LocaleProvider, useLocale } from './src/context/LocaleContext';
 import { AppTransaction, CategoryBudget } from './src/types';
 import { CurrencyProvider, useCurrency } from './src/context/CurrencyContext';
 import { isValidNickname } from './src/utils/nickname';
+import { ProductTour } from './src/components/common/ProductTour';
+import { completeTour, markTourEligible, shouldShowTour } from './src/services/tourService';
 
 import { SplitExpenseModal } from './src/components/modals/SplitExpenseModal';
 
@@ -41,7 +43,7 @@ const fadePreviousScreen = FadeOut.duration(170).easing(Easing.out(Easing.quad))
 const tabOrder = ['timeline', 'goals', 'budget', 'more'] as const;
 const navTab = (tab: string) => ['subscriptions', 'reports', 'debts', 'installments'].includes(tab) ? 'more' : tab;
 
-const MainNavigator = () => {
+const MainNavigator: React.FC<{ autoStartTour: boolean; onTourDone: () => void }> = ({ autoStartTour, onTourDone }) => {
   useLocale(); // Re-render date and currency labels when the language changes.
   useCurrency(); // Re-render amounts when the selected currency changes.
   const {
@@ -75,7 +77,24 @@ const MainNavigator = () => {
   const [isAddDebtModalVisible, setIsAddDebtModalVisible] = useState(false);
   const [isSplitModalVisible, setIsSplitModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+  const [tourVisible, setTourVisible] = useState(false);
   const [installmentAddRequest, setInstallmentAddRequest] = useState(0);
+
+  useEffect(() => {
+    if (autoStartTour) setTourVisible(true);
+  }, [autoStartTour]);
+
+  const finishTour = () => {
+    setTourVisible(false);
+    setActiveTab('timeline');
+    onTourDone();
+    void completeTour().catch((error) => console.warn('Could not save tour state:', error));
+  };
+
+  const replayTour = () => {
+    setActiveTab('timeline');
+    setTourVisible(true);
+  };
 
   const handleOpenDebtModal = () => {
     setIsAddDebtModalVisible(true);
@@ -190,6 +209,7 @@ const MainNavigator = () => {
 
       {activeTab === 'reports' && (
         <ReportsScreen
+          tourMode={tourVisible}
           onOpenAddModal={() => {
             triggerAddHaptic();
             setIsAddTxModalVisible(true);
@@ -275,26 +295,38 @@ const MainNavigator = () => {
       <SettingsModal
         visible={isSettingsModalVisible}
         onClose={() => setIsSettingsModalVisible(false)}
+        onStartTour={replayTour}
       />
+
+      <ProductTour visible={tourVisible} onNavigate={setActiveTab} onFinish={finishTour} />
 
     </View>
   );
 };
 
-const AppContent = () => {
+const AppContent: React.FC<{ autoStartTour: boolean; onTourDone: () => void }> = ({ autoStartTour, onTourDone }) => {
   const { isDark, colors } = useTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <MainNavigator />
+      <MainNavigator autoStartTour={autoStartTour} onTourDone={onTourDone} />
     </SafeAreaView>
   );
 };
 
 const AppBody = () => {
   const [introComplete, setIntroComplete] = useState(false);
+  const [autoStartTour, setAutoStartTour] = useState(false);
   const { isLoading, hasOnboarded, userName, updateUserName, markOnboarded } = useData();
   const { colors, isDark } = useTheme();
+  useEffect(() => {
+    if (!introComplete || isLoading || !hasOnboarded || !isValidNickname(userName)) return;
+    let active = true;
+    void shouldShowTour().then((shouldShow) => {
+      if (active && shouldShow) setAutoStartTour(true);
+    }).catch((error) => console.warn('Could not load tour state:', error));
+    return () => { active = false; };
+  }, [introComplete, isLoading, hasOnboarded, userName]);
   if (!introComplete) return <SplashIntro onComplete={() => setIntroComplete(true)} />;
   if (isLoading && !hasOnboarded) {
     return <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
@@ -306,11 +338,12 @@ const AppBody = () => {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <UserNameModal visible onSave={async (name) => {
         await updateUserName(name);
+        await markTourEligible();
         await markOnboarded();
       }} />
     </SafeAreaView>;
   }
-  return <AppContent />;
+  return <AppContent autoStartTour={autoStartTour} onTourDone={() => setAutoStartTour(false)} />;
 };
 
 export default function App() {
